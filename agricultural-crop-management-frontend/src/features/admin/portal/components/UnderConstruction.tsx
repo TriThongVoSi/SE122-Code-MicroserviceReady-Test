@@ -1,0 +1,27 @@
+import { Calendar } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { useI18n } from '@/hooks/useI18n';
+
+type UnderConstructionProps = {
+  title: string;
+};
+
+export function UnderConstruction({ title }: UnderConstructionProps) {
+  const { t } = useI18n();
+  
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <Card className="border-dashed border-2">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <div className="w-16 h-16 rounded-full bg-[#F5F6F8] flex items-center justify-center mb-4">
+            <Calendar className="w-8 h-8 text-[#6B7280]" />
+          </div>
+          <h3 className="mb-2 font-semibold text-lg">{title}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t('common.underConstruction', 'This view is under construction.')}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

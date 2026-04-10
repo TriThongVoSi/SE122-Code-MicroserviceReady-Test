@@ -1,0 +1,56 @@
+# ============================================================
+# Profile "local" – chạy backend KHÔNG CẦN Docker
+# Database: H2 in-memory (MySQL compatibility mode)
+# Email:    LogEmailSender (chỉ log, không gửi thật)
+# ============================================================
+
+app:
+  mail:
+    enabled: false        # -> dùng LogEmailSender (log ra console)
+
+spring:
+  # ---------- H2 In-Memory Database ----------
+  datasource:
+    url: jdbc:h2:mem:quanlymuavu;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # ---------- JPA ----------
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # ---------- H2 Web Console ----------
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false   # chỉ cho truy cập từ localhost
+
+  # ---------- Mail (disabled → LogEmailSender) ----------
+  mail:
+    host: localhost
+    port: 1025
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# Logging – verbose hơn prod để dễ debug
+logging:
+  level:
+    org.example.QuanLyMuaVu: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

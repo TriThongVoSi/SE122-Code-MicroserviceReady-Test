@@ -1,0 +1,30 @@
+# Sensitive environment variables and API keys
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+!.env.sample
+!.env.*.sample
+
+# Secret and credential files
+*.secret
+*.secrets
+secret.*
+secrets.*
+credential.*
+credentials.*
+service-account*.json
+firebase-adminsdk*.json
+google-credentials*.json
+
+# Private key and certificate bundles
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore

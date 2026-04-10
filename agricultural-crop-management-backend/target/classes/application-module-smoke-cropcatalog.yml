@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: module-smoke-cropcatalog
+
+module:
+  smoke:
+    target: cropcatalog
+    modules:
+      cropcatalog: true

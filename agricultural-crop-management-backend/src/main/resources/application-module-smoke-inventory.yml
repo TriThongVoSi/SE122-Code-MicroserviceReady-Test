@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: module-smoke-inventory
+
+module:
+  smoke:
+    target: inventory
+    modules:
+      inventory: true
