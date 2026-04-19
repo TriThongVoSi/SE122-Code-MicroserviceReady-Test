@@ -10,6 +10,24 @@ import { EmployeePortalWithShell } from '@/features/employee/portal';
 import { useAuth } from '@/features/auth';
 import { ErrorBoundary } from '@/shared/ui';
 import { SeasonProvider, useSeason } from '@/shared/contexts';
+import {
+  CartPage,
+  CheckoutPage,
+  FarmDetailPage as MarketplaceFarmDetailPage,
+  FarmListPage as MarketplaceFarmListPage,
+  MarketHomePage,
+  MarketplacePublicLayout,
+  MyOrdersPage as MarketplaceMyOrdersPage,
+  OrderDetailPage as MarketplaceOrderDetailPage,
+  ProductDetailPage as MarketplaceProductDetailPage,
+  ProductListPage as MarketplaceProductListPage,
+  SellerDashboardPage as MarketplaceSellerDashboardPage,
+  SellerOrderDetailPage as MarketplaceSellerOrderDetailPage,
+  SellerOrdersPage as MarketplaceSellerOrdersPage,
+  SellerProductFormPage as MarketplaceSellerProductFormPage,
+  SellerProductsPage as MarketplaceSellerProductsPage,
+  TraceabilityPage,
+} from '@/features/marketplace';
 
 // Farmer feature imports
 import { CropManagement } from '@/features/farmer/crops';
@@ -66,6 +84,9 @@ function RootRedirect() {
   if (role === 'employee') {
     return <Navigate to="/employee/tasks" replace />;
   }
+  if (role === 'buyer') {
+    return <Navigate to="/marketplace" replace />;
+  }
 
   return <Navigate to="/sign-in" replace />;
 }
@@ -108,6 +129,50 @@ export function AppRoutes() {
       <Route path="/signin" element={<Navigate to="/sign-in" replace />} />
       <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
 
+      {/* Marketplace public + authenticated buyer-capability routes */}
+      <Route path="/marketplace" element={<MarketplacePublicLayout />}>
+        <Route index element={<MarketHomePage />} />
+        <Route path="products" element={<MarketplaceProductListPage />} />
+        <Route path="products/:slug" element={<MarketplaceProductDetailPage />} />
+        <Route path="farms" element={<MarketplaceFarmListPage />} />
+        <Route path="farms/:id" element={<MarketplaceFarmDetailPage />} />
+        <Route path="traceability" element={<TraceabilityPage />} />
+        <Route path="traceability/:productId" element={<TraceabilityPage />} />
+        <Route
+          path="cart"
+          element={(
+            <ProtectedRoute requireAuth>
+              <CartPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="checkout"
+          element={(
+            <ProtectedRoute requireAuth>
+              <CheckoutPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="orders"
+          element={(
+            <ProtectedRoute requireAuth>
+              <MarketplaceMyOrdersPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="orders/:id"
+          element={(
+            <ProtectedRoute requireAuth>
+              <MarketplaceOrderDetailPage />
+            </ProtectedRoute>
+          )}
+        />
+      </Route>
+      <Route path="/buyer/*" element={<Navigate to="/marketplace" replace />} />
+
       {/* Farmer Routes - Protected with SeasonProvider and ErrorBoundary */}
       <Route
         path="/farmer"
@@ -126,6 +191,12 @@ export function AppRoutes() {
 
         {/* Farmer Dashboard */}
         <Route path="dashboard" element={<FarmerDashboard />} />
+        <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
+        <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
+        <Route path="marketplace-products/new" element={<MarketplaceSellerProductFormPage />} />
+        <Route path="marketplace-products/:id/edit" element={<MarketplaceSellerProductFormPage />} />
+        <Route path="marketplace-orders" element={<MarketplaceSellerOrdersPage />} />
+        <Route path="marketplace-orders/:id" element={<MarketplaceSellerOrderDetailPage />} />
         <Route path="search" element={<FarmerSearchPage />} />
 
         {/* Farm Management with nested routes */}

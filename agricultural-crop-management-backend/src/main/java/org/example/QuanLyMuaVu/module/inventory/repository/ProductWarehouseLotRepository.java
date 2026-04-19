@@ -29,6 +29,15 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
     Optional<ProductWarehouseLot> findByLotCode(String lotCode);
 
     @Query("""
+            SELECT l FROM ProductWarehouseLot l
+            WHERE l.id = :lotId
+              AND l.farm.user.id = :ownerId
+            """)
+    Optional<ProductWarehouseLot> findByIdAndFarmUserId(
+            @Param("lotId") Integer lotId,
+            @Param("ownerId") Long ownerId);
+
+    @Query("""
             select l from ProductWarehouseLot l
             where l.farm.id = :farmId
               and l.warehouse.id = :warehouseId

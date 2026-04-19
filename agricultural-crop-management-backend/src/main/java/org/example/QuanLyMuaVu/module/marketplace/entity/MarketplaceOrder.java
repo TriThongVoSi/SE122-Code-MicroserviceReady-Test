@@ -1,0 +1,115 @@
+package org.example.QuanLyMuaVu.module.marketplace.entity;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentMethod;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity
+@Table(name = "marketplace_orders")
+public class MarketplaceOrder {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "order_group_id", nullable = false)
+    MarketplaceOrderGroup orderGroup;
+
+    @Column(name = "order_code", nullable = false, length = 64, unique = true)
+    String orderCode;
+
+    @ManyToOne
+    @JoinColumn(name = "buyer_user_id", nullable = false)
+    org.example.QuanLyMuaVu.module.identity.entity.User buyerUser;
+
+    @ManyToOne
+    @JoinColumn(name = "farmer_user_id", nullable = false)
+    org.example.QuanLyMuaVu.module.identity.entity.User farmerUser;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    MarketplaceOrderStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 40)
+    MarketplacePaymentMethod paymentMethod;
+
+    @Column(name = "shipping_recipient_name", nullable = false)
+    String shippingRecipientName;
+
+    @Column(name = "shipping_phone", nullable = false, length = 30)
+    String shippingPhone;
+
+    @Column(name = "shipping_address_line", nullable = false, length = 500)
+    String shippingAddressLine;
+
+    @Column(name = "note", columnDefinition = "TEXT")
+    String note;
+
+    @Column(name = "subtotal", nullable = false, precision = 19, scale = 2)
+    BigDecimal subtotal;
+
+    @Column(name = "shipping_fee", nullable = false, precision = 19, scale = 2)
+    BigDecimal shippingFee;
+
+    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
+    BigDecimal totalAmount;
+
+    @Column(name = "created_at", nullable = false)
+    LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<MarketplaceOrderItem> items = new ArrayList<>();
+
+    @PrePersist
+    void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}

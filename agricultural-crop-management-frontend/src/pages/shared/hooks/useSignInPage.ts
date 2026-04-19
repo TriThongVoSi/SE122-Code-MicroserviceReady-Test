@@ -7,15 +7,24 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth, type AuthError } from '@/features/auth';
+import { marketplaceApi } from '@/shared/api';
+import {
+    buildGuestCartMergeRequest,
+    clearGuestCartItems,
+    hasGuestCartItems,
+} from '@/features/marketplace/state/guestCart';
 
 function getRoleHomePath(role?: string | null): string {
     if (!role) return '/';
-    return role === 'employee' ? '/employee/tasks' : `/${role}/dashboard`;
+    if (role === 'employee') return '/employee/tasks';
+    if (role === 'buyer') return '/marketplace';
+    return `/${role}/dashboard`;
 }
 
 function getRedirectPath(redirectTo?: string): string {
     if (!redirectTo || redirectTo === '/') return '/';
     if (redirectTo === '/employee') return '/employee/tasks';
+    if (redirectTo === '/buyer' || redirectTo === '/marketplace') return '/marketplace';
     return `${redirectTo}/dashboard`;
 }
 
@@ -113,6 +122,18 @@ export function useSignInPage() {
         const result = await login(email, password, rememberMe);
 
         if (result.success) {
+            if (hasGuestCartItems()) {
+                try {
+                    const mergeRequest = buildGuestCartMergeRequest();
+                    if (mergeRequest.items.length > 0) {
+                        await marketplaceApi.mergeCart(mergeRequest);
+                        clearGuestCartItems();
+                    }
+                } catch (error) {
+                    console.error('Failed to merge guest marketplace cart after login', error);
+                }
+            }
+
             // Mark as redirected to prevent useEffect from also navigating
             hasRedirected.current = true;
             

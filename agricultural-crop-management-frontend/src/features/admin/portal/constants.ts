@@ -2,6 +2,9 @@ import type { AdminView, AdminViewConfig } from "./types";
 
 export const ADMIN_VIEW_CONFIG: Record<AdminView, AdminViewConfig> = {
   dashboard: { title: "Admin Dashboard", breadcrumbLabel: "Dashboard" },
+  "marketplace-dashboard": { title: "Marketplace Dashboard", breadcrumbLabel: "Marketplace" },
+  "marketplace-products": { title: "Marketplace Products", breadcrumbLabel: "Marketplace Products" },
+  "marketplace-orders": { title: "Marketplace Orders", breadcrumbLabel: "Marketplace Orders" },
   search: { title: "Search", breadcrumbLabel: "Search" },
   inventory: { title: "Inventory", breadcrumbLabel: "Inventory" },
   incidents: { title: "Incidents", breadcrumbLabel: "Incidents" },

@@ -4,6 +4,7 @@ import { useAuth, UserRole } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  requireAuth?: boolean;
   requiredRole?: UserRole;
   allowedRoles?: UserRole[];
 }
@@ -38,6 +39,7 @@ function getDefaultPortalRoute(role: UserRole): string {
  */
 export function ProtectedRoute({ 
   children, 
+  requireAuth = true,
   requiredRole,
   allowedRoles 
 }: ProtectedRouteProps) {
@@ -57,9 +59,13 @@ export function ProtectedRoute({
   }
 
   // Check if user is authenticated
-  if (!isAuthenticated) {
+  if (requireAuth && !isAuthenticated) {
     // Save the attempted location for redirect after login
     return <Navigate to="/sign-in" state={{ from: location }} replace />;
+  }
+
+  if (!requireAuth) {
+    return <>{children}</>;
   }
 
   // Check role requirements

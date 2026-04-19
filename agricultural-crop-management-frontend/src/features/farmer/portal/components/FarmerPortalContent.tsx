@@ -2,7 +2,15 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { SeasonGate } from '@/shared/components';
 
 // Routes that don't require a season to be selected
-const EXEMPT_ROUTES = ['/farmer/seasons', '/farmer/profile', '/farmer/settings', '/farmer/search'];
+const EXEMPT_ROUTES = [
+  '/farmer/seasons',
+  '/farmer/profile',
+  '/farmer/settings',
+  '/farmer/search',
+  '/farmer/marketplace-dashboard',
+  '/farmer/marketplace-products',
+  '/farmer/marketplace-orders',
+];
 
 /**
  * Renders child routes using React Router v6 Outlet

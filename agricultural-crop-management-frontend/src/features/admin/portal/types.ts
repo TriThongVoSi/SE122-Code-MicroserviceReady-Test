@@ -2,6 +2,9 @@ import type { BreadcrumbPath } from "@/features/shared/layout/types";
 
 export type AdminView =
   | "dashboard"
+  | "marketplace-dashboard"
+  | "marketplace-products"
+  | "marketplace-orders"
   | "search"
   | "inventory"
   | "incidents"

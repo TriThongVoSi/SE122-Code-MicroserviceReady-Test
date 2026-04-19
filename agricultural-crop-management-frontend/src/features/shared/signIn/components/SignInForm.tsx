@@ -183,6 +183,20 @@ export function SignInForm({
                 </p>
             </button>
 
+            <Link
+                to="/marketplace"
+                className="mt-3 inline-flex h-[50px] w-full items-center justify-center rounded-[16px] border border-[#3ba55d] bg-white px-[8px] py-[10px] text-[14px] font-semibold tracking-[-0.28px] text-[#3ba55d] transition-colors hover:bg-[#f2fbf5]"
+                style={{ fontVariationSettings: "'opsz' 14" }}
+            >
+                Vao san voi tu cach khach
+            </Link>
+            <p
+                className="mt-2 text-center font-['DM_Sans:Regular',sans-serif] text-[12px] tracking-[-0.24px] text-[#6b7280]"
+                style={{ fontVariationSettings: "'opsz' 14" }}
+            >
+                Khach chi duoc xem san pham. Can tao tai khoan de mua hang.
+            </p>
+
             {/* Not Registered */}
             <p
                 className="font-['DM_Sans:Regular',sans-serif] font-normal leading-[26px] text-[#2b3674] text-[14px] text-center tracking-[-0.28px] mt-[28px]"

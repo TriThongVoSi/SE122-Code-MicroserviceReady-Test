@@ -14,6 +14,7 @@ D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\ja
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\module\ai\controller\AiModuleControllerIntegrationTest.java
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\module\cropcatalog\controller\CropCatalogModuleControllerIntegrationTest.java
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\module\inventory\controller\InventorySuppliesModuleControllerIntegrationTest.java
+D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\module\marketplace\service\MarketplaceServiceTest.java
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\QuanLyMuaVuApplicationTests.java
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\Service\AuthenticationServiceUnitTest.java
 D:\SE122-Code-MicroserviceReady\agricultural-crop-management-backend\src\test\java\org\example\QuanLyMuaVu\Service\CropServiceTest.java

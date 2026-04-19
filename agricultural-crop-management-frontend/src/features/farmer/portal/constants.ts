@@ -60,6 +60,18 @@ export const FARMER_VIEW_CONFIG: Record<FarmerView, FarmerViewConfig> = {
     title: 'Product Warehouse',
     breadcrumbLabel: 'Product Warehouse',
   },
+  'marketplace-dashboard': {
+    title: 'Marketplace Dashboard',
+    breadcrumbLabel: 'Marketplace Dashboard',
+  },
+  'marketplace-products': {
+    title: 'Marketplace Products',
+    breadcrumbLabel: 'Marketplace Products',
+  },
+  'marketplace-orders': {
+    title: 'Marketplace Orders',
+    breadcrumbLabel: 'Marketplace Orders',
+  },
   documents: {
     title: 'Documents',
     breadcrumbLabel: 'Documents',

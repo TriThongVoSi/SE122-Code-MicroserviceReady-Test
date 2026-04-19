@@ -49,3 +49,6 @@ export type {
 // Note: This uses provinces.open-api.vn external API
 // For new implementations, use backend address API above
 export * from './vietnamAddressApi';
+
+// Marketplace API (adapter-first integration)
+export * from './marketplace';

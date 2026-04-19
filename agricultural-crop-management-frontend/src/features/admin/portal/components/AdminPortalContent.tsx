@@ -7,6 +7,11 @@ import { AdminDashboard } from "@/features/admin";
 import { AdminPreferences } from "@/features/admin/preferences";
 import { AdminProfile } from "@/features/admin/profile";
 import { ReportsAnalytics } from "@/features/admin/reports-analytics";
+import {
+  AdminMarketplaceDashboardPage,
+  AdminMarketplaceOrdersPage,
+  AdminMarketplaceProductsPage,
+} from "@/features/marketplace";
 
 // Admin Pages
 import { AdminAlertsPage } from "@/pages/admin/AdminAlertsPage";
@@ -27,6 +32,12 @@ export function AdminPortalContent({ currentView }: AdminPortalContentProps) {
   switch (currentView) {
     case "dashboard":
       return <AdminDashboard />;
+    case "marketplace-dashboard":
+      return <AdminMarketplaceDashboardPage />;
+    case "marketplace-products":
+      return <AdminMarketplaceProductsPage />;
+    case "marketplace-orders":
+      return <AdminMarketplaceOrdersPage />;
     case "search":
       return <AdminSearchPage />;
     case "inventory":

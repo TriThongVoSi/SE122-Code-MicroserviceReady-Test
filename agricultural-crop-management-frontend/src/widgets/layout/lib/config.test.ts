@@ -4,19 +4,22 @@ import { portalConfig } from '../lib/config';
 /**
  * Test Suite: Farmer Portal Navigation Configuration
  * 
- * Verifies that the FARMER navigation contains exactly 10 items
+ * Verifies that the FARMER navigation contains expected items
  * in the required order with no extra items.
  */
 describe('Farmer Portal Navigation Configuration', () => {
     const farmerNav = portalConfig.FARMER.navigation;
 
-    it('should contain exactly 10 navigation items', () => {
-        expect(farmerNav).toHaveLength(10);
+    it('should contain exactly 13 navigation items', () => {
+        expect(farmerNav).toHaveLength(13);
     });
 
     it('should have items in the exact required order', () => {
         const expectedOrder = [
             'dashboard',
+            'marketplace-dashboard',
+            'marketplace-products',
+            'marketplace-orders',
             'farms',
             'seasons',
             'suppliers-supplies',
@@ -51,6 +54,9 @@ describe('Farmer Portal Navigation Configuration', () => {
         }, {} as Record<string, string>);
 
         expect(itemLabels['dashboard']).toBe('Dashboard');
+        expect(itemLabels['marketplace-dashboard']).toBe('Marketplace Dashboard');
+        expect(itemLabels['marketplace-products']).toBe('Marketplace Products');
+        expect(itemLabels['marketplace-orders']).toBe('Marketplace Orders');
         expect(itemLabels['farms']).toBe('Farms & Plots');
         expect(itemLabels['seasons']).toBe('Seasons');
         expect(itemLabels['suppliers-supplies']).toBe('Suppliers & Supplies');

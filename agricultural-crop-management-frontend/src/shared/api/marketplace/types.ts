@@ -1,0 +1,307 @@
+import type { MarketplacePage } from "./contracts";
+
+export type MarketplaceProductStatus =
+  | "DRAFT"
+  | "PENDING_REVIEW"
+  | "PUBLISHED"
+  | "HIDDEN";
+
+export type MarketplaceOrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PREPARING"
+  | "DELIVERING"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type MarketplacePaymentMethod = "COD" | "BANK_TRANSFER";
+
+export type MarketplaceProductSummary = {
+  id: number;
+  slug: string;
+  name: string;
+  category: string;
+  shortDescription: string;
+  price: number;
+  unit: string;
+  stock: number;
+  imageUrl: string;
+  farmerUserId: number;
+  farmerDisplayName: string;
+  farmId: number | null;
+  farmName: string | null;
+  seasonId: number | null;
+  seasonName: string | null;
+  lotId: number | null;
+  region: string | null;
+  traceable: boolean;
+  ratingAverage: number;
+  ratingCount: number;
+  status: MarketplaceProductStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketplaceProductDetail = MarketplaceProductSummary & {
+  description: string;
+  imageUrls: string[];
+  traceabilityCode: string | null;
+};
+
+export type MarketplaceFarmSummary = {
+  id: number;
+  name: string;
+  region: string | null;
+  address: string | null;
+  coverImageUrl: string | null;
+  productCount: number;
+};
+
+export type MarketplaceFarmDetail = MarketplaceFarmSummary & {
+  description: string | null;
+  ownerUserId: number;
+  ownerDisplayName: string | null;
+  contactPhone: string | null;
+};
+
+export type MarketplaceTraceability = {
+  productId: number;
+  traceable: boolean;
+  farm: {
+    id: number;
+    name: string;
+    region: string | null;
+    address: string | null;
+  } | null;
+  season: {
+    id: number;
+    name: string;
+    startDate: string | null;
+    plannedHarvestDate: string | null;
+  } | null;
+  lot: {
+    id: number;
+    lotCode: string;
+    harvestedAt: string | null;
+    unit: string | null;
+    initialQuantity: number | null;
+  } | null;
+  validatedAt: string;
+};
+
+export type MarketplaceReview = {
+  id: number;
+  productId: number;
+  orderId: number;
+  buyerUserId: number;
+  buyerDisplayName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
+export type MarketplaceCartItem = {
+  productId: number;
+  slug: string;
+  name: string;
+  imageUrl: string;
+  unitPrice: number;
+  quantity: number;
+  maxQuantity: number;
+  farmerUserId: number;
+  traceable: boolean;
+};
+
+export type MarketplaceCart = {
+  userId: number;
+  items: MarketplaceCartItem[];
+  itemCount: number;
+  subtotal: number;
+  currency: "VND";
+};
+
+export type MarketplaceAddress = {
+  id: number;
+  userId: number;
+  fullName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  street: string;
+  detail: string | null;
+  label: "home" | "office" | "other";
+  isDefault: boolean;
+};
+
+export type MarketplaceOrderItem = {
+  id: number;
+  productId: number;
+  productName: string;
+  productSlug: string;
+  imageUrl: string;
+  unitPriceSnapshot: number;
+  quantity: number;
+  lineTotal: number;
+  traceableSnapshot: boolean;
+};
+
+export type MarketplaceOrder = {
+  id: number;
+  orderCode: string;
+  orderGroupCode: string;
+  buyerUserId: number;
+  farmerUserId: number;
+  status: MarketplaceOrderStatus;
+  paymentMethod: MarketplacePaymentMethod;
+  shippingRecipientName: string;
+  shippingPhone: string;
+  shippingAddressLine: string;
+  note: string | null;
+  subtotal: number;
+  shippingFee: number;
+  totalAmount: number;
+  createdAt: string;
+  updatedAt: string;
+  items: MarketplaceOrderItem[];
+};
+
+export type MarketplaceCreateOrderResult = {
+  orderGroupCode: string;
+  splitCount: number;
+  orders: MarketplaceOrder[];
+};
+
+export type MarketplaceProductQuery = {
+  page?: number;
+  size?: number;
+  category?: string;
+  q?: string;
+  sort?: "newest" | "price_asc" | "price_desc";
+  traceable?: boolean;
+};
+
+export type MarketplaceFarmQuery = {
+  page?: number;
+  size?: number;
+  q?: string;
+  region?: string;
+};
+
+export type MarketplaceOrderQuery = {
+  page?: number;
+  size?: number;
+  status?: MarketplaceOrderStatus;
+};
+
+export type MarketplaceReviewQuery = {
+  page?: number;
+  size?: number;
+};
+
+export type MarketplaceFarmerProductQuery = {
+  page?: number;
+  size?: number;
+  q?: string;
+  status?: MarketplaceProductStatus;
+};
+
+export type MarketplaceAdminProductQuery = MarketplaceFarmerProductQuery;
+export type MarketplaceFarmerOrderQuery = MarketplaceOrderQuery;
+export type MarketplaceAdminOrderQuery = MarketplaceOrderQuery;
+
+export type MarketplaceAddCartItemRequest = {
+  productId: number;
+  quantity: number;
+};
+
+export type MarketplaceUpdateCartItemRequest = {
+  quantity: number;
+};
+
+export type MarketplaceMergeCartRequest = {
+  items: Array<{
+    productId: number;
+    quantity: number;
+  }>;
+};
+
+export type MarketplaceCreateOrderRequest = {
+  paymentMethod: MarketplacePaymentMethod;
+  addressId?: number;
+  shippingRecipientName?: string;
+  shippingPhone?: string;
+  shippingAddressLine?: string;
+  note?: string;
+  idempotencyKey: string;
+};
+
+export type MarketplaceAddressUpsertRequest = {
+  fullName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  street: string;
+  detail?: string;
+  label?: "home" | "office" | "other";
+  isDefault?: boolean;
+};
+
+export type MarketplaceCreateReviewRequest = {
+  productId: number;
+  orderId: number;
+  rating: number;
+  comment: string;
+};
+
+export type MarketplaceFarmerProductUpsertRequest = {
+  name: string;
+  category?: string;
+  shortDescription?: string;
+  description?: string;
+  price: number;
+  unit: string;
+  stockQuantity: number;
+  imageUrl?: string;
+  imageUrls?: string[];
+  farmId: number;
+  seasonId?: number;
+  lotId?: number;
+  traceable?: boolean;
+};
+
+export type MarketplaceUpdateProductStatusRequest = {
+  status: MarketplaceProductStatus;
+};
+
+export type MarketplaceUpdateOrderStatusRequest = {
+  status: MarketplaceOrderStatus;
+};
+
+export type MarketplaceFarmerDashboard = {
+  totalProducts: number;
+  pendingReviewProducts: number;
+  publishedProducts: number;
+  lowStockProducts: number;
+  pendingOrders: number;
+  totalRevenue: number;
+  recentOrders: MarketplaceOrder[];
+};
+
+export type MarketplaceAdminStats = {
+  totalProducts: number;
+  pendingReviewProducts: number;
+  publishedProducts: number;
+  hiddenProducts: number;
+  totalOrders: number;
+  activeOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  totalRevenue: number;
+};
+
+export type MarketplaceProductPage = MarketplacePage<MarketplaceProductSummary>;
+export type MarketplaceFarmPage = MarketplacePage<MarketplaceFarmSummary>;
+export type MarketplaceOrderPage = MarketplacePage<MarketplaceOrder>;
+export type MarketplaceReviewPage = MarketplacePage<MarketplaceReview>;

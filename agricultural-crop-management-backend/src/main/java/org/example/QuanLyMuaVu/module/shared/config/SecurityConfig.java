@@ -70,6 +70,22 @@ public class SecurityConfig {
                                                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                                 // Public address lookup endpoints (for frontend dropdowns)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/address/**").permitAll()
+                                                // Marketplace public catalog endpoints
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/v1/marketplace/products/**",
+                                                                "/api/v1/marketplace/farms/**",
+                                                                "/api/v1/marketplace/traceability/**")
+                                                .permitAll()
+                                                .requestMatchers("/api/v1/marketplace/farmer/**").hasRole("FARMER")
+                                                .requestMatchers("/api/v1/marketplace/admin/**").hasRole("ADMIN")
+                                                // Marketplace buyer capabilities (buyer = authenticated user)
+                                                .requestMatchers(
+                                                                "/api/v1/marketplace/cart/**",
+                                                                "/api/v1/marketplace/orders/**",
+                                                                "/api/v1/marketplace/addresses/**",
+                                                                "/api/v1/marketplace/reviews/**")
+                                                .authenticated()
                                                 // Admin APIs (system-wide access for admins)
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                                 // Farmer APIs and farm-scoped resources (day-to-day operations)
