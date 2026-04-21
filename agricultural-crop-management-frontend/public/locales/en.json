@@ -1454,6 +1454,128 @@
       "subtitle": "View and manage your orders"
     }
   },
+  "marketplaceSeller": {
+    "tabs": {
+      "overview": "Overview",
+      "products": "Products",
+      "orders": "Orders"
+    },
+    "dashboard": {
+      "title": "Seller dashboard",
+      "subtitle": "Track performance and order activity in your marketplace booth.",
+      "loading": "Loading seller dashboard...",
+      "error": "Failed to load seller dashboard.",
+      "manageProducts": "Manage products",
+      "metrics": {
+        "revenue": "Revenue",
+        "newOrders": "New orders",
+        "products": "Products",
+        "views": "Views"
+      },
+      "recentOrdersTitle": "Recent orders",
+      "recentOrdersEmpty": "No recent orders yet.",
+      "viewOrder": "View order",
+      "lowStockTitle": "Low stock products",
+      "lowStockHint": "Products that need restocking soon.",
+      "lowStockEmpty": "No low-stock products found.",
+      "stock": "Stock"
+    },
+    "products": {
+      "title": "Products management",
+      "subtitle": "Manage your catalog and update product visibility.",
+      "newProduct": "New product",
+      "filters": "Filters",
+      "searchPlaceholder": "Search by product or farm...",
+      "loading": "Loading products...",
+      "error": "Failed to load products.",
+      "empty": "No product found.",
+      "noFarm": "No farm linked",
+      "table": {
+        "product": "Product",
+        "category": "Category",
+        "price": "Price",
+        "stock": "Stock",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "edit": "Edit",
+        "hide": "Hide",
+        "show": "Show",
+        "delete": "Delete"
+      },
+      "deleteDialog": {
+        "title": "Hide this product?",
+        "description": "The product will be hidden from buyers and can be published again later.",
+        "confirm": "Hide product"
+      },
+      "statusFilter": {
+        "all": "All",
+        "draft": "Draft",
+        "pendingReview": "Pending review",
+        "published": "Published",
+        "hidden": "Hidden"
+      }
+    },
+    "orders": {
+      "title": "Orders management",
+      "subtitle": "Track and update order fulfillment status.",
+      "statusFilter": "Status filter",
+      "loading": "Loading orders...",
+      "error": "Failed to load orders.",
+      "empty": "No order found.",
+      "table": {
+        "orderCode": "Order code",
+        "orderDate": "Order date",
+        "customer": "Customer",
+        "totalAmount": "Total amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "detail": "Detail"
+    },
+    "orderDetail": {
+      "backToOrders": "Back to orders",
+      "title": "Order {{orderCode}}",
+      "loading": "Loading order detail...",
+      "error": "Failed to load order detail.",
+      "shippingInfo": "Shipping information",
+      "recipient": "Recipient",
+      "phone": "Phone",
+      "address": "Address",
+      "paymentMethod": "Payment method",
+      "totalAmount": "Total amount",
+      "orderItems": "Order items",
+      "quantity": "Quantity",
+      "orderSummary": "Order summary",
+      "subtotal": "Subtotal",
+      "shippingFee": "Shipping fee",
+      "updateStatus": "Update status",
+      "setStatus": "Set {{status}}",
+      "itemQuantity": "Qty: {{quantity}}"
+    },
+    "status": {
+      "product": {
+        "DRAFT": "Draft",
+        "PENDING_REVIEW": "Pending review",
+        "PUBLISHED": "Published",
+        "HIDDEN": "Hidden"
+      },
+      "order": {
+        "PENDING": "Pending",
+        "CONFIRMED": "Confirmed",
+        "PREPARING": "Preparing",
+        "DELIVERING": "Delivering",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "payment": {
+        "COD": "Cash on delivery",
+        "BANK_TRANSFER": "Bank transfer"
+      }
+    }
+  },
   "ai": {
     "assistant": {
       "title": "AI Assistant",

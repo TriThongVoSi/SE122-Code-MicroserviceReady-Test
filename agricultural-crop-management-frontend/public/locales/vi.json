@@ -1454,6 +1454,128 @@
       "subtitle": "Xem và quản lý đơn hàng"
     }
   },
+  "marketplaceSeller": {
+    "tabs": {
+      "overview": "Tổng quan",
+      "products": "Sản phẩm",
+      "orders": "Đơn hàng"
+    },
+    "dashboard": {
+      "title": "Bảng điều khiển người bán",
+      "subtitle": "Theo dõi hiệu suất gian hàng và hoạt động đơn hàng trên chợ nông sản.",
+      "loading": "Đang tải bảng điều khiển người bán...",
+      "error": "Không thể tải bảng điều khiển người bán.",
+      "manageProducts": "Quản lý sản phẩm",
+      "metrics": {
+        "revenue": "Doanh thu",
+        "newOrders": "Đơn mới",
+        "products": "Sản phẩm",
+        "views": "Lượt xem"
+      },
+      "recentOrdersTitle": "Đơn hàng gần đây",
+      "recentOrdersEmpty": "Chưa có đơn hàng gần đây.",
+      "viewOrder": "Xem đơn",
+      "lowStockTitle": "Sản phẩm sắp hết hàng",
+      "lowStockHint": "Các sản phẩm cần bổ sung tồn kho sớm.",
+      "lowStockEmpty": "Không có sản phẩm nào sắp hết hàng.",
+      "stock": "Tồn kho"
+    },
+    "products": {
+      "title": "Quản lý sản phẩm",
+      "subtitle": "Quản lý danh mục và cập nhật trạng thái hiển thị sản phẩm.",
+      "newProduct": "Thêm sản phẩm",
+      "filters": "Bộ lọc",
+      "searchPlaceholder": "Tìm theo tên sản phẩm hoặc nông trại...",
+      "loading": "Đang tải sản phẩm...",
+      "error": "Không thể tải danh sách sản phẩm.",
+      "empty": "Không tìm thấy sản phẩm.",
+      "noFarm": "Chưa liên kết nông trại",
+      "table": {
+        "product": "Sản phẩm",
+        "category": "Danh mục",
+        "price": "Giá",
+        "stock": "Tồn kho",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "actions": {
+        "view": "Xem",
+        "edit": "Sửa",
+        "hide": "Ẩn",
+        "show": "Hiện",
+        "delete": "Xóa"
+      },
+      "deleteDialog": {
+        "title": "Ẩn sản phẩm này?",
+        "description": "Sản phẩm sẽ bị ẩn với người mua và bạn có thể đăng lại sau.",
+        "confirm": "Ẩn sản phẩm"
+      },
+      "statusFilter": {
+        "all": "Tất cả",
+        "draft": "Nháp",
+        "pendingReview": "Chờ duyệt",
+        "published": "Đang bán",
+        "hidden": "Đã ẩn"
+      }
+    },
+    "orders": {
+      "title": "Quản lý đơn hàng",
+      "subtitle": "Theo dõi và cập nhật tiến trình xử lý đơn hàng.",
+      "statusFilter": "Lọc trạng thái",
+      "loading": "Đang tải đơn hàng...",
+      "error": "Không thể tải danh sách đơn hàng.",
+      "empty": "Không tìm thấy đơn hàng.",
+      "table": {
+        "orderCode": "Mã đơn",
+        "orderDate": "Ngày đặt",
+        "customer": "Khách hàng",
+        "totalAmount": "Tổng tiền",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "detail": "Chi tiết"
+    },
+    "orderDetail": {
+      "backToOrders": "Quay lại danh sách đơn",
+      "title": "Đơn hàng {{orderCode}}",
+      "loading": "Đang tải chi tiết đơn hàng...",
+      "error": "Không thể tải chi tiết đơn hàng.",
+      "shippingInfo": "Thông tin giao hàng",
+      "recipient": "Người nhận",
+      "phone": "Điện thoại",
+      "address": "Địa chỉ",
+      "paymentMethod": "Phương thức thanh toán",
+      "totalAmount": "Tổng thanh toán",
+      "orderItems": "Sản phẩm trong đơn",
+      "quantity": "Số lượng",
+      "orderSummary": "Tóm tắt đơn hàng",
+      "subtotal": "Tạm tính",
+      "shippingFee": "Phí vận chuyển",
+      "updateStatus": "Cập nhật trạng thái",
+      "setStatus": "Chuyển sang {{status}}",
+      "itemQuantity": "SL: {{quantity}}"
+    },
+    "status": {
+      "product": {
+        "DRAFT": "Nháp",
+        "PENDING_REVIEW": "Chờ duyệt",
+        "PUBLISHED": "Đang bán",
+        "HIDDEN": "Đã ẩn"
+      },
+      "order": {
+        "PENDING": "Chờ xác nhận",
+        "CONFIRMED": "Đã xác nhận",
+        "PREPARING": "Đang chuẩn bị",
+        "DELIVERING": "Đang giao",
+        "COMPLETED": "Hoàn thành",
+        "CANCELLED": "Đã hủy"
+      },
+      "payment": {
+        "COD": "Thanh toán khi nhận hàng",
+        "BANK_TRANSFER": "Chuyển khoản"
+      }
+    }
+  },
   "ai": {
     "assistant": {
       "title": "Trợ lý AI",
