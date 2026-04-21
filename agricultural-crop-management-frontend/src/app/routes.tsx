@@ -24,6 +24,7 @@ import {
   SellerDashboardPage as MarketplaceSellerDashboardPage,
   SellerOrderDetailPage as MarketplaceSellerOrderDetailPage,
   SellerOrdersPage as MarketplaceSellerOrdersPage,
+  SellerProductDetailPage as MarketplaceSellerProductDetailPage,
   SellerProductFormPage as MarketplaceSellerProductFormPage,
   SellerProductsPage as MarketplaceSellerProductsPage,
   TraceabilityPage,
@@ -193,6 +194,7 @@ export function AppRoutes() {
         <Route path="dashboard" element={<FarmerDashboard />} />
         <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
         <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
+        <Route path="marketplace-products/:id" element={<MarketplaceSellerProductDetailPage />} />
         <Route path="marketplace-products/new" element={<MarketplaceSellerProductFormPage />} />
         <Route path="marketplace-products/:id/edit" element={<MarketplaceSellerProductFormPage />} />
         <Route path="marketplace-orders" element={<MarketplaceSellerOrdersPage />} />
