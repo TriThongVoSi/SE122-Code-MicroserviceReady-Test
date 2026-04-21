@@ -11,3 +11,7 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+// Shared auth store facade
+export { useAuth } from './authStore';
+export type { UserRole, User, AuthContextType } from './authStore';
