@@ -17,6 +17,7 @@ import {
 } from '@/shared/ui';
 import { Bell, Bot, Menu } from 'lucide-react';
 import type { HeaderProps } from '../model/types';
+import { DashboardHeader } from './DashboardHeader';
 import { ProfileMenu } from './ProfileMenu';
 import { GlobalSearchBar } from './SearchBar';
 
@@ -111,6 +112,9 @@ export function Header({
 
             {/* Right Section */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                {/* Dashboard → Public switch link */}
+                <DashboardHeader />
+
                 {/* Global Search */}
                 {(portalType === "ADMIN" || portalType === "FARMER") && (
                     <GlobalSearchBar

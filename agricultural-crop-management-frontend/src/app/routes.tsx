@@ -1,73 +1,287 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
-import { SignInPage } from '@/pages/shared/SignInPage';
-import { SignUpPage } from '@/pages/shared/SignUpPage';
-import { ForgotPasswordPage } from '@/pages/ForgotPassword';
-import { ResetPasswordPage } from '@/pages/ResetPassword';
-import { FarmerPortalWithShell } from '@/features/farmer/portal';
-import { AdminPortalWithShell } from '@/features/admin/portal';
-import { EmployeePortalWithShell } from '@/features/employee/portal';
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
+import { useSeason } from '@/shared/contexts';
+import { CartProvider } from '@/features/buyer/providers/CartProvider';
+
+// ═══════════════════════════════════════════════════════════════
+// LOADING FALLBACK
+// ═══════════════════════════════════════════════════════════════
+
+function RouteSuspenseFallback() {
+  return (
+    <div className="min-h-screen bg-[#F8F8F4] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 text-sm">Loading…</p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Auth pages (small, rarely revisited)
+// ═══════════════════════════════════════════════════════════════
+
+const SignInPage = lazy(() =>
+  import('@/pages/shared/SignInPage').then((m) => ({ default: m.SignInPage }))
+);
+const SignUpPage = lazy(() =>
+  import('@/pages/shared/SignUpPage').then((m) => ({ default: m.SignUpPage }))
+);
+const ForgotPasswordPage = lazy(() =>
+  import('@/pages/ForgotPassword').then((m) => ({ default: m.ForgotPasswordPage }))
+);
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPasswordPage }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — ProtectedRoute guard
+// ═══════════════════════════════════════════════════════════════
+
+const ProtectedRoute = lazy(() =>
+  import('@/features/auth/components/ProtectedRoute').then((m) => ({
+    default: m.ProtectedRoute,
+  }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Public / Marketplace branch
+// ═══════════════════════════════════════════════════════════════
+
+const MarketplacePublicLayout = lazy(() =>
+  import('@/features/marketplace/layout/MarketplacePublicLayout').then((m) => ({
+    default: m.MarketplacePublicLayout,
+  }))
+);
+const MarketHomePage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.MarketHomePage }))
+);
+const MarketplaceProductListPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.ProductListPage }))
+);
+const MarketplaceProductDetailPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.ProductDetailPage }))
+);
+const MarketplaceFarmListPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.FarmListPage }))
+);
+const MarketplaceFarmDetailPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.FarmDetailPage }))
+);
+const TraceabilityPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.TraceabilityPage }))
+);
+const CartPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.CartPage }))
+);
+const CheckoutPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.CheckoutPage }))
+);
+const MarketplaceMyOrdersPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.MyOrdersPage }))
+);
+const MarketplaceOrderDetailPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({ default: m.OrderDetailPage }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Farmer branch
+// ═══════════════════════════════════════════════════════════════
+
+const FarmerPortalWithShell = lazy(() =>
+  import('@/features/farmer/portal').then((m) => ({ default: m.FarmerPortalWithShell }))
+);
+const FarmerDashboard = lazy(() =>
+  import('@/features/farmer/dashboard').then((m) => ({ default: m.FarmerDashboard }))
+);
+const CropManagement = lazy(() =>
+  import('@/features/farmer/crops').then((m) => ({ default: m.CropManagement }))
+);
+const HarvestManagement = lazy(() =>
+  import('@/features/farmer/harvests').then((m) => ({ default: m.HarvestManagement }))
+);
+const PlotManagement = lazy(() =>
+  import('@/features/farmer/plots').then((m) => ({ default: m.PlotManagement }))
+);
+const SeasonManagement = lazy(() =>
+  import('@/features/farmer/seasons').then((m) => ({ default: m.SeasonManagement }))
+);
+const Documents = lazy(() =>
+  import('@/features/farmer/documents').then((m) => ({ default: m.Documents }))
+);
+const ExpenseManagement = lazy(() =>
+  import('@/features/farmer/expense-management').then((m) => ({
+    default: m.ExpenseManagement,
+  }))
+);
+const TaskWorkspace = lazy(() =>
+  import('@/features/farmer/tasks').then((m) => ({ default: m.TaskWorkspace }))
+);
+const LaborManagementPage = lazy(() =>
+  import('@/features/farmer/labor-management').then((m) => ({
+    default: m.LaborManagementPage,
+  }))
+);
+const FarmerProfile = lazy(() =>
+  import('@/features/farmer/profile').then((m) => ({ default: m.FarmerProfile }))
+);
+const FarmerPreferences = lazy(() =>
+  import('@/features/farmer/preferences').then((m) => ({ default: m.FarmerPreferences }))
+);
+const FarmsListPage = lazy(() =>
+  import('@/features/farmer/farm-management').then((m) => ({ default: m.FarmsListPage }))
+);
+const FarmDetailPage = lazy(() =>
+  import('@/features/farmer/farm-management').then((m) => ({ default: m.FarmDetailPage }))
+);
+const FieldLogsPage = lazy(() =>
+  import('@/pages/farmer/FieldLogsPage').then((m) => ({ default: m.FieldLogsPage }))
+);
+const InventoryPage = lazy(() =>
+  import('@/pages/farmer/InventoryPage').then((m) => ({ default: m.InventoryPage }))
+);
+const ProductWarehousePage = lazy(() =>
+  import('@/pages/farmer/ProductWarehousePage').then((m) => ({
+    default: m.ProductWarehousePage,
+  }))
+);
+const AiAssistantPage = lazy(() =>
+  import('@/pages/farmer/AiAssistantPage').then((m) => ({ default: m.AiAssistantPage }))
+);
+const SuppliersSuppliesPage = lazy(() =>
+  import('@/pages/farmer/SuppliersSuppliesPage').then((m) => ({
+    default: m.SuppliersSuppliesPage,
+  }))
+);
+const NotificationsPage = lazy(() =>
+  import('@/pages/farmer/NotificationsPage').then((m) => ({
+    default: m.NotificationsPage,
+  }))
+);
+const FarmerSearchPage = lazy(() =>
+  import('@/pages/farmer/FarmerSearchPage').then((m) => ({ default: m.FarmerSearchPage }))
+);
+
+// Farmer season workspace
+const SeasonWorkspaceLayout = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonWorkspaceLayout,
+  }))
+);
+const SeasonWorkspaceOverview = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonWorkspaceOverview,
+  }))
+);
+const SeasonNutrientInputsWorkspace = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonNutrientInputsWorkspace,
+  }))
+);
+const SeasonIrrigationWaterAnalysesWorkspace = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonIrrigationWaterAnalysesWorkspace,
+  }))
+);
+const SeasonSoilTestsWorkspace = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonSoilTestsWorkspace,
+  }))
+);
+const SeasonReportsWorkspace = lazy(() =>
+  import('@/features/farmer/season-workspace').then((m) => ({
+    default: m.SeasonReportsWorkspace,
+  }))
+);
+
+// Farmer marketplace seller pages
+const MarketplaceSellerDashboardPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerDashboardPage,
+  }))
+);
+const MarketplaceSellerProductsPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerProductsPage,
+  }))
+);
+const MarketplaceSellerProductDetailPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerProductDetailPage,
+  }))
+);
+const MarketplaceSellerProductFormPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerProductFormPage,
+  }))
+);
+const MarketplaceSellerOrdersPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerOrdersPage,
+  }))
+);
+const MarketplaceSellerOrderDetailPage = lazy(() =>
+  import('@/features/marketplace/pages').then((m) => ({
+    default: m.SellerOrderDetailPage,
+  }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Admin branch
+// ═══════════════════════════════════════════════════════════════
+
+const AdminPortalWithShell = lazy(() =>
+  import('@/features/admin/portal').then((m) => ({ default: m.AdminPortalWithShell }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Employee branch
+// ═══════════════════════════════════════════════════════════════
+
+const EmployeePortalWithShell = lazy(() =>
+  import('@/features/employee/portal').then((m) => ({
+    default: m.EmployeePortalWithShell,
+  }))
+);
+const EmployeeTasksPage = lazy(() =>
+  import('@/pages/employee/EmployeeTasksPage').then((m) => ({
+    default: m.EmployeeTasksPage,
+  }))
+);
+const EmployeeProgressPage = lazy(() =>
+  import('@/pages/employee/EmployeeProgressPage').then((m) => ({
+    default: m.EmployeeProgressPage,
+  }))
+);
+const EmployeePayrollPage = lazy(() =>
+  import('@/pages/employee/EmployeePayrollPage').then((m) => ({
+    default: m.EmployeePayrollPage,
+  }))
+);
+const EmployeeProfilePage = lazy(() =>
+  import('@/pages/employee/EmployeeProfilePage').then((m) => ({
+    default: m.EmployeeProfilePage,
+  }))
+);
+const EmployeeSettingsPage = lazy(() =>
+  import('@/pages/employee/EmployeeSettingsPage').then((m) => ({
+    default: m.EmployeeSettingsPage,
+  }))
+);
+
+// ═══════════════════════════════════════════════════════════════
+// SHARED IMPORTS — ErrorBoundary + SeasonProvider (needed eagerly for wrappers)
+// ═══════════════════════════════════════════════════════════════
+
 import { ErrorBoundary } from '@/shared/ui';
-import { SeasonProvider, useSeason } from '@/shared/contexts';
-import {
-  CartPage,
-  CheckoutPage,
-  FarmDetailPage as MarketplaceFarmDetailPage,
-  FarmListPage as MarketplaceFarmListPage,
-  MarketHomePage,
-  MarketplacePublicLayout,
-  MyOrdersPage as MarketplaceMyOrdersPage,
-  OrderDetailPage as MarketplaceOrderDetailPage,
-  ProductDetailPage as MarketplaceProductDetailPage,
-  ProductListPage as MarketplaceProductListPage,
-  SellerDashboardPage as MarketplaceSellerDashboardPage,
-  SellerOrderDetailPage as MarketplaceSellerOrderDetailPage,
-  SellerOrdersPage as MarketplaceSellerOrdersPage,
-  SellerProductDetailPage as MarketplaceSellerProductDetailPage,
-  SellerProductFormPage as MarketplaceSellerProductFormPage,
-  SellerProductsPage as MarketplaceSellerProductsPage,
-  TraceabilityPage,
-} from '@/features/marketplace';
+import { SeasonProvider } from '@/shared/contexts';
 
-// Farmer feature imports
-import { CropManagement } from '@/features/farmer/crops';
-import { FarmerDashboard } from '@/features/farmer/dashboard';
-import { HarvestManagement } from '@/features/farmer/harvests';
-import { PlotManagement } from '@/features/farmer/plots';
-import { SeasonManagement } from '@/features/farmer/seasons';
-import { Documents } from '@/features/farmer/documents';
-import { ExpenseManagement } from '@/features/farmer/expense-management';
-import { TaskWorkspace } from '@/features/farmer/tasks';
-import { LaborManagementPage } from '@/features/farmer/labor-management';
-import { FarmerProfile } from '@/features/farmer/profile';
-import { FarmerPreferences } from '@/features/farmer/preferences';
-import { FarmsListPage, FarmDetailPage } from '@/features/farmer/farm-management';
-import { FieldLogsPage } from '@/pages/farmer/FieldLogsPage';
-import { InventoryPage } from '@/pages/farmer/InventoryPage';
-import { ProductWarehousePage } from '@/pages/farmer/ProductWarehousePage';
+// ═══════════════════════════════════════════════════════════════
+// ROOT REDIRECT
+// ═══════════════════════════════════════════════════════════════
 
-import { AiAssistantPage } from '@/pages/farmer/AiAssistantPage';
-import { SuppliersSuppliesPage } from '@/pages/farmer/SuppliersSuppliesPage';
-import { NotificationsPage } from '@/pages/farmer/NotificationsPage';
-import { FarmerSearchPage } from '@/pages/farmer/FarmerSearchPage';
-import {
-  SeasonIrrigationWaterAnalysesWorkspace,
-  SeasonWorkspaceLayout,
-  SeasonNutrientInputsWorkspace,
-  SeasonReportsWorkspace,
-  SeasonSoilTestsWorkspace,
-  SeasonWorkspaceOverview,
-} from '@/features/farmer/season-workspace';
-import { EmployeeTasksPage } from '@/pages/employee/EmployeeTasksPage';
-import { EmployeeProgressPage } from '@/pages/employee/EmployeeProgressPage';
-import { EmployeePayrollPage } from '@/pages/employee/EmployeePayrollPage';
-import { EmployeeProfilePage } from '@/pages/employee/EmployeeProfilePage';
-import { EmployeeSettingsPage } from '@/pages/employee/EmployeeSettingsPage';
-
-/**
- * Root redirect - redirects to sign-in or user's portal based on auth state
- */
 function RootRedirect() {
   const { isAuthenticated, getUserRole } = useAuth();
 
@@ -76,21 +290,17 @@ function RootRedirect() {
   }
 
   const role = getUserRole();
-  if (role === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-  if (role === 'farmer') {
-    return <Navigate to="/farmer/dashboard" replace />;
-  }
-  if (role === 'employee') {
-    return <Navigate to="/employee/tasks" replace />;
-  }
-  if (role === 'buyer') {
-    return <Navigate to="/marketplace" replace />;
-  }
+  if (role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'farmer') return <Navigate to="/farmer/dashboard" replace />;
+  if (role === 'employee') return <Navigate to="/employee/tasks" replace />;
+  if (role === 'buyer') return <Navigate to="/marketplace" replace />;
 
   return <Navigate to="/sign-in" replace />;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// LEGACY SEASON REDIRECT
+// ═══════════════════════════════════════════════════════════════
 
 function LegacySeasonModuleRedirect({
   modulePath,
@@ -111,175 +321,201 @@ function LegacySeasonModuleRedirect({
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LAYOUT WRAPPERS
+// ═══════════════════════════════════════════════════════════════
+
 /**
- * AppRoutes Component
- * 
- * Defines all application routes with:
- * - Role-based protection via ProtectedRoute
- * - Route-level ErrorBoundary for each portal
- * - SeasonProvider for farmer routes (tasks/harvests)
+ * PublicLayoutWrapper — wraps public/marketplace routes with
+ * buyer-scoped CartProvider. Dashboard routes are excluded from
+ * this provider so they never subscribe to cart state.
  */
-export function AppRoutes() {
+function PublicLayoutWrapper() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/sign-in" element={<SignInPage />} />
-      <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/signin" element={<Navigate to="/sign-in" replace />} />
-      <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
-
-      {/* Marketplace public + authenticated buyer-capability routes */}
-      <Route path="/marketplace" element={<MarketplacePublicLayout />}>
-        <Route index element={<MarketHomePage />} />
-        <Route path="products" element={<MarketplaceProductListPage />} />
-        <Route path="products/:slug" element={<MarketplaceProductDetailPage />} />
-        <Route path="farms" element={<MarketplaceFarmListPage />} />
-        <Route path="farms/:id" element={<MarketplaceFarmDetailPage />} />
-        <Route path="traceability" element={<TraceabilityPage />} />
-        <Route path="traceability/:productId" element={<TraceabilityPage />} />
-        <Route
-          path="cart"
-          element={(
-            <ProtectedRoute requireAuth>
-              <CartPage />
-            </ProtectedRoute>
-          )}
-        />
-        <Route
-          path="checkout"
-          element={(
-            <ProtectedRoute requireAuth>
-              <CheckoutPage />
-            </ProtectedRoute>
-          )}
-        />
-        <Route
-          path="orders"
-          element={(
-            <ProtectedRoute requireAuth>
-              <MarketplaceMyOrdersPage />
-            </ProtectedRoute>
-          )}
-        />
-        <Route
-          path="orders/:id"
-          element={(
-            <ProtectedRoute requireAuth>
-              <MarketplaceOrderDetailPage />
-            </ProtectedRoute>
-          )}
-        />
-      </Route>
-      <Route path="/buyer/*" element={<Navigate to="/marketplace" replace />} />
-
-      {/* Farmer Routes - Protected with SeasonProvider and ErrorBoundary */}
-      <Route
-        path="/farmer"
-        element={
-          <ProtectedRoute requiredRole="farmer">
-            <ErrorBoundary>
-              <SeasonProvider>
-                <FarmerPortalWithShell />
-              </SeasonProvider>
-            </ErrorBoundary>
-          </ProtectedRoute>
-        }
-      >
-        {/* Redirect /farmer to /farmer/dashboard */}
-        <Route index element={<Navigate to="dashboard" replace />} />
-
-        {/* Farmer Dashboard */}
-        <Route path="dashboard" element={<FarmerDashboard />} />
-        <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
-        <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
-        <Route path="marketplace-products/:id" element={<MarketplaceSellerProductDetailPage />} />
-        <Route path="marketplace-products/new" element={<MarketplaceSellerProductFormPage />} />
-        <Route path="marketplace-products/:id/edit" element={<MarketplaceSellerProductFormPage />} />
-        <Route path="marketplace-orders" element={<MarketplaceSellerOrdersPage />} />
-        <Route path="marketplace-orders/:id" element={<MarketplaceSellerOrderDetailPage />} />
-        <Route path="search" element={<FarmerSearchPage />} />
-
-        {/* Farm Management with nested routes */}
-        <Route path="farms">
-          <Route index element={<FarmsListPage />} />
-          <Route path=":id" element={<FarmDetailPage />} />
-        </Route>
-
-        {/* Other Farmer Features */}
-        <Route path="plots" element={<PlotManagement />} />
-        <Route path="seasons">
-          <Route index element={<SeasonManagement />} />
-          <Route path=":seasonId/workspace" element={<SeasonWorkspaceLayout />}>
-            <Route index element={<SeasonWorkspaceOverview />} />
-            <Route path="tasks" element={<TaskWorkspace />} />
-            <Route path="expenses" element={<ExpenseManagement />} />
-            <Route path="field-logs" element={<FieldLogsPage />} />
-            <Route path="harvest" element={<HarvestManagement />} />
-            <Route path="labor-management" element={<LaborManagementPage />} />
-            <Route path="nutrient-inputs" element={<SeasonNutrientInputsWorkspace />} />
-            <Route path="irrigation-water-analyses" element={<SeasonIrrigationWaterAnalysesWorkspace />} />
-            <Route path="soil-tests" element={<SeasonSoilTestsWorkspace />} />
-            <Route path="reports" element={<SeasonReportsWorkspace />} />
-          </Route>
-        </Route>
-        <Route path="tasks" element={<LegacySeasonModuleRedirect modulePath="tasks" />} />
-        <Route path="crops" element={<CropManagement />} />
-        <Route path="expenses" element={<LegacySeasonModuleRedirect modulePath="expenses" />} />
-        <Route path="harvest" element={<LegacySeasonModuleRedirect modulePath="harvest" />} />
-        <Route path="suppliers-supplies" element={<SuppliersSuppliesPage />} />
-        <Route path="labor-management" element={<LegacySeasonModuleRedirect modulePath="labor-management" />} />
-        <Route path="reports" element={<LegacySeasonModuleRedirect modulePath="reports" />} />
-        <Route path="documents" element={<Documents />} />
-        <Route path="field-logs" element={<LegacySeasonModuleRedirect modulePath="field-logs" />} />
-        <Route path="inventory" element={<InventoryPage />} />
-        <Route path="product-warehouse" element={<ProductWarehousePage />} />
-
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="farms-plots" element={<Navigate to="/farmer/farms" replace />} />
-        <Route path="ai-assistant" element={<AiAssistantPage />} />
-        <Route path="profile" element={<FarmerProfile />} />
-        <Route path="settings" element={<FarmerPreferences />} />
-      </Route>
-
-      {/* Admin Routes - Protected with ErrorBoundary */}
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <ErrorBoundary>
-              <AdminPortalWithShell />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Employee Routes - Protected with ErrorBoundary */}
-      <Route
-        path="/employee"
-        element={
-          <ProtectedRoute requiredRole="employee">
-            <ErrorBoundary>
-              <EmployeePortalWithShell />
-            </ErrorBoundary>
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="tasks" replace />} />
-        <Route path="tasks" element={<EmployeeTasksPage />} />
-        <Route path="progress" element={<EmployeeProgressPage />} />
-        <Route path="payroll" element={<EmployeePayrollPage />} />
-        <Route path="profile" element={<EmployeeProfilePage />} />
-        <Route path="settings" element={<EmployeeSettingsPage />} />
-      </Route>
-
-      {/* Root redirect */}
-      <Route path="/" element={<RootRedirect />} />
-
-      {/* Catch all - redirect to sign-in */}
-      <Route path="*" element={<Navigate to="/sign-in" replace />} />
-    </Routes>
+    <CartProvider>
+      <Outlet />
+    </CartProvider>
   );
 }
 
+// ═══════════════════════════════════════════════════════════════
+// APP ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * AppRoutes Component
+ *
+ * Defines all application routes with:
+ * - Lazy-loaded domain branches for code splitting
+ * - Suspense boundaries at each domain branch
+ * - Role-based protection via ProtectedRoute
+ * - Route-level ErrorBoundary for each portal
+ * - SeasonProvider for farmer routes
+ * - CartProvider scoped to public routes only
+ * - Strict layout separation between public and dashboard
+ */
+export function AppRoutes() {
+  return (
+    <Suspense fallback={<RouteSuspenseFallback />}>
+      <Routes>
+        {/* ━━━ Auth Routes ━━━ */}
+        <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/signin" element={<Navigate to="/sign-in" replace />} />
+        <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
+
+        {/* ━━━ Public Layout Branch ━━━ */}
+        <Route element={<PublicLayoutWrapper />}>
+          {/* Marketplace public + authenticated buyer-capability routes */}
+          <Route path="/marketplace" element={<MarketplacePublicLayout />}>
+            <Route index element={<MarketHomePage />} />
+            <Route path="products" element={<MarketplaceProductListPage />} />
+            <Route path="products/:slug" element={<MarketplaceProductDetailPage />} />
+            <Route path="farms" element={<MarketplaceFarmListPage />} />
+            <Route path="farms/:id" element={<MarketplaceFarmDetailPage />} />
+            <Route path="traceability" element={<TraceabilityPage />} />
+            <Route path="traceability/:productId" element={<TraceabilityPage />} />
+            <Route
+              path="cart"
+              element={(
+                <ProtectedRoute requireAuth>
+                  <CartPage />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="checkout"
+              element={(
+                <ProtectedRoute requireAuth>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="orders"
+              element={(
+                <ProtectedRoute requireAuth>
+                  <MarketplaceMyOrdersPage />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              path="orders/:id"
+              element={(
+                <ProtectedRoute requireAuth>
+                  <MarketplaceOrderDetailPage />
+                </ProtectedRoute>
+              )}
+            />
+          </Route>
+          <Route path="/buyer/*" element={<Navigate to="/marketplace" replace />} />
+        </Route>
+
+        {/* ━━━ Dashboard Layout Branch: Farmer ━━━ */}
+        <Route
+          path="/farmer"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <ErrorBoundary>
+                <SeasonProvider>
+                  <FarmerPortalWithShell />
+                </SeasonProvider>
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<FarmerDashboard />} />
+          <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
+          <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
+          <Route path="marketplace-products/:id" element={<MarketplaceSellerProductDetailPage />} />
+          <Route path="marketplace-products/new" element={<MarketplaceSellerProductFormPage />} />
+          <Route path="marketplace-products/:id/edit" element={<MarketplaceSellerProductFormPage />} />
+          <Route path="marketplace-orders" element={<MarketplaceSellerOrdersPage />} />
+          <Route path="marketplace-orders/:id" element={<MarketplaceSellerOrderDetailPage />} />
+          <Route path="search" element={<FarmerSearchPage />} />
+
+          {/* Farm Management */}
+          <Route path="farms">
+            <Route index element={<FarmsListPage />} />
+            <Route path=":id" element={<FarmDetailPage />} />
+          </Route>
+
+          {/* Season Workspace */}
+          <Route path="plots" element={<PlotManagement />} />
+          <Route path="seasons">
+            <Route index element={<SeasonManagement />} />
+            <Route path=":seasonId/workspace" element={<SeasonWorkspaceLayout />}>
+              <Route index element={<SeasonWorkspaceOverview />} />
+              <Route path="tasks" element={<TaskWorkspace />} />
+              <Route path="expenses" element={<ExpenseManagement />} />
+              <Route path="field-logs" element={<FieldLogsPage />} />
+              <Route path="harvest" element={<HarvestManagement />} />
+              <Route path="labor-management" element={<LaborManagementPage />} />
+              <Route path="nutrient-inputs" element={<SeasonNutrientInputsWorkspace />} />
+              <Route path="irrigation-water-analyses" element={<SeasonIrrigationWaterAnalysesWorkspace />} />
+              <Route path="soil-tests" element={<SeasonSoilTestsWorkspace />} />
+              <Route path="reports" element={<SeasonReportsWorkspace />} />
+            </Route>
+          </Route>
+
+          {/* Legacy season module redirects */}
+          <Route path="tasks" element={<LegacySeasonModuleRedirect modulePath="tasks" />} />
+          <Route path="crops" element={<CropManagement />} />
+          <Route path="expenses" element={<LegacySeasonModuleRedirect modulePath="expenses" />} />
+          <Route path="harvest" element={<LegacySeasonModuleRedirect modulePath="harvest" />} />
+          <Route path="suppliers-supplies" element={<SuppliersSuppliesPage />} />
+          <Route path="labor-management" element={<LegacySeasonModuleRedirect modulePath="labor-management" />} />
+          <Route path="reports" element={<LegacySeasonModuleRedirect modulePath="reports" />} />
+          <Route path="documents" element={<Documents />} />
+          <Route path="field-logs" element={<LegacySeasonModuleRedirect modulePath="field-logs" />} />
+          <Route path="inventory" element={<InventoryPage />} />
+          <Route path="product-warehouse" element={<ProductWarehousePage />} />
+
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="farms-plots" element={<Navigate to="/farmer/farms" replace />} />
+          <Route path="ai-assistant" element={<AiAssistantPage />} />
+          <Route path="profile" element={<FarmerProfile />} />
+          <Route path="settings" element={<FarmerPreferences />} />
+        </Route>
+
+        {/* ━━━ Dashboard Layout Branch: Admin ━━━ */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <ErrorBoundary>
+                <AdminPortalWithShell />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ━━━ Dashboard Layout Branch: Employee ━━━ */}
+        <Route
+          path="/employee"
+          element={
+            <ProtectedRoute requiredRole="employee">
+              <ErrorBoundary>
+                <EmployeePortalWithShell />
+              </ErrorBoundary>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="tasks" replace />} />
+          <Route path="tasks" element={<EmployeeTasksPage />} />
+          <Route path="progress" element={<EmployeeProgressPage />} />
+          <Route path="payroll" element={<EmployeePayrollPage />} />
+          <Route path="profile" element={<EmployeeProfilePage />} />
+          <Route path="settings" element={<EmployeeSettingsPage />} />
+        </Route>
+
+        {/* ━━━ Root + Catch-all ━━━ */}
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<Navigate to="/sign-in" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}

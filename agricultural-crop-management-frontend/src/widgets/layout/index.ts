@@ -9,6 +9,8 @@
 
 // Main component
 export { AppShell } from './ui/AppShell';
+export { PublicHeader } from './ui/PublicHeader';
+export { DashboardHeader } from './ui/DashboardHeader';
 
 // Types (for page compositions)
 export type {

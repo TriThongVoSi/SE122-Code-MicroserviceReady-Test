@@ -2,11 +2,21 @@ import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
 
+/** Uppercase role aliases accepted by route guards */
+type UppercaseRole = 'ADMIN' | 'FARMER' | 'BUYER' | 'EMPLOYEE';
+
+/** Role input that accepts both lowercase canonical and uppercase forms */
+type RoleInput = UserRole | UppercaseRole;
+
+function normalizeRoleInput(role: RoleInput): UserRole {
+  return role.toLowerCase() as UserRole;
+}
+
 interface ProtectedRouteProps {
   children: ReactNode;
   requireAuth?: boolean;
-  requiredRole?: UserRole;
-  allowedRoles?: UserRole[];
+  requiredRole?: RoleInput;
+  allowedRoles?: RoleInput[];
 }
 
 function getDefaultPortalRoute(role: UserRole): string {
@@ -74,14 +84,14 @@ export function ProtectedRoute({
     return <Navigate to="/sign-in" replace />;
   }
   
-  // If requiredRole is specified and doesn't match
-  if (requiredRole && userRole !== requiredRole) {
+  // If requiredRole is specified and doesn't match (normalize for case)
+  if (requiredRole && userRole !== normalizeRoleInput(requiredRole)) {
     // Redirect to user's portal (access denied for this route)
     return <Navigate to={getDefaultPortalRoute(userRole)} replace />;
   }
 
   // If allowedRoles is specified and user's role is not in the list
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+  if (allowedRoles && userRole && !allowedRoles.map(normalizeRoleInput).includes(userRole)) {
     // Redirect to user's portal (access denied for this route)
     return <Navigate to={getDefaultPortalRoute(userRole)} replace />;
   }
