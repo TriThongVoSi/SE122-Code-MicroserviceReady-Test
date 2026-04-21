@@ -1,78 +1,171 @@
+import { Package, ShoppingCart, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
-import { useMarketplaceFarmerDashboard } from "../hooks";
-import { formatDateTime, formatVnd } from "../lib/format";
+import { useTranslation } from "react-i18next";
+import {
+  Card,
+  CardContent,
+} from "@/shared/ui";
+import { useMarketplaceFarmerDashboard, useMarketplaceFarmerProducts } from "../hooks";
+import { SellerMarketplaceTabs } from "../layout";
+import { formatVnd } from "../lib/format";
+
+const LOW_STOCK_THRESHOLD = 20;
 
 export function SellerDashboardPage() {
+  const { t, i18n } = useTranslation();
   const dashboardQuery = useMarketplaceFarmerDashboard();
+  const lowStockProductsQuery = useMarketplaceFarmerProducts({
+    page: 0,
+    size: 20,
+    status: "PUBLISHED",
+  });
 
   if (dashboardQuery.isLoading) {
-    return <div className="rounded-xl border border-dashed bg-white p-8 text-sm text-slate-500">Loading seller dashboard...</div>;
+    return <div className="rounded-xl border border-dashed bg-white p-8 text-sm text-slate-500">{t("marketplaceSeller.dashboard.loading")}</div>;
   }
 
   if (dashboardQuery.isError || !dashboardQuery.data) {
-    return <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-sm text-red-600">Failed to load seller dashboard.</div>;
+    return <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-sm text-red-600">{t("marketplaceSeller.dashboard.error")}</div>;
   }
 
   const dashboard = dashboardQuery.data;
+  const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
+  const lowStockProducts = (lowStockProductsQuery.data?.items ?? [])
+    .filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
+    .sort((left, right) => left.stock - right.stock)
+    .slice(0, 4);
+
   const cards = [
-    { label: "Total products", value: dashboard.totalProducts },
-    { label: "Pending review", value: dashboard.pendingReviewProducts },
-    { label: "Published", value: dashboard.publishedProducts },
-    { label: "Low stock", value: dashboard.lowStockProducts },
-    { label: "Pending orders", value: dashboard.pendingOrders },
-    { label: "Revenue", value: formatVnd(dashboard.totalRevenue) },
+    {
+      key: "revenue",
+      label: t("marketplaceSeller.dashboard.metrics.revenue"),
+      value: formatVnd(dashboard.totalRevenue, locale),
+      icon: Wallet,
+      iconClassName: "bg-emerald-100 text-emerald-600",
+    },
+    {
+      key: "new-orders",
+      label: t("marketplaceSeller.dashboard.metrics.newOrders"),
+      value: dashboard.pendingOrders,
+      icon: ShoppingCart,
+      iconClassName: "bg-blue-100 text-blue-600",
+    },
+    {
+      key: "products",
+      label: t("marketplaceSeller.dashboard.metrics.products"),
+      value: dashboard.totalProducts,
+      icon: Package,
+      iconClassName: "bg-orange-100 text-orange-600",
+    },
+    {
+      key: "views",
+      label: t("marketplaceSeller.dashboard.metrics.views"),
+      value: "1,234",
+      icon: TrendingUp,
+      iconClassName: "bg-red-50 text-red-500",
+    },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Marketplace seller dashboard</h1>
-          <p className="text-sm text-slate-500">Overview of your marketplace products and orders.</p>
-        </div>
-        <Link to="/farmer/marketplace-products" className="text-sm text-emerald-700 hover:underline">
-          Manage products
-        </Link>
+      <SellerMarketplaceTabs />
+
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.dashboard.title")}</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Metric cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
-          <Card key={card.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">{card.label}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold text-slate-900">{card.value}</p>
+          <Card key={card.key} className="rounded-[14px] border-slate-200 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[10px] ${card.iconClassName}`}>
+                <card.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">{card.label}</p>
+                <p className="text-2xl font-semibold text-slate-900">{card.value}</p>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent orders</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {dashboard.recentOrders.length === 0 && (
-            <p className="text-sm text-slate-500">No orders yet.</p>
-          )}
-          {dashboard.recentOrders.map((order) => (
-            <div key={order.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
-                <p className="text-xs text-slate-500">{formatDateTime(order.createdAt)}</p>
+      {/* Recent orders + Low stock */}
+      <div className="grid gap-4 xl:grid-cols-5">
+        {/* Recent orders */}
+        <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-3">
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.recentOrdersTitle")}</h2>
+            {dashboard.recentOrders.length === 0 ? (
+              <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.recentOrdersEmpty")}</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {dashboard.recentOrders.map((order) => (
+                  <Link
+                    key={order.id}
+                    to={`/farmer/marketplace-orders/${order.id}`}
+                    className="-mx-2 flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-slate-50 first:pt-0"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
+                      <p className="text-xs text-slate-500">
+                        {order.items?.length ?? "?"} {t("marketplaceSeller.dashboard.itemsLabel", "sản phẩm")}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-[#00a63e]">{formatVnd(order.totalAmount, locale)}</p>
+                      <p className="text-xs text-slate-500">{t(`marketplaceSeller.status.order.${order.status}`)}</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-emerald-700">{formatVnd(order.totalAmount)}</p>
-                <Link to={`/farmer/marketplace-orders/${order.id}`} className="text-xs text-emerald-700 hover:underline">
-                  View order
-                </Link>
-              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Low stock products */}
+        <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-2">
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.lowStockTitle")}</h2>
+            {lowStockProductsQuery.isLoading && (
+              <p className="text-sm text-slate-500">{t("marketplaceSeller.products.loading")}</p>
+            )}
+            {lowStockProductsQuery.isError && (
+              <p className="text-sm text-red-600">{t("marketplaceSeller.products.error")}</p>
+            )}
+            {!lowStockProductsQuery.isLoading && !lowStockProductsQuery.isError && lowStockProducts.length === 0 && (
+              <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.lowStockEmpty")}</p>
+            )}
+
+            <div className="space-y-3">
+              {lowStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center gap-3">
+                  <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm font-medium text-slate-400">
+                        {product.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">{product.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {t("marketplaceSeller.dashboard.stock")}: <span className="font-semibold text-red-600">{product.stock} {product.unit}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

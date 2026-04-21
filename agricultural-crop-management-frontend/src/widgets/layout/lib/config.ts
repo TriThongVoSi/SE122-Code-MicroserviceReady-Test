@@ -38,7 +38,6 @@ export const portalConfig: Record<PortalType, PortalConfig> = {
         navigation: [
             { id: 'dashboard', label: 'Dashboard', icon: Home },
             { id: 'marketplace-dashboard', label: 'Marketplace Dashboard', icon: ShoppingCart },
-            { id: 'marketplace-products', label: 'Marketplace Products', icon: Sprout },
             { id: 'marketplace-orders', label: 'Marketplace Orders', icon: Package },
             { id: 'farms', label: 'Farms & Plots', icon: MapPin },
             { id: 'seasons', label: 'Seasons', icon: Calendar },

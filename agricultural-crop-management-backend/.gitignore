@@ -1,14 +1,78 @@
-# Sensitive environment variables and API keys
+# =========================
+# Dependencies / package caches
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+# =========================
+# Build artifacts (Java / Maven)
+# =========================
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar
+*.gz
+
+# Keep Maven wrapper files committed
+!mvnw
+!mvnw.cmd
+!.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# =========================
+# Test, coverage, and reports
+# =========================
+surefire-reports/
+failsafe-reports/
+test-output/
+coverage/
+.coverage
+.jacoco/
+jacoco.exec
+
+# =========================
+# Logs and runtime files
+# =========================
+*.log
+logs/
+*.pid
+*.pid.lock
+*.seed
+
+# =========================
+# Environment variables and local configs
+# =========================
 .env
 .env.*
 *.env
 *.env.*
+
+# Keep safe examples/templates
 !.env.example
 !.env.*.example
 !.env.template
 !.env.*.template
 
-# Secret and credential files
+# Spring profile local overrides
+application-local.yml
+application-local.yaml
+application-*.local.yml
+application-*.local.yaml
+
+# =========================
+# Secrets and credentials
+# =========================
 *.secret
 *.secrets
 secret.*
@@ -26,3 +90,34 @@ google-credentials*.json
 *.pfx
 *.jks
 *.keystore
+
+# =========================
+# IDE / Editor files
+# =========================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS-generated files
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Optional frontend build outputs
+# =========================
+dist/
+.next/
+.nuxt/
+storybook-static/
+
+# =========================
+# Docker / local infra overrides
+# =========================
+docker-compose.override.yml
+

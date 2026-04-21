@@ -1,86 +1,107 @@
 import { useState } from "react";
+import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { MarketplaceOrderStatus } from "@/shared/api";
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/ui";
 import { useMarketplaceFarmerOrders } from "../hooks";
-import { formatDateTime, formatVnd } from "../lib/format";
+import { SellerMarketplaceTabs } from "../layout";
+import { formatDate, formatVnd } from "../lib/format";
 
-const statusFilters: Array<{ value: "ALL" | MarketplaceOrderStatus; label: string }> = [
-  { value: "ALL", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PREPARING", label: "Preparing" },
-  { value: "DELIVERING", label: "Delivering" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
-
-function statusVariant(status: MarketplaceOrderStatus) {
-  if (status === "COMPLETED") return "success";
-  if (status === "CANCELLED") return "destructive";
-  if (status === "PENDING") return "warning";
-  return "secondary";
+function statusPillClass(status: MarketplaceOrderStatus): string {
+  switch (status) {
+    case "COMPLETED":
+      return "bg-[#dbeafe] text-[#1447e6]";
+    case "DELIVERING":
+      return "bg-[#dcfce7] text-[#008236]";
+    case "PENDING":
+      return "bg-amber-100 text-amber-700";
+    case "CANCELLED":
+      return "bg-red-50 text-red-600";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
 }
 
 export function SellerOrdersPage() {
-  const [status, setStatus] = useState<"ALL" | MarketplaceOrderStatus>("ALL");
+  const { t, i18n } = useTranslation();
+  const [status] = useState<"ALL" | MarketplaceOrderStatus>("ALL");
   const ordersQuery = useMarketplaceFarmerOrders({
     page: 0,
     size: 50,
     status: status === "ALL" ? undefined : status,
   });
+  const orders = ordersQuery.data?.items ?? [];
+  const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <SellerMarketplaceTabs />
+
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Marketplace orders</h1>
-        <p className="text-sm text-slate-500">Track and update order fulfillment status.</p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.orders.title")}</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Status filter</CardTitle>
-          <div className="flex flex-wrap gap-2">
-            {statusFilters.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setStatus(option.value)}
-                className={`rounded-md border px-3 py-1.5 text-sm ${
-                  status === option.value
-                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {ordersQuery.isLoading && <p className="text-sm text-slate-500">Loading orders...</p>}
-          {ordersQuery.isError && <p className="text-sm text-red-600">Failed to load orders.</p>}
-          {!ordersQuery.isLoading && !ordersQuery.isError && (ordersQuery.data?.items ?? []).length === 0 && (
-            <p className="text-sm text-slate-500">No order found.</p>
-          )}
-          {(ordersQuery.data?.items ?? []).map((order) => (
-            <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-              <div>
-                <p className="font-semibold text-slate-900">{order.orderCode}</p>
-                <p className="text-xs text-slate-500">{formatDateTime(order.createdAt)}</p>
-                <p className="text-xs text-slate-500">Buyer #{order.buyerUserId}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
-                <p className="text-sm font-semibold text-emerald-700">{formatVnd(order.totalAmount)}</p>
-                <Link to={`/farmer/marketplace-orders/${order.id}`} className="text-sm text-emerald-700 hover:underline">
-                  Detail
-                </Link>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/* Orders table */}
+      <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
+        {ordersQuery.isLoading && (
+          <div className="p-8 text-center text-sm text-slate-500">{t("marketplaceSeller.orders.loading")}</div>
+        )}
+        {ordersQuery.isError && (
+          <div className="p-8 text-center text-sm text-red-600">{t("marketplaceSeller.orders.error")}</div>
+        )}
+        {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 && (
+          <div className="p-8 text-center text-sm text-slate-500">{t("marketplaceSeller.orders.empty")}</div>
+        )}
+
+        {!ordersQuery.isLoading && !ordersQuery.isError && orders.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50">
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.orderCode")}</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.orderDate")}</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.customer")}</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.totalAmount")}</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.status")}</TableHead>
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow key={order.id} className="hover:bg-slate-50/50">
+                  <TableCell className="text-sm font-semibold text-slate-900">{order.orderCode}</TableCell>
+                  <TableCell className="text-sm text-slate-600">{formatDate(order.createdAt, locale)}</TableCell>
+                  <TableCell className="text-sm text-slate-700">{order.shippingRecipientName || `#${order.buyerUserId}`}</TableCell>
+                  <TableCell className="text-sm font-semibold text-emerald-600">
+                    {formatVnd(order.totalAmount, locale)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusPillClass(order.status)}`}>
+                      {t(`marketplaceSeller.status.order.${order.status}`)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      to={`/farmer/marketplace-orders/${order.id}`}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-[#155dfc] hover:text-blue-700"
+                    >
+                      <Eye className="h-4 w-4" />
+                      {t("marketplaceSeller.orders.detail")}
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }
