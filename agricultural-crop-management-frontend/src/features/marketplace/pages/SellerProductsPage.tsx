@@ -101,6 +101,9 @@ export function SellerProductsPage() {
               <div className="flex items-center gap-3">
                 <Badge variant={statusBadge(product.status)}>{product.status}</Badge>
                 <p className="min-w-24 text-right text-sm font-semibold text-emerald-700">{formatVnd(product.price)}</p>
+                <Link to={`/farmer/marketplace-products/${product.id}`} className="text-sm text-slate-600 hover:underline">
+                  View
+                </Link>
                 <Link to={`/farmer/marketplace-products/${product.id}/edit`} className="text-sm text-emerald-700 hover:underline">
                   Edit
                 </Link>
