@@ -1,4 +1,4 @@
-﻿export { MarketplacePublicLayout } from "./layout";
+export { MarketplacePublicLayout } from "./layout";
 export {
   MarketHomePage,
   ProductListPage,
@@ -12,6 +12,7 @@ export {
   TraceabilityPage,
   SellerDashboardPage,
   SellerProductsPage,
+  SellerProductDetailPage,
   SellerProductFormPage,
   SellerOrdersPage,
   SellerOrderDetailPage,

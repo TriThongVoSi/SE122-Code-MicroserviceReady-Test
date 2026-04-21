@@ -1,4 +1,4 @@
-﻿export { MarketHomePage } from "./MarketHomePage";
+export { MarketHomePage } from "./MarketHomePage";
 export { ProductListPage } from "./ProductListPage";
 export { ProductDetailPage } from "./ProductDetailPage";
 export { FarmListPage } from "./FarmListPage";
@@ -10,6 +10,7 @@ export { OrderDetailPage } from "./OrderDetailPage";
 export { TraceabilityPage } from "./TraceabilityPage";
 export { SellerDashboardPage } from "./SellerDashboardPage";
 export { SellerProductsPage } from "./SellerProductsPage";
+export { SellerProductDetailPage } from "./SellerProductDetailPage";
 export { SellerProductFormPage } from "./SellerProductFormPage";
 export { SellerOrdersPage } from "./SellerOrdersPage";
 export { SellerOrderDetailPage } from "./SellerOrderDetailPage";
