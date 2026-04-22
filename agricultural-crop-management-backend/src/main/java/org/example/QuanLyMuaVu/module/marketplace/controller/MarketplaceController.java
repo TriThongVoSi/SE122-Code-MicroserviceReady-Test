@@ -1,6 +1,7 @@
 package org.example.QuanLyMuaVu.module.marketplace.controller;
 
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/marketplace")
@@ -48,11 +50,14 @@ public class MarketplaceController {
     public ApiResponse<PageResponse<MarketplaceProductSummaryResponse>> listProducts(
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "region", required = false) String region,
             @RequestParam(value = "traceable", required = false) Boolean traceable,
+            @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
-        return ApiResponse.success(marketplaceService.listProducts(category, q, traceable, sort, page, size));
+        return ApiResponse.success(marketplaceService.listProducts(category, q, region, traceable, minPrice, maxPrice, sort, page, size));
     }
 
     @GetMapping("/products/{slug}")
@@ -119,6 +124,13 @@ public class MarketplaceController {
             @Valid @RequestBody MarketplaceCreateOrderRequest request,
             @RequestHeader(value = "X-Idempotency-Key", required = false) String idempotencyKeyHeader) {
         return ApiResponse.success(marketplaceService.createOrder(request, idempotencyKeyHeader));
+    }
+
+    @PostMapping("/orders/{orderId}/payment-proof")
+    public ApiResponse<MarketplaceOrderResponse> uploadPaymentProof(
+            @PathVariable Long orderId,
+            @RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(marketplaceService.uploadPaymentProof(orderId, file));
     }
 
     @GetMapping("/orders")

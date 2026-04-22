@@ -164,9 +164,9 @@ export function SellerOrderDetailPage() {
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-4 w-4 flex-shrink-0 text-slate-400" />
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{t(`marketplaceSeller.status.payment.${order.paymentMethod}`)}</p>
+                    <p className="text-sm font-medium text-slate-900">{t(`marketplaceSeller.status.payment.${order.payment.method}`)}</p>
                     <p className="text-xs text-slate-500">
-                      {t("marketplaceSeller.orders.table.status")}: {t(`marketplaceSeller.status.order.${order.status}`)}
+                      Verification: {order.payment.verificationStatus}
                     </p>
                   </div>
                 </div>

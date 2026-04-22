@@ -9,7 +9,9 @@ public record MarketplaceOrderItemResponse(
         String productSlug,
         String imageUrl,
         BigDecimal unitPriceSnapshot,
-        Integer quantity,
+        BigDecimal quantity,
         BigDecimal lineTotal,
-        Boolean traceableSnapshot) {
+        Boolean traceableSnapshot,
+        Boolean canReview,
+        Long reviewId) {
 }

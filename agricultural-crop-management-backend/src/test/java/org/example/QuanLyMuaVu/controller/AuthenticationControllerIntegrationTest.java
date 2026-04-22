@@ -22,8 +22,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -254,7 +257,7 @@ public class AuthenticationControllerIntegrationTest {
         }
 
         @Test
-        @DisplayName("Buyer user gets role=BUYER and redirectTo=/buyer")
+        @DisplayName("Buyer user gets role=BUYER and redirectTo=/marketplace")
         void testBuyerUserRedirect() throws Exception {
                 User buyerUser = User.builder()
                                 .username("test_buyer_user")
@@ -277,7 +280,69 @@ public class AuthenticationControllerIntegrationTest {
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.result.role").value("BUYER"))
-                                .andExpect(jsonPath("$.result.redirectTo").value("/buyer"));
+                                .andExpect(jsonPath("$.result.redirectTo").value("/marketplace"));
+        }
+
+        @Test
+        @DisplayName("Sign-up with BUYER role persists BUYER instead of FARMER")
+        void testBuyerSignupPersistsBuyerRole() throws Exception {
+                Map<String, Object> request = Map.of(
+                                "username", "signup_buyer_user",
+                                "email", "signupbuyer@test.local",
+                                "password", TEST_PASSWORD,
+                                "role", "BUYER");
+
+                mockMvc.perform(post("/api/v1/auth/sign-up")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.result.username").value("signup_buyer_user"));
+
+                User createdUser = userRepository.findByIdentifierWithRoles("signupbuyer@test.local")
+                                .orElseThrow();
+
+                Set<String> createdRoles = createdUser.getRoles().stream().map(Role::getCode).collect(java.util.stream.Collectors.toSet());
+                assertTrue(createdRoles.contains("BUYER"));
+                assertFalse(createdRoles.contains("FARMER"));
+        }
+
+        @Test
+        @DisplayName("Buyer cannot access marketplace farmer or admin APIs")
+        void testBuyerCannotAccessFarmerOrAdminMarketplaceApis() throws Exception {
+                User buyerUser = User.builder()
+                                .username("market_buyer_user")
+                                .email("marketbuyer@test.local")
+                                .password(passwordEncoder.encode(TEST_PASSWORD))
+                                .fullName("Market Buyer")
+                                .phone("0900000010")
+                                .status(UserStatus.ACTIVE)
+                                .roles(new HashSet<>(Set.of(buyerRole)))
+                                .build();
+                buyerUser = userRepository.saveAndFlush(buyerUser);
+
+                AuthenticationRequest request = AuthenticationRequest.builder()
+                                .identifier(buyerUser.getEmail())
+                                .password(TEST_PASSWORD)
+                                .build();
+
+                MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/sign-in")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andReturn();
+
+                String token = objectMapper.readTree(loginResult.getResponse().getContentAsString())
+                                .path("result")
+                                .path("token")
+                                .asText();
+
+                mockMvc.perform(get("/api/v1/marketplace/farmer/dashboard")
+                                .header("Authorization", "Bearer " + token))
+                                .andExpect(status().isForbidden());
+
+                mockMvc.perform(get("/api/v1/marketplace/admin/stats")
+                                .header("Authorization", "Bearer " + token))
+                                .andExpect(status().isForbidden());
         }
 
         @Test

@@ -59,9 +59,6 @@ public class MarketplaceProduct {
     @Column(name = "unit", nullable = false, length = 50)
     String unit;
 
-    @Column(name = "stock_quantity", nullable = false)
-    Integer stockQuantity;
-
     @Column(name = "image_url", length = 1024)
     String imageUrl;
 
@@ -81,12 +78,12 @@ public class MarketplaceProduct {
     org.example.QuanLyMuaVu.module.season.entity.Season season;
 
     @ManyToOne
-    @JoinColumn(name = "lot_id")
+    @JoinColumn(name = "lot_id", nullable = false)
     org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot lot;
 
     @Column(name = "traceable", nullable = false)
     @Builder.Default
-    Boolean traceable = Boolean.FALSE;
+    Boolean traceable = Boolean.TRUE;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)

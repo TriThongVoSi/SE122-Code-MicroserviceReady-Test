@@ -15,6 +15,12 @@ export type MarketplaceOrderStatus =
   | "CANCELLED";
 
 export type MarketplacePaymentMethod = "COD" | "BANK_TRANSFER";
+export type MarketplacePaymentVerificationStatus =
+  | "NOT_REQUIRED"
+  | "AWAITING_PROOF"
+  | "SUBMITTED"
+  | "VERIFIED"
+  | "REJECTED";
 
 export type MarketplaceProductSummary = {
   id: number;
@@ -144,6 +150,20 @@ export type MarketplaceOrderItem = {
   quantity: number;
   lineTotal: number;
   traceableSnapshot: boolean;
+  canReview: boolean;
+  reviewId: number | null;
+};
+
+export type MarketplaceOrderPayment = {
+  method: MarketplacePaymentMethod;
+  verificationStatus: MarketplacePaymentVerificationStatus;
+  proofFileName: string | null;
+  proofContentType: string | null;
+  proofStoragePath: string | null;
+  proofUploadedAt: string | null;
+  verifiedAt: string | null;
+  verifiedBy: number | null;
+  verificationNote: string | null;
 };
 
 export type MarketplaceOrder = {
@@ -153,7 +173,7 @@ export type MarketplaceOrder = {
   buyerUserId: number;
   farmerUserId: number;
   status: MarketplaceOrderStatus;
-  paymentMethod: MarketplacePaymentMethod;
+  payment: MarketplaceOrderPayment;
   shippingRecipientName: string;
   shippingPhone: string;
   shippingAddressLine: string;
@@ -161,9 +181,22 @@ export type MarketplaceOrder = {
   subtotal: number;
   shippingFee: number;
   totalAmount: number;
+  canCancel: boolean;
   createdAt: string;
   updatedAt: string;
   items: MarketplaceOrderItem[];
+};
+
+export type MarketplaceOrderAuditLog = {
+  id: number;
+  entityType: string;
+  entityId: number;
+  operation: string;
+  performedBy: string;
+  performedAt: string;
+  snapshotDataJson: string | null;
+  reason: string | null;
+  ipAddress: string | null;
 };
 
 export type MarketplaceCreateOrderResult = {
@@ -177,6 +210,9 @@ export type MarketplaceProductQuery = {
   size?: number;
   category?: string;
   q?: string;
+  region?: string;
+  minPrice?: number;
+  maxPrice?: number;
   sort?: "newest" | "price_asc" | "price_desc";
   traceable?: boolean;
 };
@@ -277,6 +313,11 @@ export type MarketplaceUpdateProductStatusRequest = {
 
 export type MarketplaceUpdateOrderStatusRequest = {
   status: MarketplaceOrderStatus;
+};
+
+export type MarketplaceUpdatePaymentVerificationRequest = {
+  verificationStatus: MarketplacePaymentVerificationStatus;
+  verificationNote?: string;
 };
 
 export type MarketplaceFarmerDashboard = {

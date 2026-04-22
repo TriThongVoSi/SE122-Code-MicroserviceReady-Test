@@ -166,4 +166,41 @@ public class AuditLogService {
     public java.util.List<AuditLog> getFarmAuditTrail(Integer farmId) {
         return auditLogRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc("FARM", farmId);
     }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logEntityOperation(
+            String entityType,
+            Integer entityId,
+            String operation,
+            String performedBy,
+            Object snapshot,
+            String reason,
+            String ipAddress) {
+        try {
+            String snapshotJson = snapshot == null ? null : objectMapper.writeValueAsString(snapshot);
+            AuditLog auditLog = AuditLog.builder()
+                    .entityType(entityType)
+                    .entityId(entityId)
+                    .operation(operation)
+                    .performedBy(performedBy)
+                    .performedAt(LocalDateTime.now())
+                    .snapshotDataJson(snapshotJson)
+                    .reason(reason)
+                    .ipAddress(ipAddress)
+                    .build();
+            auditLogRepository.save(auditLog);
+        } catch (Exception e) {
+            log.error(
+                    "[AUDIT_FAILURE] Failed to create audit log: entityType={}, entityId={}, operation={}, error={}",
+                    entityType,
+                    entityId,
+                    operation,
+                    e.getMessage(),
+                    e);
+        }
+    }
+
+    public java.util.List<AuditLog> getEntityAuditTrail(String entityType, Integer entityId) {
+        return auditLogRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc(entityType, entityId);
+    }
 }

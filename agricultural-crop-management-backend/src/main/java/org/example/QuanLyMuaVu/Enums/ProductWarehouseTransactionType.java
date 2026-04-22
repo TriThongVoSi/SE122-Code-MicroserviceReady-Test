@@ -5,7 +5,9 @@ public enum ProductWarehouseTransactionType {
     ADJUSTMENT,
     STOCK_OUT,
     TRANSFER,
-    RETURN;
+    RETURN,
+    MARKETPLACE_ORDER_RESERVED,
+    MARKETPLACE_ORDER_RELEASED;
 
     public static ProductWarehouseTransactionType fromCode(String code) {
         if (code == null || code.isBlank()) {

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
-import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentMethod;
 
 public record MarketplaceOrderResponse(
         Long id,
@@ -13,7 +12,7 @@ public record MarketplaceOrderResponse(
         Long buyerUserId,
         Long farmerUserId,
         MarketplaceOrderStatus status,
-        MarketplacePaymentMethod paymentMethod,
+        MarketplaceOrderPaymentResponse payment,
         String shippingRecipientName,
         String shippingPhone,
         String shippingAddressLine,
@@ -21,6 +20,7 @@ public record MarketplaceOrderResponse(
         BigDecimal subtotal,
         BigDecimal shippingFee,
         BigDecimal totalAmount,
+        Boolean canCancel,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         List<MarketplaceOrderItemResponse> items) {

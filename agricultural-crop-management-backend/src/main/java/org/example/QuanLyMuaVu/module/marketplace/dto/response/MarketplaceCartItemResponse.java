@@ -8,8 +8,8 @@ public record MarketplaceCartItemResponse(
         String name,
         String imageUrl,
         BigDecimal unitPrice,
-        Integer quantity,
-        Integer maxQuantity,
+        BigDecimal quantity,
+        BigDecimal maxQuantity,
         Long farmerUserId,
         Boolean traceable) {
 }

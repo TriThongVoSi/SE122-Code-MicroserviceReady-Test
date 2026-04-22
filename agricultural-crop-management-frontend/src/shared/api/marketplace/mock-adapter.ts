@@ -20,14 +20,17 @@ import type {
   MarketplaceFarmSummary,
   MarketplaceMergeCartRequest,
   MarketplaceOrder,
+  MarketplaceOrderAuditLog,
   MarketplaceOrderItem,
   MarketplaceOrderStatus,
   MarketplacePaymentMethod,
+  MarketplacePaymentVerificationStatus,
   MarketplaceProductDetail,
   MarketplaceProductSummary,
   MarketplaceProductStatus,
   MarketplaceReview,
   MarketplaceUpdateOrderStatusRequest,
+  MarketplaceUpdatePaymentVerificationRequest,
   MarketplaceUpdateProductStatusRequest,
   MarketplaceUpdateCartItemRequest,
 } from "./types";
@@ -454,6 +457,22 @@ export function createMarketplaceMockAdapter(
 
   function toOrderStatusCanCancel(status: MarketplaceOrderStatus): boolean {
     return status === "PENDING" || status === "CONFIRMED";
+  }
+
+  function createOrderPayment(method: MarketplacePaymentMethod) {
+    const verificationStatus: MarketplacePaymentVerificationStatus =
+      method === "BANK_TRANSFER" ? "AWAITING_PROOF" : "NOT_REQUIRED";
+    return {
+      method,
+      verificationStatus,
+      proofFileName: null,
+      proofContentType: null,
+      proofStoragePath: null,
+      proofUploadedAt: null,
+      verifiedAt: null,
+      verifiedBy: null,
+      verificationNote: null,
+    };
   }
 
   function ensureTraceabilityChain(product: MarketplaceProductDetail): void {
@@ -944,6 +963,8 @@ export function createMarketplaceMockAdapter(
             quantity: cartItem.quantity,
             lineTotal,
             traceableSnapshot: product.traceable,
+            canReview: false,
+            reviewId: null,
           };
         });
 
@@ -960,10 +981,10 @@ export function createMarketplaceMockAdapter(
           buyerUserId: userId,
           farmerUserId,
           status: "PENDING",
-          paymentMethod:
+          payment:
             request.paymentMethod === ("BANK_TRANSFER" as MarketplacePaymentMethod)
-              ? "BANK_TRANSFER"
-              : "COD",
+              ? createOrderPayment("BANK_TRANSFER")
+              : createOrderPayment("COD"),
           shippingRecipientName,
           shippingPhone,
           shippingAddressLine,
@@ -971,6 +992,7 @@ export function createMarketplaceMockAdapter(
           subtotal,
           shippingFee,
           totalAmount,
+          canCancel: true,
           createdAt,
           updatedAt: createdAt,
           items: orderItems,
@@ -1056,7 +1078,40 @@ export function createMarketplaceMockAdapter(
 
       order.status = "CANCELLED";
       order.updatedAt = nowIso();
+      order.canCancel = false;
       return okMarketplaceResponse(order, "Order cancelled.");
+    },
+
+    async uploadOrderPaymentProof(orderId, file) {
+      const userId = resolveAuthenticatedUserId();
+      const order = (orders.get(userId) ?? []).find((candidate) => candidate.id === orderId);
+      if (!order) {
+        throw new MarketplaceApiClientError(
+          "Order does not exist.",
+          "ERR_MARKETPLACE_ORDER_NOT_FOUND",
+          404,
+        );
+      }
+      if (order.payment.method !== "BANK_TRANSFER") {
+        throw new MarketplaceApiClientError(
+          "Payment proof is not allowed for this order.",
+          "ERR_MARKETPLACE_PAYMENT_PROOF_NOT_ALLOWED",
+          409,
+        );
+      }
+      order.payment = {
+        ...order.payment,
+        verificationStatus: "SUBMITTED",
+        proofFileName: file.name,
+        proofContentType: file.type || null,
+        proofStoragePath: `/mock-storage/orders/${orderId}/${encodeURIComponent(file.name)}`,
+        proofUploadedAt: nowIso(),
+        verifiedAt: null,
+        verifiedBy: null,
+        verificationNote: null,
+      };
+      order.updatedAt = nowIso();
+      return okMarketplaceResponse(order, "Payment proof uploaded.");
     },
 
     async listAddresses() {
@@ -1215,6 +1270,11 @@ export function createMarketplaceMockAdapter(
       };
 
       reviews.push(review);
+      const reviewedItem = order.items.find((item) => item.productId === request.productId);
+      if (reviewedItem) {
+        reviewedItem.canReview = false;
+        reviewedItem.reviewId = review.id;
+      }
       recalculateProductRating(review.productId);
 
       return okMarketplaceResponse(review, "Review created.");
@@ -1431,6 +1491,7 @@ export function createMarketplaceMockAdapter(
             product.updatedAt = nowIso();
           }
         }
+        order.canCancel = false;
       }
 
       order.status = request.status;
@@ -1499,6 +1560,69 @@ export function createMarketplaceMockAdapter(
         );
       }
       return okMarketplaceResponse(order);
+    },
+
+    async updateAdminOrderPaymentVerification(orderId: number, request: MarketplaceUpdatePaymentVerificationRequest) {
+      resolveAuthenticatedUserId();
+      const order = allOrdersFlat().find((candidate) => candidate.id === orderId);
+      if (!order) {
+        throw new MarketplaceApiClientError(
+          "Order does not exist.",
+          "ERR_MARKETPLACE_ORDER_NOT_FOUND",
+          404,
+        );
+      }
+      order.payment = {
+        ...order.payment,
+        verificationStatus: request.verificationStatus,
+        verificationNote: normalizeString(request.verificationNote) || null,
+        verifiedAt: nowIso(),
+        verifiedBy: 1,
+      };
+      order.updatedAt = nowIso();
+      return okMarketplaceResponse(order, "Payment verification updated.");
+    },
+
+    async updateAdminOrderStatus(orderId: number, request: MarketplaceUpdateOrderStatusRequest) {
+      resolveAuthenticatedUserId();
+      const order = allOrdersFlat().find((candidate) => candidate.id === orderId);
+      if (!order) {
+        throw new MarketplaceApiClientError(
+          "Order does not exist.",
+          "ERR_MARKETPLACE_ORDER_NOT_FOUND",
+          404,
+        );
+      }
+      order.status = request.status;
+      order.canCancel = false;
+      order.updatedAt = nowIso();
+      return okMarketplaceResponse(order, "Order status updated.");
+    },
+
+    async listAdminOrderAuditLogs(orderId: number) {
+      resolveAuthenticatedUserId();
+      const order = allOrdersFlat().find((candidate) => candidate.id === orderId);
+      if (!order) {
+        throw new MarketplaceApiClientError(
+          "Order does not exist.",
+          "ERR_MARKETPLACE_ORDER_NOT_FOUND",
+          404,
+        );
+      }
+      const auditLogs: MarketplaceOrderAuditLog[] = [
+        {
+          id: order.id * 10,
+          entityType: "MARKETPLACE_ORDER",
+          entityId: order.id,
+          operation: "ORDER_CREATED",
+          performedBy: "mock-system",
+          performedAt: order.createdAt,
+          snapshotDataJson: null,
+          reason: "Mock order bootstrap",
+          ipAddress: null,
+        },
+      ];
+      return okMarketplaceResponse(auditLogs);
     },
 
     async getAdminStats() {

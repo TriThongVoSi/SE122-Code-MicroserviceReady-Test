@@ -1,18 +1,18 @@
 package org.example.QuanLyMuaVu.module.inventory.repository;
 
-
-
-
-
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus;
 import org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,6 +28,10 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
 
     Optional<ProductWarehouseLot> findByLotCode(String lotCode);
 
+    Optional<ProductWarehouseLot> findByIdAndStatus(Integer id, ProductWarehouseLotStatus status);
+
+    Optional<ProductWarehouseLot> findByIdAndOnHandQuantityGreaterThan(Integer id, BigDecimal onHandQuantity);
+
     @Query("""
             SELECT l FROM ProductWarehouseLot l
             WHERE l.id = :lotId
@@ -36,6 +40,18 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
     Optional<ProductWarehouseLot> findByIdAndFarmUserId(
             @Param("lotId") Integer lotId,
             @Param("ownerId") Long ownerId);
+
+    Optional<ProductWarehouseLot> findByIdAndFarmUserIdAndStatus(Integer lotId, Long ownerId, ProductWarehouseLotStatus status);
+
+    Optional<ProductWarehouseLot> findByIdAndFarmUserIdAndStatusAndOnHandQuantityGreaterThan(
+            Integer lotId,
+            Long ownerId,
+            ProductWarehouseLotStatus status,
+            BigDecimal onHandQuantity);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM ProductWarehouseLot l WHERE l.id IN :ids")
+    List<ProductWarehouseLot> findAllByIdInForUpdate(@Param("ids") Collection<Integer> ids);
 
     @Query("""
             select l from ProductWarehouseLot l
@@ -60,6 +76,20 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
 
     @Query("select count(l) from ProductWarehouseLot l where l.farm.id in :farmIds and l.onHandQuantity <= 0")
     long countByFarmIdsAndOnHandDepleted(@Param("farmIds") List<Integer> farmIds);
+
+    @Query("""
+            select count(p)
+            from MarketplaceProduct p
+            join p.lot l
+            where p.farmerUser.id = :farmerUserId
+              and p.status = :status
+              and l.onHandQuantity > 0
+              and l.onHandQuantity <= :threshold
+            """)
+    long countMarketplaceListingsByFarmerAndOnHandLessThanEqual(
+            @Param("farmerUserId") Long farmerUserId,
+            @Param("status") MarketplaceProductStatus status,
+            @Param("threshold") BigDecimal threshold);
 
     @Query("""
             select l from ProductWarehouseLot l

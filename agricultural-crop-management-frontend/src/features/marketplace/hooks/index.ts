@@ -3,6 +3,7 @@ export { useMarketplaceCartMergeBridge } from "./useMarketplaceCartMergeBridge";
 export {
   marketplaceQueryKeys,
   useMarketplaceAddresses,
+  useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
   useMarketplaceAdminOrders,
   useMarketplaceAdminProducts,
@@ -30,10 +31,13 @@ export {
   useMarketplaceProducts,
   useMarketplaceRemoveCartItemMutation,
   useMarketplaceTraceability,
+  useMarketplaceUpdateAdminOrderPaymentVerificationMutation,
+  useMarketplaceUpdateAdminOrderStatusMutation,
   useMarketplaceUpdateAdminProductStatusMutation,
   useMarketplaceUpdateAddressMutation,
   useMarketplaceUpdateCartItemMutation,
   useMarketplaceUpdateFarmerOrderStatusMutation,
   useMarketplaceUpdateFarmerProductMutation,
   useMarketplaceUpdateFarmerProductStatusMutation,
+  useMarketplaceUploadPaymentProofMutation,
 } from "./useMarketplaceQueries";
