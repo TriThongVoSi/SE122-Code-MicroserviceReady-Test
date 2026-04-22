@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { MarketplaceOrderStatus } from "@/shared/api";
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import {
+  useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
   useMarketplaceAdminOrders,
+  useMarketplaceUpdateAdminOrderPaymentVerificationMutation,
+  useMarketplaceUpdateAdminOrderStatusMutation,
 } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
 
@@ -28,6 +31,7 @@ function statusVariant(status: MarketplaceOrderStatus) {
 export function AdminMarketplaceOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<"ALL" | MarketplaceOrderStatus>("ALL");
+  const [verificationNote, setVerificationNote] = useState("");
 
   const ordersQuery = useMarketplaceAdminOrders({
     page: 0,
@@ -38,12 +42,15 @@ export function AdminMarketplaceOrdersPage() {
   const selectedOrderId = Number(searchParams.get("orderId") ?? 0);
   const selectedOrderQuery = useMarketplaceAdminOrderDetail(selectedOrderId);
   const selectedOrder = useMemo(() => selectedOrderQuery.data, [selectedOrderQuery.data]);
+  const auditLogsQuery = useMarketplaceAdminOrderAuditLogs(selectedOrderId);
+  const verifyMutation = useMarketplaceUpdateAdminOrderPaymentVerificationMutation(selectedOrderId || 0);
+  const cancelMutation = useMarketplaceUpdateAdminOrderStatusMutation(selectedOrderId || 0);
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Marketplace orders overview</h1>
-        <p className="text-sm text-slate-500">Inspect marketplace order flow across all farmers.</p>
+        <p className="text-sm text-slate-500">Inspect payment verification and moderation actions across all farmers.</p>
       </div>
 
       <Card>
@@ -83,7 +90,10 @@ export function AdminMarketplaceOrdersPage() {
                 <div>
                   <p className="font-semibold text-slate-900">{order.orderCode}</p>
                   <p className="text-xs text-slate-500">
-                    Buyer #{order.buyerUserId} - Farmer #{order.farmerUserId}
+                    Buyer #{order.buyerUserId} · Farmer #{order.farmerUserId}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {order.payment.method} · {order.payment.verificationStatus}
                   </p>
                   <p className="text-xs text-slate-500">{formatDateTime(order.createdAt)}</p>
                 </div>
@@ -100,18 +110,98 @@ export function AdminMarketplaceOrdersPage() {
       {selectedOrder && (
         <Card>
           <CardHeader>
-            <CardTitle>Order detail - {selectedOrder.orderCode}</CardTitle>
+            <CardTitle>Order detail · {selectedOrder.orderCode}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600">
+          <CardContent className="space-y-4 text-sm text-slate-600">
             <p>Status: <span className="font-medium text-slate-900">{selectedOrder.status}</span></p>
-            <p>Recipient: {selectedOrder.shippingRecipientName} - {selectedOrder.shippingPhone}</p>
+            <p>Recipient: {selectedOrder.shippingRecipientName} · {selectedOrder.shippingPhone}</p>
             <p>Address: {selectedOrder.shippingAddressLine}</p>
+            <p>
+              Payment: <span className="font-medium text-slate-900">{selectedOrder.payment.method}</span> ·{" "}
+              <span className="font-medium text-slate-900">{selectedOrder.payment.verificationStatus}</span>
+            </p>
             <p>Total: <span className="font-semibold text-emerald-700">{formatVnd(selectedOrder.totalAmount)}</span></p>
+
+            {selectedOrder.payment.proofFileName ? (
+              <div className="rounded border border-slate-200 bg-slate-50 p-3">
+                <p>Proof file: {selectedOrder.payment.proofFileName}</p>
+                {selectedOrder.payment.proofUploadedAt ? (
+                  <p>Uploaded at: {formatDateTime(selectedOrder.payment.proofUploadedAt)}</p>
+                ) : null}
+                {selectedOrder.payment.proofStoragePath ? (
+                  <p className="break-all text-xs text-slate-500">{selectedOrder.payment.proofStoragePath}</p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="space-y-3 rounded border border-slate-200 p-3">
+              <p className="font-medium text-slate-900">Verification note</p>
+              <Input
+                value={verificationNote}
+                onChange={(event) => setVerificationNote(event.target.value)}
+                placeholder="Optional note for buyer"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={verifyMutation.isPending}
+                  onClick={async () => {
+                    await verifyMutation.mutateAsync({
+                      verificationStatus: "VERIFIED",
+                      verificationNote,
+                    });
+                    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                  }}
+                >
+                  Mark verified
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={verifyMutation.isPending}
+                  onClick={async () => {
+                    await verifyMutation.mutateAsync({
+                      verificationStatus: "REJECTED",
+                      verificationNote,
+                    });
+                    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                  }}
+                >
+                  Reject proof
+                </Button>
+                {selectedOrder.status !== "CANCELLED" ? (
+                  <Button
+                    variant="destructive"
+                    disabled={cancelMutation.isPending}
+                    onClick={async () => {
+                      await cancelMutation.mutateAsync({ status: "CANCELLED" });
+                      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                    }}
+                  >
+                    Force cancel
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+
             <div className="space-y-2 pt-2">
               {selectedOrder.items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded border p-2">
                   <p>{item.productName} x{item.quantity}</p>
                   <p className="font-medium text-slate-900">{formatVnd(item.lineTotal)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 rounded border border-slate-200 p-3">
+              <p className="font-medium text-slate-900">Audit trail</p>
+              {auditLogsQuery.isLoading ? <p>Loading audit logs...</p> : null}
+              {auditLogsQuery.isError ? <p className="text-red-600">Failed to load audit logs.</p> : null}
+              {(auditLogsQuery.data ?? []).map((log) => (
+                <div key={log.id} className="rounded border border-slate-200 p-2">
+                  <p className="font-medium text-slate-900">{log.operation}</p>
+                  <p className="text-xs text-slate-500">
+                    {log.performedBy} · {formatDateTime(log.performedAt)}
+                  </p>
+                  {log.reason ? <p className="text-xs text-slate-500">{log.reason}</p> : null}
                 </div>
               ))}
             </div>

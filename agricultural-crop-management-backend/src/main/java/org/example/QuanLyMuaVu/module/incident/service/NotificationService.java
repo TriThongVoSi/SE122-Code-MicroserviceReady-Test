@@ -42,6 +42,16 @@ public class NotificationService {
         return toResponse(notificationRepository.save(notification));
     }
 
+    public NotificationResponse createNotification(Long userId, String title, String message, String link) {
+        Notification notification = Notification.builder()
+                .userId(userId)
+                .title(title)
+                .message(message)
+                .link(link)
+                .build();
+        return toResponse(notificationRepository.save(notification));
+    }
+
     private NotificationResponse toResponse(Notification notification) {
         return NotificationResponse.builder()
                 .id(notification.getId())

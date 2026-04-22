@@ -6,6 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.example.QuanLyMuaVu.DTO.Common.ApiResponse;
 import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
+import java.util.List;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateOrderStatusRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdatePaymentVerificationRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderAuditLogResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateProductStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAdminStatsResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
@@ -57,6 +61,25 @@ public class MarketplaceAdminController {
     @GetMapping("/orders/{orderId}")
     public ApiResponse<MarketplaceOrderResponse> getOrderDetail(@PathVariable Long orderId) {
         return ApiResponse.success(marketplaceService.getAdminOrderDetail(orderId));
+    }
+
+    @PatchMapping("/orders/{orderId}/payment-verification")
+    public ApiResponse<MarketplaceOrderResponse> updatePaymentVerification(
+            @PathVariable Long orderId,
+            @Valid @RequestBody MarketplaceUpdatePaymentVerificationRequest request) {
+        return ApiResponse.success(marketplaceService.updateAdminPaymentVerification(orderId, request));
+    }
+
+    @PatchMapping("/orders/{orderId}/status")
+    public ApiResponse<MarketplaceOrderResponse> updateOrderStatus(
+            @PathVariable Long orderId,
+            @Valid @RequestBody MarketplaceUpdateOrderStatusRequest request) {
+        return ApiResponse.success(marketplaceService.updateAdminOrderStatus(orderId, request));
+    }
+
+    @GetMapping("/orders/{orderId}/audit-logs")
+    public ApiResponse<List<MarketplaceOrderAuditLogResponse>> getOrderAuditLogs(@PathVariable Long orderId) {
+        return ApiResponse.success(marketplaceService.listOrderAuditLogs(orderId));
     }
 
     @GetMapping("/stats")

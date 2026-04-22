@@ -26,6 +26,7 @@ import type {
   MarketplaceFarmQuery,
   MarketplaceMergeCartRequest,
   MarketplaceOrder,
+  MarketplaceOrderAuditLog,
   MarketplaceOrderPage,
   MarketplaceOrderQuery,
   MarketplaceProductDetail,
@@ -36,6 +37,7 @@ import type {
   MarketplaceReviewQuery,
   MarketplaceTraceability,
   MarketplaceUpdateOrderStatusRequest,
+  MarketplaceUpdatePaymentVerificationRequest,
   MarketplaceUpdateProductStatusRequest,
   MarketplaceUpdateCartItemRequest,
 } from './types';
@@ -149,6 +151,18 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
       );
     },
 
+    uploadOrderPaymentProof(orderId: number, file: File) {
+      const formData = new FormData();
+      formData.append("file", file);
+      return requestEnvelope<MarketplaceOrder>(() =>
+        httpClient.post(`${MARKETPLACE_API_PREFIX}/orders/${orderId}/payment-proof`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }),
+      );
+    },
+
     listAddresses() {
       return requestEnvelope<MarketplaceAddress[]>(() =>
         httpClient.get(`${MARKETPLACE_API_PREFIX}/addresses`),
@@ -248,6 +262,24 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
     getAdminOrderDetail(orderId: number) {
       return requestEnvelope<MarketplaceOrder>(() =>
         httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}`),
+      );
+    },
+
+    updateAdminOrderPaymentVerification(orderId: number, request: MarketplaceUpdatePaymentVerificationRequest) {
+      return requestEnvelope<MarketplaceOrder>(() =>
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}/payment-verification`, request),
+      );
+    },
+
+    updateAdminOrderStatus(orderId: number, request: MarketplaceUpdateOrderStatusRequest) {
+      return requestEnvelope<MarketplaceOrder>(() =>
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}/status`, request),
+      );
+    },
+
+    listAdminOrderAuditLogs(orderId: number) {
+      return requestEnvelope<MarketplaceOrderAuditLog[]>(() =>
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}/audit-logs`),
       );
     },
 

@@ -13,10 +13,12 @@ import {
   type MarketplaceFarmerProductUpsertRequest,
   type MarketplaceFarmQuery,
   type MarketplaceOrderQuery,
+  type MarketplaceOrderAuditLog,
   type MarketplaceOrderStatus,
   type MarketplaceProductQuery,
   type MarketplaceReviewQuery,
   type MarketplaceUpdateOrderStatusRequest,
+  type MarketplaceUpdatePaymentVerificationRequest,
   type MarketplaceUpdateProductStatusRequest,
   type MarketplaceUpdateCartItemRequest,
 } from "@/shared/api";
@@ -58,6 +60,8 @@ export const marketplaceQueryKeys = {
   adminOrders: (query?: MarketplaceAdminOrderQuery) =>
     [...marketplaceQueryKeys.adminOrdersBase(), query ?? {}] as const,
   adminOrder: (orderId?: number) => [...marketplaceQueryKeys.root, "admin-order", orderId ?? 0] as const,
+  adminOrderAuditLogs: (orderId?: number) =>
+    [...marketplaceQueryKeys.root, "admin-order-audit-logs", orderId ?? 0] as const,
   adminStats: () => [...marketplaceQueryKeys.root, "admin-stats"] as const,
 };
 
@@ -239,6 +243,22 @@ export function useMarketplaceCancelOrderMutation(orderId: number) {
   return useMutation({
     mutationFn: async () => {
       const response = await marketplaceApi.cancelOrder(orderId);
+      return response.result;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.order(orderId) }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.ordersBase() }),
+      ]);
+    },
+  });
+}
+
+export function useMarketplaceUploadPaymentProofMutation(orderId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const response = await marketplaceApi.uploadOrderPaymentProof(orderId, file);
       return response.result;
     },
     onSuccess: async () => {
@@ -476,6 +496,52 @@ export function useMarketplaceAdminOrderDetail(orderId?: number) {
     enabled: Boolean(orderId && orderId > 0),
     queryFn: async () => {
       const response = await marketplaceApi.getAdminOrderDetail(orderId ?? 0);
+      return response.result;
+    },
+  });
+}
+
+export function useMarketplaceUpdateAdminOrderPaymentVerificationMutation(orderId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: MarketplaceUpdatePaymentVerificationRequest) => {
+      const response = await marketplaceApi.updateAdminOrderPaymentVerification(orderId, request);
+      return response.result;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrder(orderId) }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrdersBase() }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrderAuditLogs(orderId) }),
+      ]);
+    },
+  });
+}
+
+export function useMarketplaceUpdateAdminOrderStatusMutation(orderId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: MarketplaceUpdateOrderStatusRequest) => {
+      const response = await marketplaceApi.updateAdminOrderStatus(orderId, request);
+      return response.result;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrder(orderId) }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrdersBase() }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminOrderAuditLogs(orderId) }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminStats() }),
+      ]);
+    },
+  });
+}
+
+export function useMarketplaceAdminOrderAuditLogs(orderId?: number) {
+  return useQuery({
+    queryKey: marketplaceQueryKeys.adminOrderAuditLogs(orderId),
+    enabled: Boolean(orderId && orderId > 0),
+    queryFn: async (): Promise<MarketplaceOrderAuditLog[]> => {
+      const response = await marketplaceApi.listAdminOrderAuditLogs(orderId ?? 0);
       return response.result;
     },
   });

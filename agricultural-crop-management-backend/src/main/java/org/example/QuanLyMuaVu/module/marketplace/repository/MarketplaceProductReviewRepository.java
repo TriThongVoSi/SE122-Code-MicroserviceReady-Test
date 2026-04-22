@@ -2,6 +2,7 @@ package org.example.QuanLyMuaVu.module.marketplace.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceProductReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,10 @@ public interface MarketplaceProductReviewRepository extends JpaRepository<Market
     Page<MarketplaceProductReview> findByProductId(@Param("productId") Long productId, Pageable pageable);
 
     boolean existsByProduct_IdAndOrder_IdAndBuyerUser_Id(Long productId, Long orderId, Long buyerUserId);
+
+    List<MarketplaceProductReview> findByOrder_IdAndBuyerUser_Id(Long orderId, Long buyerUserId);
+
+    Optional<MarketplaceProductReview> findByProduct_IdAndOrder_IdAndBuyerUser_Id(Long productId, Long orderId, Long buyerUserId);
 
     @Query("""
             SELECT r.product.id AS productId,

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,11 +13,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.example.QuanLyMuaVu.Config.AppProperties;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.repository.FarmRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.ProductWarehouseLotRepository;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
+import org.example.QuanLyMuaVu.module.incident.service.NotificationService;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateOrderRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceFarmerProductUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceMergeCartRequest;
@@ -91,6 +96,15 @@ class MarketplaceServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private AppProperties appProperties;
+
+    @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private MarketplaceService marketplaceService;
 
@@ -121,6 +135,9 @@ class MarketplaceServiceTest {
                 .traceable(false)
                 .farmerUser(User.builder().id(20L).username("farmer-1").build())
                 .build();
+
+        lenient().when(marketplaceProductReviewRepository.findByOrder_IdAndBuyerUser_Id(anyLong(), anyLong()))
+                .thenReturn(List.of());
     }
 
     @Nested

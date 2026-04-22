@@ -11,5 +11,7 @@ public record MarketplaceOrderItemResponse(
         BigDecimal unitPriceSnapshot,
         Integer quantity,
         BigDecimal lineTotal,
-        Boolean traceableSnapshot) {
+        Boolean traceableSnapshot,
+        Boolean canReview,
+        Long reviewId) {
 }

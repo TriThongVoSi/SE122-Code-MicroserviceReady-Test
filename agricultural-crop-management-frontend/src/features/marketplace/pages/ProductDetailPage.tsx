@@ -31,6 +31,8 @@ export function ProductDetailPage() {
     return quantity < product.stock;
   }, [product, quantity]);
 
+  const quantityValue = product ? Math.min(Math.max(quantity, 1), Math.max(product.stock, 1)) : quantity;
+
   if (productQuery.isLoading) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
@@ -98,7 +100,7 @@ export function ProductDetailPage() {
                   >
                     <Minus size={14} />
                   </button>
-                  <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+                  <span className="w-10 text-center text-sm font-semibold">{quantityValue}</span>
                   <button
                     type="button"
                     className="p-2 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -171,6 +173,34 @@ export function ProductDetailPage() {
 
         <Card>
           <CardContent className="space-y-3 p-6">
+            <h2 className="text-lg font-semibold text-slate-900">Product information</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Farm</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {product.farmName ?? product.farmerDisplayName}
+                </p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Region</p>
+                <p className="text-sm font-medium text-slate-900">{product.region ?? "Updating"}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Season</p>
+                <p className="text-sm font-medium text-slate-900">{product.seasonName ?? "Not linked"}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">Lot</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {product.lotId ? `#${product.lotId}` : "Not linked"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 p-6">
             <h2 className="text-lg font-semibold text-slate-900">Recent reviews</h2>
 
             {reviewsQuery.isLoading ? (
@@ -207,14 +237,21 @@ export function ProductDetailPage() {
                   <div className="rounded-md border border-slate-200 p-3">
                     <p className="text-xs text-slate-500">Farm</p>
                     <p className="text-sm font-medium">{traceabilityQuery.data.farm?.name}</p>
+                    <p className="text-xs text-slate-500">{traceabilityQuery.data.farm?.region}</p>
                   </div>
                   <div className="rounded-md border border-slate-200 p-3">
                     <p className="text-xs text-slate-500">Season</p>
                     <p className="text-sm font-medium">{traceabilityQuery.data.season?.name}</p>
+                    <p className="text-xs text-slate-500">
+                      Planned harvest: {traceabilityQuery.data.season?.plannedHarvestDate ?? "N/A"}
+                    </p>
                   </div>
                   <div className="rounded-md border border-slate-200 p-3">
                     <p className="text-xs text-slate-500">Lot</p>
                     <p className="text-sm font-medium">{traceabilityQuery.data.lot?.lotCode}</p>
+                    <p className="text-xs text-slate-500">
+                      Harvested: {traceabilityQuery.data.lot?.harvestedAt ?? "N/A"}
+                    </p>
                   </div>
                 </div>
               ) : (

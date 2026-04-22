@@ -19,6 +19,7 @@ import type {
   MarketplaceFarmQuery,
   MarketplaceMergeCartRequest,
   MarketplaceOrder,
+  MarketplaceOrderAuditLog,
   MarketplaceOrderPage,
   MarketplaceOrderQuery,
   MarketplaceProductDetail,
@@ -29,6 +30,7 @@ import type {
   MarketplaceReviewQuery,
   MarketplaceTraceability,
   MarketplaceUpdateOrderStatusRequest,
+  MarketplaceUpdatePaymentVerificationRequest,
   MarketplaceUpdateProductStatusRequest,
   MarketplaceUpdateCartItemRequest,
 } from "./types";
@@ -87,6 +89,11 @@ export interface MarketplaceApiAdapter {
   getOrderDetail(orderId: number): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
 
   cancelOrder(orderId: number): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
+
+  uploadOrderPaymentProof(
+    orderId: number,
+    file: File,
+  ): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
 
   listAddresses(): Promise<MarketplaceApiResponse<MarketplaceAddress[]>>;
 
@@ -150,6 +157,20 @@ export interface MarketplaceApiAdapter {
   ): Promise<MarketplaceApiResponse<MarketplaceOrderPage>>;
 
   getAdminOrderDetail(orderId: number): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
+
+  updateAdminOrderPaymentVerification(
+    orderId: number,
+    request: MarketplaceUpdatePaymentVerificationRequest,
+  ): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
+
+  updateAdminOrderStatus(
+    orderId: number,
+    request: MarketplaceUpdateOrderStatusRequest,
+  ): Promise<MarketplaceApiResponse<MarketplaceOrder>>;
+
+  listAdminOrderAuditLogs(
+    orderId: number,
+  ): Promise<MarketplaceApiResponse<MarketplaceOrderAuditLog[]>>;
 
   getAdminStats(): Promise<MarketplaceApiResponse<MarketplaceAdminStats>>;
 }

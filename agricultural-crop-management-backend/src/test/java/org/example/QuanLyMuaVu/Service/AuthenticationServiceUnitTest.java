@@ -647,7 +647,7 @@ public class AuthenticationServiceUnitTest {
 
             // Assert
             assertEquals("BUYER", response.getRole());
-            assertEquals("/buyer", response.getRedirectTo());
+            assertEquals("/marketplace", response.getRedirectTo());
         }
     }
 

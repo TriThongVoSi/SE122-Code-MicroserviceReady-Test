@@ -86,6 +86,7 @@ public class SecurityConfig {
                                                                 "/api/v1/marketplace/addresses/**",
                                                                 "/api/v1/marketplace/reviews/**")
                                                 .authenticated()
+                                                .requestMatchers("/api/v1/notifications/**").authenticated()
                                                 // Admin APIs (system-wide access for admins)
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                                 // Farmer APIs and farm-scoped resources (day-to-day operations)

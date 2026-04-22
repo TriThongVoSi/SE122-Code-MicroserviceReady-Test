@@ -19,9 +19,13 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     @Query(value = """
             SELECT p FROM MarketplaceProduct p
             LEFT JOIN p.farm f
+            LEFT JOIN f.province province
             WHERE p.status = :status
               AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))
               AND (:traceable IS NULL OR p.traceable = :traceable)
+              AND (:region IS NULL OR LOWER(COALESCE(province.name, '')) LIKE LOWER(CONCAT('%', :region, '%')))
+              AND (:minPrice IS NULL OR p.price >= :minPrice)
+              AND (:maxPrice IS NULL OR p.price <= :maxPrice)
               AND (:q IS NULL
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :q, '%'))
@@ -29,9 +33,13 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             """, countQuery = """
             SELECT COUNT(p) FROM MarketplaceProduct p
             LEFT JOIN p.farm f
+            LEFT JOIN f.province province
             WHERE p.status = :status
               AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))
               AND (:traceable IS NULL OR p.traceable = :traceable)
+              AND (:region IS NULL OR LOWER(COALESCE(province.name, '')) LIKE LOWER(CONCAT('%', :region, '%')))
+              AND (:minPrice IS NULL OR p.price >= :minPrice)
+              AND (:maxPrice IS NULL OR p.price <= :maxPrice)
               AND (:q IS NULL
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :q, '%'))
@@ -42,6 +50,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             @Param("category") String category,
             @Param("q") String q,
             @Param("traceable") Boolean traceable,
+            @Param("region") String region,
+            @Param("minPrice") java.math.BigDecimal minPrice,
+            @Param("maxPrice") java.math.BigDecimal maxPrice,
             Pageable pageable);
 
     Optional<MarketplaceProduct> findBySlugAndStatus(String slug, MarketplaceProductStatus status);

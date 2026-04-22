@@ -10,8 +10,8 @@ export const AuthSignUpRequestSchema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
     phone: z.string().optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    role: z.enum(["BUYER", "FARMER", "EMPLOYEE"], {
-        errorMap: () => ({ message: "Role must be BUYER, FARMER, or EMPLOYEE" }),
+    role: z.enum(["BUYER", "FARMER"], {
+        errorMap: () => ({ message: "Role must be BUYER or FARMER" }),
     }),
 }).strict();
 
@@ -79,7 +79,7 @@ export const AuthSignInResponseSchema = z.object({
         roles: z.array(z.string()).min(1, "At least one role is required"),
         role: z.string().optional(), // Primary role (BUYER/FARMER/EMPLOYEE)
         profile: ProfileInfoSchema.optional(),
-        redirectTo: z.string().optional(), // "/buyer", "/farmer", or "/employee"
+        redirectTo: z.string().optional(), // "/marketplace", "/farmer", or "/employee"
     }),
 });
 

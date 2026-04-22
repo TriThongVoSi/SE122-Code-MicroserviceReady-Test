@@ -12,6 +12,7 @@ import type { SignUpFormData } from '@/features/shared/signUp/types';
 
 function getRoleHomePath(role?: string | null): string {
     if (!role) return '/';
+    if (role === 'buyer') return '/marketplace';
     return role === 'employee' ? '/employee/tasks' : `/${role}/dashboard`;
 }
 

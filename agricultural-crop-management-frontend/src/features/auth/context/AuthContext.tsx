@@ -392,10 +392,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const normalizedRedirect =
         redirectTo === "/admin" ||
         redirectTo === "/farmer" ||
+        redirectTo === "/marketplace" ||
         redirectTo === "/buyer" ||
         redirectTo === "/employee"
-          ? redirectTo
-          : `/${primaryRole}`;
+          ? redirectTo === "/buyer"
+            ? "/marketplace"
+            : redirectTo
+          : primaryRole === "buyer"
+            ? "/marketplace"
+            : `/${primaryRole}`;
 
       return {
         success: true,

@@ -3,8 +3,12 @@ package org.example.QuanLyMuaVu.module.marketplace.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,14 +33,18 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.example.QuanLyMuaVu.Config.AppProperties;
 import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.entity.AuditLog;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.farm.repository.FarmRepository;
 import org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot;
 import org.example.QuanLyMuaVu.module.inventory.repository.ProductWarehouseLotRepository;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
+import org.example.QuanLyMuaVu.module.incident.service.NotificationService;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceAddCartItemRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceAddressUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateOrderRequest;
@@ -44,6 +52,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateR
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceFarmerProductUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceMergeCartRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateOrderStatusRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdatePaymentVerificationRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateProductStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateCartItemRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAdminStatsResponse;
@@ -54,7 +63,9 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCreate
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerDashboardResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmSummaryResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderAuditLogResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderItemResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPaymentResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductSummaryResponse;
@@ -69,6 +80,8 @@ import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceOrderItem;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceProduct;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceProductReview;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentMethod;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentVerificationStatus;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceAddressRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceCartItemRepository;
@@ -86,6 +99,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -96,6 +110,7 @@ public class MarketplaceService {
     static BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("20000");
     static String CURRENCY_VND = "VND";
     static int LOW_STOCK_THRESHOLD = 10;
+    static String AUDIT_ENTITY_ORDER = "MARKETPLACE_ORDER";
 
     MarketplaceProductRepository marketplaceProductRepository;
     MarketplaceCartRepository marketplaceCartRepository;
@@ -109,12 +124,18 @@ public class MarketplaceService {
     ProductWarehouseLotRepository productWarehouseLotRepository;
     CurrentUserService currentUserService;
     ObjectMapper objectMapper;
+    AppProperties appProperties;
+    AuditLogService auditLogService;
+    NotificationService notificationService;
 
     @Transactional
     public PageResponse<MarketplaceProductSummaryResponse> listProducts(
             String category,
             String q,
+            String region,
             Boolean traceable,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
             String sort,
             int page,
             int size) {
@@ -124,6 +145,9 @@ public class MarketplaceService {
                 normalizeNullable(category),
                 normalizeNullable(q),
                 traceable,
+                normalizeNullable(region),
+                minPrice,
+                maxPrice,
                 pageable);
 
         Map<Long, MarketplaceProductReviewRepository.ProductRatingProjection> ratings = aggregateProductRatings(
@@ -483,6 +507,7 @@ public class MarketplaceService {
                     .farmerUser(farmer)
                     .status(MarketplaceOrderStatus.PENDING)
                     .paymentMethod(request.paymentMethod())
+                    .paymentVerificationStatus(resolveInitialPaymentVerificationStatus(request.paymentMethod()))
                     .shippingRecipientName(shippingSnapshot.recipientName())
                     .shippingPhone(shippingSnapshot.phone())
                     .shippingAddressLine(shippingSnapshot.addressLine())
@@ -504,6 +529,22 @@ public class MarketplaceService {
 
         marketplaceProductRepository.saveAll(lockedProducts);
         marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
+
+        for (MarketplaceOrder createdOrder : createdOrders) {
+            notifyUser(
+                    buyerUserId,
+                    "Order created",
+                    "Your order " + createdOrder.getOrderCode() + " has been created.",
+                    "/marketplace/orders/" + createdOrder.getId());
+            if (createdOrder.getFarmerUser() != null) {
+                notifyUser(
+                        createdOrder.getFarmerUser().getId(),
+                        "New marketplace order",
+                        "New order " + createdOrder.getOrderCode() + " is waiting for processing.",
+                        "/farmer/marketplace-orders/" + createdOrder.getId());
+            }
+            auditOrderOperation(createdOrder, "ORDER_CREATED", "Marketplace order created");
+        }
 
         List<MarketplaceOrderResponse> orderResponses = createdOrders.stream()
                 .map(this::toOrderResponse)
@@ -538,6 +579,40 @@ public class MarketplaceService {
     }
 
     @Transactional
+    public MarketplaceOrderResponse uploadPaymentProof(Long orderId, MultipartFile file) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER
+                || order.getStatus() == MarketplaceOrderStatus.CANCELLED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_NOT_ALLOWED);
+        }
+        if (file == null || file.isEmpty() || normalizeNullable(file.getOriginalFilename()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_INVALID);
+        }
+
+        storePaymentProof(order, file);
+        order.setPaymentVerificationStatus(MarketplacePaymentVerificationStatus.SUBMITTED);
+        order.setPaymentProofUploadedAt(LocalDateTime.now());
+        order.setPaymentVerifiedAt(null);
+        order.setPaymentVerifiedByUserId(null);
+        order.setPaymentVerificationNote(null);
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "PAYMENT_PROOF_SUBMITTED", "Buyer submitted payment proof");
+
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Payment proof submitted",
+                    "Buyer submitted transfer proof for order " + saved.getOrderCode() + ".",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toOrderResponse(saved);
+    }
+
+    @Transactional
     public MarketplaceOrderResponse cancelOrder(Long orderId) {
         Long buyerUserId = currentUserService.getCurrentUserId();
         MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
@@ -563,6 +638,19 @@ public class MarketplaceService {
         order.setStatus(MarketplaceOrderStatus.CANCELLED);
         marketplaceProductRepository.saveAll(lockedProducts);
         MarketplaceOrder savedOrder = marketplaceOrderRepository.save(order);
+        auditOrderOperation(savedOrder, "ORDER_CANCELLED", "Buyer cancelled order");
+        notifyUser(
+                buyerUserId,
+                "Order cancelled",
+                "Your order " + savedOrder.getOrderCode() + " has been cancelled.",
+                "/marketplace/orders/" + savedOrder.getId());
+        if (savedOrder.getFarmerUser() != null) {
+            notifyUser(
+                    savedOrder.getFarmerUser().getId(),
+                    "Order cancelled",
+                    "Buyer cancelled order " + savedOrder.getOrderCode() + ".",
+                    "/farmer/marketplace-orders/" + savedOrder.getId());
+        }
         return toOrderResponse(savedOrder);
     }
 
@@ -914,6 +1002,14 @@ public class MarketplaceService {
 
         order.setStatus(targetStatus);
         MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "ORDER_STATUS_CHANGED", "Farmer changed order status to " + targetStatus.name());
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Order status updated",
+                    "Order " + saved.getOrderCode() + " is now " + targetStatus.name() + ".",
+                    "/marketplace/orders/" + saved.getId());
+        }
         return toOrderResponse(saved);
     }
 
@@ -958,6 +1054,14 @@ public class MarketplaceService {
         }
 
         MarketplaceProduct saved = marketplaceProductRepository.save(product);
+        auditProductStatusChange(saved, "Admin changed product status to " + targetStatus.name());
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Product moderation updated",
+                    "Product " + saved.getName() + " is now " + targetStatus.name() + ".",
+                    "/farmer/marketplace-products");
+        }
         MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
                 .get(saved.getId());
         return toProductDetail(saved, rating);
@@ -983,6 +1087,92 @@ public class MarketplaceService {
         MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
         return toOrderResponse(order);
+    }
+
+    @Transactional
+    public MarketplaceOrderResponse updateAdminPaymentVerification(
+            Long orderId,
+            MarketplaceUpdatePaymentVerificationRequest request) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        MarketplacePaymentVerificationStatus target = request.verificationStatus();
+        if (target != MarketplacePaymentVerificationStatus.VERIFIED
+                && target != MarketplacePaymentVerificationStatus.REJECTED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+
+        User admin = currentUserService.getCurrentUser();
+        order.setPaymentVerificationStatus(target);
+        order.setPaymentVerificationNote(normalizeNullable(request.verificationNote()));
+        order.setPaymentVerifiedAt(LocalDateTime.now());
+        order.setPaymentVerifiedByUserId(admin.getId());
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        String operation = target == MarketplacePaymentVerificationStatus.VERIFIED
+                ? "PAYMENT_VERIFIED"
+                : "PAYMENT_REJECTED";
+        auditOrderOperation(saved, operation, "Admin updated payment verification to " + target.name());
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Payment verification updated",
+                    "Payment for order " + saved.getOrderCode() + " is now " + target.name() + ".",
+                    "/marketplace/orders/" + saved.getId());
+        }
+        return toOrderResponse(saved);
+    }
+
+    @Transactional
+    public MarketplaceOrderResponse updateAdminOrderStatus(
+            Long orderId,
+            MarketplaceUpdateOrderStatusRequest request) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (request.status() != MarketplaceOrderStatus.CANCELLED) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+        if (order.getStatus() == MarketplaceOrderStatus.CANCELLED) {
+            return toOrderResponse(order);
+        }
+        if (order.getStatus() == MarketplaceOrderStatus.COMPLETED) {
+            throw new AppException(ErrorCode.MARKETPLACE_ORDER_CANCEL_NOT_ALLOWED);
+        }
+
+        restoreOrderStock(order);
+        order.setStatus(MarketplaceOrderStatus.CANCELLED);
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "ORDER_CANCELLED", "Admin cancelled order");
+
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Order cancelled",
+                    "Admin cancelled order " + saved.getOrderCode() + ".",
+                    "/marketplace/orders/" + saved.getId());
+        }
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Order cancelled",
+                    "Admin cancelled order " + saved.getOrderCode() + ".",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toOrderResponse(saved);
+    }
+
+    @Transactional
+    public List<MarketplaceOrderAuditLogResponse> listOrderAuditLogs(Long orderId) {
+        marketplaceOrderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        return auditLogService.getEntityAuditTrail(AUDIT_ENTITY_ORDER, Math.toIntExact(orderId)).stream()
+                .map(this::toOrderAuditLogResponse)
+                .toList();
     }
 
     @Transactional
@@ -1326,7 +1516,143 @@ public class MarketplaceService {
                 .collect(Collectors.toMap(MarketplaceProductReviewRepository.ProductRatingProjection::getProductId, p -> p));
     }
 
+    private MarketplacePaymentVerificationStatus resolveInitialPaymentVerificationStatus(MarketplacePaymentMethod paymentMethod) {
+        return paymentMethod == MarketplacePaymentMethod.BANK_TRANSFER
+                ? MarketplacePaymentVerificationStatus.AWAITING_PROOF
+                : MarketplacePaymentVerificationStatus.NOT_REQUIRED;
+    }
+
+    private void restoreOrderStock(MarketplaceOrder order) {
+        List<Long> productIds = order.getItems().stream()
+                .map(item -> item.getProduct() == null ? null : item.getProduct().getId())
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        List<MarketplaceProduct> lockedProducts = marketplaceProductRepository.findAllByIdInForUpdate(productIds);
+        Map<Long, MarketplaceProduct> productById = lockedProducts.stream()
+                .collect(Collectors.toMap(MarketplaceProduct::getId, p -> p));
+
+        for (MarketplaceOrderItem orderItem : order.getItems()) {
+            Long productId = orderItem.getProduct() == null ? null : orderItem.getProduct().getId();
+            if (productId == null) {
+                continue;
+            }
+            MarketplaceProduct product = productById.get(productId);
+            if (product == null) {
+                throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
+            }
+            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
+        }
+
+        marketplaceProductRepository.saveAll(lockedProducts);
+    }
+
+    private void storePaymentProof(MarketplaceOrder order, MultipartFile file) {
+        String root = appProperties.getMarketplace().getStorage().getPaymentProofRoot();
+        String extension = extractExtension(file.getOriginalFilename());
+        Path rootPath = Path.of(root).toAbsolutePath().normalize();
+        Path orderDirectory = rootPath.resolve("order-" + order.getId());
+        String storedFileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                + "-"
+                + UUID.randomUUID().toString().replace("-", "")
+                + extension;
+        Path target = orderDirectory.resolve(storedFileName).normalize();
+
+        try {
+            if (!target.startsWith(rootPath)) {
+                throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_INVALID);
+            }
+            Files.createDirectories(orderDirectory);
+            if (normalizeNullable(order.getPaymentProofStoragePath()) != null) {
+                Path existing = Path.of(order.getPaymentProofStoragePath()).toAbsolutePath().normalize();
+                if (existing.startsWith(rootPath) && Files.exists(existing)) {
+                    Files.delete(existing);
+                }
+            }
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        order.setPaymentProofFileName(normalizeNullable(file.getOriginalFilename()));
+        order.setPaymentProofContentType(normalizeNullable(file.getContentType()));
+        order.setPaymentProofStoragePath(target.toString());
+    }
+
+    private String extractExtension(String fileName) {
+        String normalized = normalizeNullable(fileName);
+        if (normalized == null) {
+            return "";
+        }
+        int lastDot = normalized.lastIndexOf('.');
+        if (lastDot < 0 || lastDot == normalized.length() - 1) {
+            return "";
+        }
+        return normalized.substring(lastDot);
+    }
+
+    private void notifyUser(Long userId, String title, String message, String link) {
+        if (userId == null) {
+            return;
+        }
+        notificationService.createNotification(userId, title, message, link);
+    }
+
+    private void auditOrderOperation(MarketplaceOrder order, String operation, String reason) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        String performedBy = resolveCurrentUsername();
+        auditLogService.logEntityOperation(
+                AUDIT_ENTITY_ORDER,
+                Math.toIntExact(order.getId()),
+                operation,
+                performedBy,
+                order,
+                reason,
+                null);
+    }
+
+    private void auditProductStatusChange(MarketplaceProduct product, String reason) {
+        if (product == null || product.getId() == null) {
+            return;
+        }
+        auditLogService.logEntityOperation(
+                "MARKETPLACE_PRODUCT",
+                Math.toIntExact(product.getId()),
+                "PRODUCT_STATUS_CHANGED",
+                resolveCurrentUsername(),
+                product,
+                reason,
+                null);
+    }
+
+    private String resolveCurrentUsername() {
+        try {
+            User currentUser = currentUserService.getCurrentUser();
+            return defaultDisplayName(currentUser);
+        } catch (Exception ex) {
+            return "system";
+        }
+    }
+
     private MarketplaceOrderResponse toOrderResponse(MarketplaceOrder order) {
+        Long currentUserId = null;
+        try {
+            currentUserId = currentUserService.getCurrentUserId();
+        } catch (Exception ex) {
+            currentUserId = null;
+        }
+        final Long viewerUserId = currentUserId;
+        Long buyerUserId = order.getBuyerUser() == null ? null : order.getBuyerUser().getId();
+        Map<Long, Long> reviewIdByProductId = Collections.emptyMap();
+        if (viewerUserId != null && Objects.equals(viewerUserId, buyerUserId)) {
+            reviewIdByProductId = marketplaceProductReviewRepository.findByOrder_IdAndBuyerUser_Id(order.getId(), viewerUserId).stream()
+                    .filter(review -> review.getProduct() != null && review.getProduct().getId() != null)
+                    .collect(Collectors.toMap(review -> review.getProduct().getId(), MarketplaceProductReview::getId, (left, right) -> left));
+        }
+        final Map<Long, Long> reviewMap = reviewIdByProductId;
+
         List<MarketplaceOrderItemResponse> itemResponses = order.getItems().stream()
                 .sorted(Comparator.comparing(MarketplaceOrderItem::getId))
                 .map(item -> new MarketplaceOrderItemResponse(
@@ -1338,7 +1664,12 @@ public class MarketplaceService {
                         item.getUnitPriceSnapshot(),
                         item.getQuantity(),
                         item.getLineTotal(),
-                        Boolean.TRUE.equals(item.getTraceableSnapshot())))
+                        Boolean.TRUE.equals(item.getTraceableSnapshot()),
+                        viewerUserId != null
+                                && Objects.equals(viewerUserId, buyerUserId)
+                                && order.getStatus() == MarketplaceOrderStatus.COMPLETED
+                                && !reviewMap.containsKey(item.getProduct() == null ? null : item.getProduct().getId()),
+                        reviewMap.get(item.getProduct() == null ? null : item.getProduct().getId())))
                 .toList();
 
         return new MarketplaceOrderResponse(
@@ -1348,7 +1679,7 @@ public class MarketplaceService {
                 order.getBuyerUser() == null ? null : order.getBuyerUser().getId(),
                 order.getFarmerUser() == null ? null : order.getFarmerUser().getId(),
                 order.getStatus(),
-                order.getPaymentMethod(),
+                toOrderPaymentResponse(order),
                 order.getShippingRecipientName(),
                 order.getShippingPhone(),
                 order.getShippingAddressLine(),
@@ -1356,9 +1687,25 @@ public class MarketplaceService {
                 order.getSubtotal(),
                 order.getShippingFee(),
                 order.getTotalAmount(),
+                viewerUserId != null
+                        && Objects.equals(viewerUserId, buyerUserId)
+                        && (order.getStatus() == MarketplaceOrderStatus.PENDING || order.getStatus() == MarketplaceOrderStatus.CONFIRMED),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 itemResponses);
+    }
+
+    private MarketplaceOrderPaymentResponse toOrderPaymentResponse(MarketplaceOrder order) {
+        return new MarketplaceOrderPaymentResponse(
+                order.getPaymentMethod(),
+                order.getPaymentVerificationStatus(),
+                order.getPaymentProofFileName(),
+                order.getPaymentProofContentType(),
+                order.getPaymentProofStoragePath(),
+                order.getPaymentProofUploadedAt(),
+                order.getPaymentVerifiedAt(),
+                order.getPaymentVerifiedByUserId(),
+                order.getPaymentVerificationNote());
     }
 
     private MarketplaceAddressResponse toAddressResponse(MarketplaceAddress address) {
@@ -1387,6 +1734,19 @@ public class MarketplaceService {
                 review.getRating(),
                 review.getComment(),
                 review.getCreatedAt());
+    }
+
+    private MarketplaceOrderAuditLogResponse toOrderAuditLogResponse(AuditLog auditLog) {
+        return new MarketplaceOrderAuditLogResponse(
+                auditLog.getId(),
+                auditLog.getEntityType(),
+                auditLog.getEntityId(),
+                auditLog.getOperation(),
+                auditLog.getPerformedBy(),
+                auditLog.getPerformedAt(),
+                auditLog.getSnapshotDataJson(),
+                auditLog.getReason(),
+                auditLog.getIpAddress());
     }
 
     private String defaultDisplayName(User user) {

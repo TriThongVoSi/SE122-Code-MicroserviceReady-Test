@@ -74,14 +74,11 @@ public class UserService {
 
         String roleCode = request.getRole() != null
                 ? request.getRole().trim().toUpperCase()
-                : PredefinedRole.FARMER_ROLE;
-        if (PredefinedRole.ADMIN_ROLE.equals(roleCode)) {
-            roleRepository.findByCode(PredefinedRole.ADMIN_ROLE).ifPresent(roles::add);
-        } else if (PredefinedRole.EMPLOYEE_ROLE.equals(roleCode)) {
-            roleRepository.findByCode(PredefinedRole.EMPLOYEE_ROLE).ifPresent(roles::add);
-        } else {
-            roleRepository.findByCode(PredefinedRole.FARMER_ROLE).ifPresent(roles::add);
+                : PredefinedRole.BUYER_ROLE;
+        if (!PredefinedRole.BUYER_ROLE.equals(roleCode) && !PredefinedRole.FARMER_ROLE.equals(roleCode)) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
+        roleRepository.findByCode(roleCode).ifPresent(roles::add);
 
         if (roles.isEmpty()) {
             throw new AppException(ErrorCode.RESOURCE_NOT_FOUND);

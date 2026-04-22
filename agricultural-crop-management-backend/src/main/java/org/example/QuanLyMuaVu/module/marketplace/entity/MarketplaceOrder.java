@@ -27,6 +27,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentMethod;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentVerificationStatus;
 
 @Getter
 @Setter
@@ -65,6 +66,31 @@ public class MarketplaceOrder {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 40)
     MarketplacePaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_verification_status", nullable = false, length = 40)
+    MarketplacePaymentVerificationStatus paymentVerificationStatus;
+
+    @Column(name = "payment_proof_file_name", length = 255)
+    String paymentProofFileName;
+
+    @Column(name = "payment_proof_content_type", length = 150)
+    String paymentProofContentType;
+
+    @Column(name = "payment_proof_storage_path", length = 1000)
+    String paymentProofStoragePath;
+
+    @Column(name = "payment_proof_uploaded_at")
+    LocalDateTime paymentProofUploadedAt;
+
+    @Column(name = "payment_verified_at")
+    LocalDateTime paymentVerifiedAt;
+
+    @Column(name = "payment_verified_by_user_id")
+    Long paymentVerifiedByUserId;
+
+    @Column(name = "payment_verification_note", length = 500)
+    String paymentVerificationNote;
 
     @Column(name = "shipping_recipient_name", nullable = false)
     String shippingRecipientName;
@@ -105,6 +131,11 @@ public class MarketplaceOrder {
         }
         if (updatedAt == null) {
             updatedAt = now;
+        }
+        if (paymentVerificationStatus == null) {
+            paymentVerificationStatus = paymentMethod == MarketplacePaymentMethod.BANK_TRANSFER
+                    ? MarketplacePaymentVerificationStatus.AWAITING_PROOF
+                    : MarketplacePaymentVerificationStatus.NOT_REQUIRED;
         }
     }
 

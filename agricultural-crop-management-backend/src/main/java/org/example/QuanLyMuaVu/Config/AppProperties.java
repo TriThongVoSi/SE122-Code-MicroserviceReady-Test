@@ -12,6 +12,7 @@ public class AppProperties {
     private Jwt jwt = new Jwt();
     private Mail mail = new Mail();
     private Ai ai = new Ai();
+    private Marketplace marketplace = new Marketplace();
     private Sustainability sustainability = new Sustainability();
 
     public Jwt getJwt() {
@@ -38,12 +39,44 @@ public class AppProperties {
         this.ai = ai;
     }
 
+    public Marketplace getMarketplace() {
+        return marketplace;
+    }
+
+    public void setMarketplace(Marketplace marketplace) {
+        this.marketplace = marketplace;
+    }
+
     public Sustainability getSustainability() {
         return sustainability;
     }
 
     public void setSustainability(Sustainability sustainability) {
         this.sustainability = sustainability;
+    }
+
+    public static class Marketplace {
+        private Storage storage = new Storage();
+
+        public Storage getStorage() {
+            return storage;
+        }
+
+        public void setStorage(Storage storage) {
+            this.storage = storage;
+        }
+    }
+
+    public static class Storage {
+        private String paymentProofRoot = "storage/marketplace/payment-proofs";
+
+        public String getPaymentProofRoot() {
+            return paymentProofRoot;
+        }
+
+        public void setPaymentProofRoot(String paymentProofRoot) {
+            this.paymentProofRoot = paymentProofRoot;
+        }
     }
 
     public static class Jwt {

@@ -283,7 +283,7 @@ public class AuthenticationService {
             return "/employee";
         }
         if ("BUYER".equalsIgnoreCase(role)) {
-            return "/buyer";
+            return "/marketplace";
         }
         return "/";
     }

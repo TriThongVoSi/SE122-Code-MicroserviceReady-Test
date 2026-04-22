@@ -12,6 +12,7 @@ import org.example.QuanLyMuaVu.Enums.UserStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.identity.mapper.FarmerMapper;
+import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
 import org.example.QuanLyMuaVu.module.farm.repository.ProvinceRepository;
 import org.example.QuanLyMuaVu.module.identity.repository.RoleRepository;
 import org.example.QuanLyMuaVu.module.identity.repository.UserRepository;
@@ -58,6 +59,9 @@ public class UserServiceTest {
         private FarmerMapper farmerMapper;
 
         @Mock
+        private FarmQueryPort farmQueryPort;
+
+        @Mock
         private PasswordEncoder passwordEncoder;
 
         @InjectMocks
@@ -65,6 +69,7 @@ public class UserServiceTest {
 
         private User testUser;
         private Role farmerRole;
+        private Role buyerRole;
         private FarmerResponse farmerResponse;
 
         @BeforeEach
@@ -73,6 +78,12 @@ public class UserServiceTest {
                                 .id(1L)
                                 .code(PredefinedRole.FARMER_ROLE)
                                 .name("Farmer")
+                                .build();
+
+                buyerRole = Role.builder()
+                                .id(2L)
+                                .code(PredefinedRole.BUYER_ROLE)
+                                .name("Buyer")
                                 .build();
 
                 testUser = User.builder()
@@ -100,6 +111,7 @@ public class UserServiceTest {
                                 .password("Password123!")
                                 .email("new@test.com")
                                 .fullName("New Farmer")
+                                .role(PredefinedRole.FARMER_ROLE)
                                 .build();
 
                 when(farmerMapper.toUser(any())).thenReturn(new User());
@@ -146,6 +158,7 @@ public class UserServiceTest {
                 SignUpRequest request = SignUpRequest.builder()
                                 .username("existinguser")
                                 .password("Password123!")
+                                .role(PredefinedRole.FARMER_ROLE)
                                 .build();
 
                 when(farmerMapper.toUser(any())).thenReturn(new User());
@@ -183,6 +196,7 @@ public class UserServiceTest {
                 SignUpRequest request = SignUpRequest.builder()
                                 .username("farmer@example.com")
                                 .password("Password123!")
+                                .role(PredefinedRole.FARMER_ROLE)
                                 .build();
 
                 User newUser = new User();
@@ -201,5 +215,30 @@ public class UserServiceTest {
 
                 // Assert
                 verify(userRepository).save(argThat(user -> "farmer@example.com".equals(user.getEmail())));
+        }
+
+        @Test
+        @DisplayName("SignUp - Creates user with BUYER role when requested")
+        void signUp_WithBuyerRole_CreatesBuyerUser() {
+                SignUpRequest request = SignUpRequest.builder()
+                                .username("newbuyer")
+                                .password("Password123!")
+                                .email("buyer@test.com")
+                                .role(PredefinedRole.BUYER_ROLE)
+                                .build();
+
+                when(farmerMapper.toUser(any())).thenReturn(new User());
+                when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+                when(roleRepository.findByCode(PredefinedRole.BUYER_ROLE)).thenReturn(Optional.of(buyerRole));
+                when(userRepository.save(any())).thenAnswer(i -> {
+                        User u = i.getArgument(0);
+                        u.setId(2L);
+                        return u;
+                });
+                when(farmerMapper.toFarmerResponse(any())).thenReturn(farmerResponse);
+
+                userService.signUp(request);
+
+                verify(roleRepository).findByCode(PredefinedRole.BUYER_ROLE);
         }
 }
