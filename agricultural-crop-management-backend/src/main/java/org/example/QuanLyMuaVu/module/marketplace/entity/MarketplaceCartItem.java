@@ -43,8 +43,8 @@ public class MarketplaceCartItem {
     @JoinColumn(name = "product_id", nullable = false)
     MarketplaceProduct product;
 
-    @Column(name = "quantity", nullable = false)
-    Integer quantity;
+    @Column(name = "quantity", nullable = false, precision = 19, scale = 3)
+    BigDecimal quantity;
 
     @Column(name = "unit_price_snapshot", nullable = false, precision = 19, scale = 2)
     BigDecimal unitPriceSnapshot;

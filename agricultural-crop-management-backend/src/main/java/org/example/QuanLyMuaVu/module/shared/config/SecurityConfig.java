@@ -79,13 +79,13 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/api/v1/marketplace/farmer/**").hasRole("FARMER")
                                                 .requestMatchers("/api/v1/marketplace/admin/**").hasRole("ADMIN")
-                                                // Marketplace buyer capabilities (buyer = authenticated user)
+                                                // Marketplace buyer capabilities
                                                 .requestMatchers(
                                                                 "/api/v1/marketplace/cart/**",
                                                                 "/api/v1/marketplace/orders/**",
                                                                 "/api/v1/marketplace/addresses/**",
                                                                 "/api/v1/marketplace/reviews/**")
-                                                .authenticated()
+                                                .hasRole("BUYER")
                                                 .requestMatchers("/api/v1/notifications/**").authenticated()
                                                 // Admin APIs (system-wide access for admins)
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

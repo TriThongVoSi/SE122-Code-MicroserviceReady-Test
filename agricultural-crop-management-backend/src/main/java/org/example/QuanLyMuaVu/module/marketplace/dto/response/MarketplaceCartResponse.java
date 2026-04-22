@@ -6,7 +6,7 @@ import java.util.List;
 public record MarketplaceCartResponse(
         Long userId,
         List<MarketplaceCartItemResponse> items,
-        Integer itemCount,
+        BigDecimal itemCount,
         BigDecimal subtotal,
         String currency) {
 }

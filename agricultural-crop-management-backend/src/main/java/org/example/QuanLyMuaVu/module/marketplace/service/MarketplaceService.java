@@ -35,6 +35,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.example.QuanLyMuaVu.Config.AppProperties;
 import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
+import org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus;
+import org.example.QuanLyMuaVu.Enums.ProductWarehouseTransactionType;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.admin.entity.AuditLog;
@@ -42,7 +44,9 @@ import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.farm.repository.FarmRepository;
 import org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot;
+import org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseTransaction;
 import org.example.QuanLyMuaVu.module.inventory.repository.ProductWarehouseLotRepository;
+import org.example.QuanLyMuaVu.module.inventory.repository.ProductWarehouseTransactionRepository;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.incident.service.NotificationService;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceAddCartItemRequest;
@@ -109,7 +113,8 @@ public class MarketplaceService {
 
     static BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("20000");
     static String CURRENCY_VND = "VND";
-    static int LOW_STOCK_THRESHOLD = 10;
+    static BigDecimal LOW_STOCK_THRESHOLD = new BigDecimal("10");
+    static BigDecimal ZERO_QUANTITY = BigDecimal.ZERO;
     static String AUDIT_ENTITY_ORDER = "MARKETPLACE_ORDER";
 
     MarketplaceProductRepository marketplaceProductRepository;
@@ -122,6 +127,7 @@ public class MarketplaceService {
     FarmRepository farmRepository;
     SeasonRepository seasonRepository;
     ProductWarehouseLotRepository productWarehouseLotRepository;
+    ProductWarehouseTransactionRepository productWarehouseTransactionRepository;
     CurrentUserService currentUserService;
     ObjectMapper objectMapper;
     AppProperties appProperties;
@@ -163,7 +169,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceProductDetailResponse getProductBySlug(String slug) {
         MarketplaceProduct product = marketplaceProductRepository
-                .findBySlugAndStatus(slug, MarketplaceProductStatus.PUBLISHED)
+                .findSellableBySlugAndStatus(slug, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
 
         validateTraceabilityChain(product);
@@ -176,7 +182,7 @@ public class MarketplaceService {
 
     @Transactional
     public PageResponse<MarketplaceReviewResponse> listProductReviews(Long productId, int page, int size) {
-        marketplaceProductRepository.findByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
+        marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
 
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -210,7 +216,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceFarmDetailResponse getFarmDetail(Integer farmId) {
         Farm farm = farmRepository.findById(farmId).orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
-        long productCount = marketplaceProductRepository.countByFarm_IdAndStatus(farmId, MarketplaceProductStatus.PUBLISHED);
+        long productCount = marketplaceProductRepository.countSellableByFarmIdAndStatus(farmId, MarketplaceProductStatus.PUBLISHED);
 
         MarketplaceFarmSummaryResponse summary = toFarmSummary(farm, productCount);
         User owner = farm.getUser();
@@ -232,18 +238,8 @@ public class MarketplaceService {
 
     @Transactional
     public MarketplaceTraceabilityResponse getTraceability(Long productId) {
-        MarketplaceProduct product = marketplaceProductRepository.findByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
+        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(product.getTraceable())) {
-            return new MarketplaceTraceabilityResponse(
-                    product.getId(),
-                    false,
-                    null,
-                    null,
-                    null,
-                    LocalDateTime.now());
-        }
 
         validateTraceabilityChain(product);
 
@@ -253,7 +249,7 @@ public class MarketplaceService {
 
         return new MarketplaceTraceabilityResponse(
                 product.getId(),
-                true,
+                Boolean.TRUE.equals(product.getTraceable()),
                 new MarketplaceTraceabilityResponse.FarmTraceability(
                         farm.getId(),
                         farm.getName(),
@@ -293,9 +289,9 @@ public class MarketplaceService {
         MarketplaceCartItem item = marketplaceCartItemRepository
                 .findByCart_IdAndProduct_Id(cart.getId(), product.getId())
                 .orElse(null);
-        int targetQuantity = request.quantity();
+        BigDecimal targetQuantity = request.quantity();
         if (item != null) {
-            targetQuantity = item.getQuantity() + request.quantity();
+            targetQuantity = item.getQuantity().add(request.quantity());
         }
 
         ensureStockAvailable(product, targetQuantity);
@@ -353,21 +349,21 @@ public class MarketplaceService {
         User currentUser = currentUserService.getCurrentUser();
         MarketplaceCart cart = getOrCreateCartForUpdate(currentUser);
 
-        Map<Long, Integer> incomingByProductId = new LinkedHashMap<>();
+        Map<Long, BigDecimal> incomingByProductId = new LinkedHashMap<>();
         for (MarketplaceMergeCartRequest.MarketplaceMergeCartItem item : request.items()) {
             validatePositiveQuantity(item.quantity());
-            incomingByProductId.merge(item.productId(), item.quantity(), Integer::sum);
+            incomingByProductId.merge(item.productId(), item.quantity(), BigDecimal::add);
         }
 
-        for (Map.Entry<Long, Integer> entry : incomingByProductId.entrySet()) {
+        for (Map.Entry<Long, BigDecimal> entry : incomingByProductId.entrySet()) {
             MarketplaceProduct product = getPublishedProductOrThrow(entry.getKey());
             MarketplaceCartItem existing = marketplaceCartItemRepository
                     .findByCart_IdAndProduct_Id(cart.getId(), product.getId())
                     .orElse(null);
 
-            int mergedQuantity = entry.getValue();
+            BigDecimal mergedQuantity = entry.getValue();
             if (existing != null) {
-                mergedQuantity = existing.getQuantity() + entry.getValue();
+                mergedQuantity = existing.getQuantity().add(entry.getValue());
             }
             ensureStockAvailable(product, mergedQuantity);
 
@@ -427,6 +423,16 @@ public class MarketplaceService {
             throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
         }
 
+        List<Integer> lotIds = lockedProducts.stream()
+                .map(MarketplaceProduct::getLot)
+                .filter(Objects::nonNull)
+                .map(ProductWarehouseLot::getId)
+                .distinct()
+                .toList();
+        List<ProductWarehouseLot> lockedLots = productWarehouseLotRepository.findAllByIdInForUpdate(lotIds);
+        Map<Integer, ProductWarehouseLot> lockedLotById = lockedLots.stream()
+                .collect(Collectors.toMap(ProductWarehouseLot::getId, lot -> lot));
+
         for (MarketplaceCartItem item : cartItems) {
             MarketplaceProduct lockedProduct = lockedProductById.get(item.getProduct().getId());
             if (lockedProduct == null) {
@@ -436,6 +442,9 @@ public class MarketplaceService {
                 throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_PUBLISHED);
             }
             validateTraceabilityChain(lockedProduct);
+
+            ProductWarehouseLot lot = resolveLockedLot(lockedProduct, lockedLotById);
+            ensureLotSellable(lot);
             ensureStockAvailable(lockedProduct, item.getQuantity());
         }
 
@@ -478,7 +487,8 @@ public class MarketplaceService {
             List<MarketplaceOrderItem> orderItems = new ArrayList<>();
             for (MarketplaceCartItem cartItem : groupItems) {
                 MarketplaceProduct lockedProduct = lockedProductById.get(cartItem.getProduct().getId());
-                BigDecimal lineTotal = lockedProduct.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+                ProductWarehouseLot lockedLot = resolveLockedLot(lockedProduct, lockedLotById);
+                BigDecimal lineTotal = lockedProduct.getPrice().multiply(cartItem.getQuantity());
                 subtotal = subtotal.add(lineTotal);
 
                 MarketplaceOrderItem orderItem = MarketplaceOrderItem.builder()
@@ -492,11 +502,19 @@ public class MarketplaceService {
                         .traceableSnapshot(Boolean.TRUE.equals(lockedProduct.getTraceable()))
                         .farm(lockedProduct.getFarm())
                         .season(lockedProduct.getSeason())
-                        .lot(lockedProduct.getLot())
+                        .lot(lockedLot)
                         .build();
                 orderItems.add(orderItem);
 
-                lockedProduct.setStockQuantity(lockedProduct.getStockQuantity() - cartItem.getQuantity());
+                lockedLot.setOnHandQuantity(lockedLot.getOnHandQuantity().subtract(cartItem.getQuantity()));
+                productWarehouseTransactionRepository.save(buildMarketplaceLotTransaction(
+                        lockedLot,
+                        ProductWarehouseTransactionType.MARKETPLACE_ORDER_RESERVED,
+                        cartItem.getQuantity().negate(),
+                        "ORDER",
+                        orderGroup.getGroupCode(),
+                        "Reserved for marketplace checkout",
+                        buyer));
             }
 
             BigDecimal shippingFee = DEFAULT_SHIPPING_FEE;
@@ -527,7 +545,7 @@ public class MarketplaceService {
             log.debug("Created marketplace order for farmer {} with {} items", farmerUserId, orderItems.size());
         }
 
-        marketplaceProductRepository.saveAll(lockedProducts);
+        productWarehouseLotRepository.saveAll(lockedLots);
         marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
 
         for (MarketplaceOrder createdOrder : createdOrders) {
@@ -614,7 +632,8 @@ public class MarketplaceService {
 
     @Transactional
     public MarketplaceOrderResponse cancelOrder(Long orderId) {
-        Long buyerUserId = currentUserService.getCurrentUserId();
+        User buyer = currentUserService.getCurrentUser();
+        Long buyerUserId = buyer.getId();
         MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
 
@@ -622,21 +641,9 @@ public class MarketplaceService {
             throw new AppException(ErrorCode.MARKETPLACE_ORDER_CANCEL_NOT_ALLOWED);
         }
 
-        List<Long> productIds = order.getItems().stream().map(item -> item.getProduct().getId()).toList();
-        List<MarketplaceProduct> lockedProducts = marketplaceProductRepository.findAllByIdInForUpdate(productIds);
-        Map<Long, MarketplaceProduct> productMap = lockedProducts.stream()
-                .collect(Collectors.toMap(MarketplaceProduct::getId, p -> p));
-
-        for (MarketplaceOrderItem orderItem : order.getItems()) {
-            MarketplaceProduct product = productMap.get(orderItem.getProduct().getId());
-            if (product == null) {
-                throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
-            }
-            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
-        }
+        restoreOrderStock(order, buyer, "Buyer cancelled order");
 
         order.setStatus(MarketplaceOrderStatus.CANCELLED);
-        marketplaceProductRepository.saveAll(lockedProducts);
         MarketplaceOrder savedOrder = marketplaceOrderRepository.save(order);
         auditOrderOperation(savedOrder, "ORDER_CANCELLED", "Buyer cancelled order");
         notifyUser(
@@ -780,10 +787,10 @@ public class MarketplaceService {
         long publishedProducts = marketplaceProductRepository.countByFarmerUser_IdAndStatus(
                 farmerUserId,
                 MarketplaceProductStatus.PUBLISHED);
-        long lowStockProducts = marketplaceProductRepository.countByFarmerUser_IdAndStockQuantityLessThanEqualAndStatus(
+        long lowStockProducts = productWarehouseLotRepository.countMarketplaceListingsByFarmerAndOnHandLessThanEqual(
                 farmerUserId,
-                LOW_STOCK_THRESHOLD,
-                MarketplaceProductStatus.PUBLISHED);
+                MarketplaceProductStatus.PUBLISHED,
+                LOW_STOCK_THRESHOLD);
 
         long pendingOrders = marketplaceOrderRepository.countByFarmerUser_IdAndStatus(
                 farmerUserId,
@@ -841,16 +848,18 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceProductDetailResponse createFarmerProduct(MarketplaceFarmerProductUpsertRequest request) {
         User farmer = currentUserService.getCurrentUser();
-        Long farmerUserId = farmer.getId();
-        boolean traceable = Boolean.TRUE.equals(request.traceable());
-
-        Farm farm = resolveOwnedFarm(request.farmId(), farmerUserId);
-        Season season = resolveOwnedSeason(request.seasonId(), farmerUserId);
-        ProductWarehouseLot lot = resolveOwnedLot(request.lotId(), farmerUserId);
-        validateTraceabilityReferencesForUpsert(traceable, farm, season, lot);
+        ProductWarehouseLot lot = resolveSellableOwnedLot(request.lotId(), farmer.getId());
 
         List<String> imageUrls = normalizeImageUrls(request.imageUrls(), request.imageUrl());
         String primaryImage = imageUrls.isEmpty() ? normalizeNullable(request.imageUrl()) : imageUrls.get(0);
+
+        MarketplaceProduct existingProduct = marketplaceProductRepository.findByLot_Id(lot.getId()).orElse(null);
+        if (existingProduct != null) {
+            if (!Objects.equals(existingProduct.getFarmerUser().getId(), farmer.getId())) {
+                throw new AppException(ErrorCode.NOT_OWNER);
+            }
+            return saveFarmerProduct(existingProduct, request, farmer, lot, primaryImage, imageUrls);
+        }
 
         MarketplaceProduct product = MarketplaceProduct.builder()
                 .slug(generateUniqueSlug(request.name(), null))
@@ -859,15 +868,14 @@ public class MarketplaceService {
                 .shortDescription(normalizeNullable(request.shortDescription()))
                 .description(normalizeNullable(request.description()))
                 .price(request.price())
-                .unit(request.unit().trim())
-                .stockQuantity(request.stockQuantity())
+                .unit(lot.getUnit())
                 .imageUrl(primaryImage)
                 .imageUrlsJson(toImageUrlsJson(imageUrls))
                 .farmerUser(farmer)
-                .farm(farm)
-                .season(traceable ? season : null)
-                .lot(traceable ? lot : null)
-                .traceable(traceable)
+                .farm(lot.getFarm())
+                .season(lot.getSeason())
+                .lot(lot)
+                .traceable(Boolean.TRUE)
                 .status(MarketplaceProductStatus.DRAFT)
                 .publishedAt(null)
                 .build();
@@ -880,42 +888,14 @@ public class MarketplaceService {
     public MarketplaceProductDetailResponse updateFarmerProduct(
             Long productId,
             MarketplaceFarmerProductUpsertRequest request) {
-        Long farmerUserId = currentUserService.getCurrentUserId();
-        MarketplaceProduct product = getOwnedProductForFarmer(productId, farmerUserId);
-        boolean traceable = Boolean.TRUE.equals(request.traceable());
-
-        Farm farm = resolveOwnedFarm(request.farmId(), farmerUserId);
-        Season season = resolveOwnedSeason(request.seasonId(), farmerUserId);
-        ProductWarehouseLot lot = resolveOwnedLot(request.lotId(), farmerUserId);
-        validateTraceabilityReferencesForUpsert(traceable, farm, season, lot);
+        User farmer = currentUserService.getCurrentUser();
+        MarketplaceProduct product = getOwnedProductForFarmer(productId, farmer.getId());
+        ProductWarehouseLot lot = resolveOwnedLotForUpsert(request.lotId(), farmer.getId(), product);
 
         List<String> imageUrls = normalizeImageUrls(request.imageUrls(), request.imageUrl());
         String primaryImage = imageUrls.isEmpty() ? normalizeNullable(request.imageUrl()) : imageUrls.get(0);
 
-        product.setSlug(generateUniqueSlug(request.name(), product.getId()));
-        product.setName(request.name().trim());
-        product.setCategory(normalizeNullable(request.category()));
-        product.setShortDescription(normalizeNullable(request.shortDescription()));
-        product.setDescription(normalizeNullable(request.description()));
-        product.setPrice(request.price());
-        product.setUnit(request.unit().trim());
-        product.setStockQuantity(request.stockQuantity());
-        product.setImageUrl(primaryImage);
-        product.setImageUrlsJson(toImageUrlsJson(imageUrls));
-        product.setFarm(farm);
-        product.setSeason(traceable ? season : null);
-        product.setLot(traceable ? lot : null);
-        product.setTraceable(traceable);
-
-        if (product.getStatus() == MarketplaceProductStatus.PUBLISHED) {
-            product.setStatus(MarketplaceProductStatus.PENDING_REVIEW);
-            product.setPublishedAt(null);
-        }
-
-        MarketplaceProduct saved = marketplaceProductRepository.save(product);
-        MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
-                .get(saved.getId());
-        return toProductDetail(saved, rating);
+        return saveFarmerProduct(product, request, farmer, lot, primaryImage, imageUrls);
     }
 
     @Transactional
@@ -976,28 +956,7 @@ public class MarketplaceService {
 
         validateFarmerOrderStatusTransition(order.getStatus(), targetStatus);
         if (targetStatus == MarketplaceOrderStatus.CANCELLED) {
-            List<Long> productIds = order.getItems().stream()
-                    .map(item -> item.getProduct() == null ? null : item.getProduct().getId())
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-            List<MarketplaceProduct> lockedProducts = marketplaceProductRepository.findAllByIdInForUpdate(productIds);
-            Map<Long, MarketplaceProduct> productById = lockedProducts.stream()
-                    .collect(Collectors.toMap(MarketplaceProduct::getId, p -> p));
-
-            for (MarketplaceOrderItem orderItem : order.getItems()) {
-                Long productId = orderItem.getProduct() == null ? null : orderItem.getProduct().getId();
-                if (productId == null) {
-                    continue;
-                }
-                MarketplaceProduct lockedProduct = productById.get(productId);
-                if (lockedProduct == null) {
-                    throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
-                }
-                lockedProduct.setStockQuantity(lockedProduct.getStockQuantity() + orderItem.getQuantity());
-            }
-
-            marketplaceProductRepository.saveAll(lockedProducts);
+            restoreOrderStock(order, currentUserService.getCurrentUser(), "Farmer cancelled order");
         }
 
         order.setStatus(targetStatus);
@@ -1046,6 +1005,15 @@ public class MarketplaceService {
         MarketplaceProductStatus targetStatus = request.status();
 
         validateAdminProductStatusTransition(product.getStatus(), targetStatus);
+        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            ProductWarehouseLot lot = product.getLot();
+            if (lot == null) {
+                throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
+            }
+            ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
+            ensureLotSellable(lockedLot);
+        }
         product.setStatus(targetStatus);
         if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
             product.setPublishedAt(LocalDateTime.now());
@@ -1144,7 +1112,7 @@ public class MarketplaceService {
             throw new AppException(ErrorCode.MARKETPLACE_ORDER_CANCEL_NOT_ALLOWED);
         }
 
-        restoreOrderStock(order);
+        restoreOrderStock(order, currentUserService.getCurrentUser(), "Admin cancelled order");
         order.setStatus(MarketplaceOrderStatus.CANCELLED);
         MarketplaceOrder saved = marketplaceOrderRepository.save(order);
         auditOrderOperation(saved, "ORDER_CANCELLED", "Admin cancelled order");
@@ -1301,14 +1269,14 @@ public class MarketplaceService {
     private MarketplaceCartResponse buildCartResponse(Long userId, MarketplaceCart cart) {
         List<MarketplaceCartItem> items = marketplaceCartItemRepository.findByCartIdWithProduct(cart.getId());
         List<MarketplaceCartItemResponse> itemResponses = new ArrayList<>();
-        int itemCount = 0;
+        BigDecimal itemCount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (MarketplaceCartItem item : items) {
             MarketplaceProduct product = item.getProduct();
-            itemCount += item.getQuantity();
+            itemCount = itemCount.add(item.getQuantity());
             BigDecimal unitPrice = product.getPrice();
-            subtotal = subtotal.add(unitPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
+            subtotal = subtotal.add(unitPrice.multiply(item.getQuantity()));
 
             itemResponses.add(new MarketplaceCartItemResponse(
                     product.getId(),
@@ -1317,7 +1285,7 @@ public class MarketplaceService {
                     product.getImageUrl(),
                     unitPrice,
                     item.getQuantity(),
-                    product.getStockQuantity(),
+                    currentAvailableQuantity(product),
                     product.getFarmerUser() == null ? null : product.getFarmerUser().getId(),
                     Boolean.TRUE.equals(product.getTraceable())));
         }
@@ -1331,29 +1299,24 @@ public class MarketplaceService {
     }
 
     private MarketplaceCartResponse emptyCart(Long userId) {
-        return new MarketplaceCartResponse(userId, Collections.emptyList(), 0, BigDecimal.ZERO, CURRENCY_VND);
+        return new MarketplaceCartResponse(userId, Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
     }
 
     private MarketplaceProduct getPublishedProductOrThrow(Long productId) {
-        MarketplaceProduct product = marketplaceProductRepository.findById(productId)
+        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
-        if (product.getStatus() != MarketplaceProductStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_PUBLISHED);
-        }
         return product;
     }
 
-    private void ensureStockAvailable(MarketplaceProduct product, Integer requestedQuantity) {
-        if (requestedQuantity == null || requestedQuantity <= 0) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
-        }
-        if (product.getStockQuantity() == null || product.getStockQuantity() < requestedQuantity) {
+    private void ensureStockAvailable(MarketplaceProduct product, BigDecimal requestedQuantity) {
+        validatePositiveQuantity(requestedQuantity);
+        if (currentAvailableQuantity(product).compareTo(requestedQuantity) < 0) {
             throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
         }
     }
 
-    private void validatePositiveQuantity(Integer quantity) {
-        if (quantity == null || quantity <= 0) {
+    private void validatePositiveQuantity(BigDecimal quantity) {
+        if (quantity == null || quantity.compareTo(ZERO_QUANTITY) <= 0) {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
     }
@@ -1408,8 +1371,8 @@ public class MarketplaceService {
                 product.getCategory(),
                 product.getShortDescription(),
                 product.getPrice(),
-                product.getUnit(),
-                product.getStockQuantity(),
+                resolveListingUnit(product),
+                currentAvailableQuantity(product),
                 product.getImageUrl(),
                 farmer == null ? null : farmer.getId(),
                 farmer == null ? null : defaultDisplayName(farmer),
@@ -1440,7 +1403,7 @@ public class MarketplaceService {
                 product.getDescription(),
                 summary.price(),
                 summary.unit(),
-                summary.stock(),
+                summary.availableQuantity(),
                 summary.imageUrl(),
                 resolveImageUrls(product),
                 summary.farmerUserId(),
@@ -1482,7 +1445,12 @@ public class MarketplaceService {
 
     private MarketplaceFarmSummaryResponse toFarmSummary(Farm farm, long productCount) {
         String coverImage = marketplaceProductRepository
-                .findFirstByFarm_IdAndStatusOrderByPublishedAtDescIdDesc(farm.getId(), MarketplaceProductStatus.PUBLISHED)
+                .findSellableByFarmIdAndStatusOrderByPublishedAtDescIdDesc(
+                        farm.getId(),
+                        MarketplaceProductStatus.PUBLISHED,
+                        PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
                 .map(MarketplaceProduct::getImageUrl)
                 .orElse(null);
 
@@ -1522,29 +1490,39 @@ public class MarketplaceService {
                 : MarketplacePaymentVerificationStatus.NOT_REQUIRED;
     }
 
-    private void restoreOrderStock(MarketplaceOrder order) {
-        List<Long> productIds = order.getItems().stream()
-                .map(item -> item.getProduct() == null ? null : item.getProduct().getId())
+    private void restoreOrderStock(MarketplaceOrder order, User actor, String reason) {
+        List<Integer> lotIds = order.getItems().stream()
+                .map(MarketplaceOrderItem::getLot)
                 .filter(Objects::nonNull)
+                .map(ProductWarehouseLot::getId)
                 .distinct()
                 .toList();
-        List<MarketplaceProduct> lockedProducts = marketplaceProductRepository.findAllByIdInForUpdate(productIds);
-        Map<Long, MarketplaceProduct> productById = lockedProducts.stream()
-                .collect(Collectors.toMap(MarketplaceProduct::getId, p -> p));
+        List<ProductWarehouseLot> lockedLots = productWarehouseLotRepository.findAllByIdInForUpdate(lotIds);
+        Map<Integer, ProductWarehouseLot> lotById = lockedLots.stream()
+                .collect(Collectors.toMap(ProductWarehouseLot::getId, lot -> lot));
 
         for (MarketplaceOrderItem orderItem : order.getItems()) {
-            Long productId = orderItem.getProduct() == null ? null : orderItem.getProduct().getId();
-            if (productId == null) {
+            ProductWarehouseLot orderLot = orderItem.getLot();
+            Integer lotId = orderLot == null ? null : orderLot.getId();
+            if (lotId == null) {
                 continue;
             }
-            MarketplaceProduct product = productById.get(productId);
-            if (product == null) {
-                throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
+            ProductWarehouseLot lot = lotById.get(lotId);
+            if (lot == null) {
+                throw new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND);
             }
-            product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
+            lot.setOnHandQuantity(lot.getOnHandQuantity().add(orderItem.getQuantity()));
+            productWarehouseTransactionRepository.save(buildMarketplaceLotTransaction(
+                    lot,
+                    ProductWarehouseTransactionType.MARKETPLACE_ORDER_RELEASED,
+                    orderItem.getQuantity(),
+                    "ORDER",
+                    order.getOrderCode(),
+                    reason,
+                    actor));
         }
 
-        marketplaceProductRepository.saveAll(lockedProducts);
+        productWarehouseLotRepository.saveAll(lockedLots);
     }
 
     private void storePaymentProof(MarketplaceOrder order, MultipartFile file) {
@@ -1817,6 +1795,29 @@ public class MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_OWNER));
     }
 
+    private ProductWarehouseLot resolveSellableOwnedLot(Integer lotId, Long farmerUserId) {
+        return productWarehouseLotRepository
+                .findByIdAndFarmUserIdAndStatusAndOnHandQuantityGreaterThan(
+                        lotId,
+                        farmerUserId,
+                        ProductWarehouseLotStatus.IN_STOCK,
+                        ZERO_QUANTITY)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT));
+    }
+
+    private ProductWarehouseLot resolveOwnedLotForUpsert(Integer lotId, Long farmerUserId, MarketplaceProduct currentProduct) {
+        ProductWarehouseLot lot = resolveOwnedLot(lotId, farmerUserId);
+        ProductWarehouseLot currentLot = currentProduct == null ? null : currentProduct.getLot();
+        boolean sameLot = currentLot != null && Objects.equals(currentLot.getId(), lot.getId());
+        if (!sameLot) {
+            ensureLotSellable(lot);
+        }
+        if (currentProduct != null && marketplaceProductRepository.existsByLot_IdAndIdNot(lot.getId(), currentProduct.getId())) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+        return lot;
+    }
+
     private void validateTraceabilityReferencesForUpsert(
             boolean traceable,
             Farm farm,
@@ -1841,6 +1842,99 @@ public class MarketplaceService {
                 || !Objects.equals(season.getId(), lotSeasonId)) {
             throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
         }
+    }
+
+    private MarketplaceProductDetailResponse saveFarmerProduct(
+            MarketplaceProduct product,
+            MarketplaceFarmerProductUpsertRequest request,
+            User farmer,
+            ProductWarehouseLot lot,
+            String primaryImage,
+            List<String> imageUrls) {
+        if (product.getId() != null && marketplaceProductRepository.existsByLot_IdAndIdNot(lot.getId(), product.getId())) {
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+
+        product.setSlug(generateUniqueSlug(request.name(), product.getId()));
+        product.setName(request.name().trim());
+        product.setCategory(normalizeNullable(request.category()));
+        product.setShortDescription(normalizeNullable(request.shortDescription()));
+        product.setDescription(normalizeNullable(request.description()));
+        product.setPrice(request.price());
+        product.setUnit(lot.getUnit());
+        product.setImageUrl(primaryImage);
+        product.setImageUrlsJson(toImageUrlsJson(imageUrls));
+        product.setFarmerUser(farmer);
+        product.setFarm(lot.getFarm());
+        product.setSeason(lot.getSeason());
+        product.setLot(lot);
+        product.setTraceable(Boolean.TRUE);
+        product.setStatus(MarketplaceProductStatus.DRAFT);
+        product.setPublishedAt(null);
+
+        MarketplaceProduct saved = marketplaceProductRepository.save(product);
+        MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
+                .get(saved.getId());
+        return toProductDetail(saved, rating);
+    }
+
+    private void ensureLotSellable(ProductWarehouseLot lot) {
+        if (lot == null
+                || lot.getStatus() != ProductWarehouseLotStatus.IN_STOCK
+                || lot.getOnHandQuantity() == null
+                || lot.getOnHandQuantity().compareTo(ZERO_QUANTITY) <= 0) {
+            throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
+        }
+    }
+
+    private ProductWarehouseLot resolveLockedLot(
+            MarketplaceProduct product,
+            Map<Integer, ProductWarehouseLot> lockedLotById) {
+        ProductWarehouseLot productLot = product.getLot();
+        Integer lotId = productLot == null ? null : productLot.getId();
+        if (lotId == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
+        }
+        ProductWarehouseLot lockedLot = lockedLotById.get(lotId);
+        if (lockedLot == null) {
+            throw new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND);
+        }
+        return lockedLot;
+    }
+
+    private ProductWarehouseTransaction buildMarketplaceLotTransaction(
+            ProductWarehouseLot lot,
+            ProductWarehouseTransactionType transactionType,
+            BigDecimal quantity,
+            String referenceType,
+            String referenceId,
+            String note,
+            User actor) {
+        return ProductWarehouseTransaction.builder()
+                .lot(lot)
+                .transactionType(transactionType)
+                .quantity(quantity)
+                .unit(lot.getUnit())
+                .resultingOnHand(lot.getOnHandQuantity())
+                .referenceType(referenceType)
+                .referenceId(referenceId)
+                .note(note)
+                .createdBy(actor)
+                .build();
+    }
+
+    private BigDecimal currentAvailableQuantity(MarketplaceProduct product) {
+        if (product == null || product.getLot() == null || product.getLot().getOnHandQuantity() == null) {
+            return ZERO_QUANTITY;
+        }
+        return product.getLot().getOnHandQuantity().max(ZERO_QUANTITY);
+    }
+
+    private String resolveListingUnit(MarketplaceProduct product) {
+        if (product != null && product.getLot() != null && normalizeNullable(product.getLot().getUnit()) != null) {
+            return product.getLot().getUnit();
+        }
+        return product == null ? null : product.getUnit();
     }
 
     private List<String> normalizeImageUrls(List<String> imageUrls, String fallbackImageUrl) {
