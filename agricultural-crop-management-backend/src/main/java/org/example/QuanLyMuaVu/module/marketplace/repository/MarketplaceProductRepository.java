@@ -24,6 +24,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             LEFT JOIN f.province province
             WHERE p.status = :status
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
+              AND p.stockQuantity > 0
               AND lot.onHandQuantity > 0
               AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))
               AND (:traceable IS NULL OR p.traceable = :traceable)
@@ -41,6 +42,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             LEFT JOIN f.province province
             WHERE p.status = :status
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
+              AND p.stockQuantity > 0
               AND lot.onHandQuantity > 0
               AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))
               AND (:traceable IS NULL OR p.traceable = :traceable)
@@ -67,6 +69,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             JOIN p.lot lot
             WHERE p.slug = :slug
               AND p.status = :status
+              AND p.stockQuantity > 0
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
               AND lot.onHandQuantity > 0
             """)
@@ -79,6 +82,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             JOIN p.lot lot
             WHERE p.id = :id
               AND p.status = :status
+              AND p.stockQuantity > 0
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
               AND lot.onHandQuantity > 0
             """)
@@ -91,6 +95,8 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     Optional<MarketplaceProduct> findByIdAndFarmerUser_Id(Long id, Long farmerUserId);
 
     Optional<MarketplaceProduct> findByLot_Id(Integer lotId);
+
+    List<MarketplaceProduct> findAllByLot_IdIn(Collection<Integer> lotIds);
 
     boolean existsByLot_Id(Integer lotId);
 
@@ -116,6 +122,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             JOIN p.lot lot
             WHERE p.farm.id = :farmId
               AND p.status = :status
+              AND p.stockQuantity > 0
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
               AND lot.onHandQuantity > 0
             """)
@@ -182,7 +189,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             LEFT JOIN p.farmerUser fu
             WHERE (:status IS NULL OR p.status = :status)
               AND (p.status <> org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus.PUBLISHED
-                   OR (lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK AND lot.onHandQuantity > 0))
+                   OR (p.stockQuantity > 0
+                       AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
+                       AND lot.onHandQuantity > 0))
               AND (:q IS NULL
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :q, '%'))
@@ -195,7 +204,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             LEFT JOIN p.farmerUser fu
             WHERE (:status IS NULL OR p.status = :status)
               AND (p.status <> org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus.PUBLISHED
-                   OR (lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK AND lot.onHandQuantity > 0))
+                   OR (p.stockQuantity > 0
+                       AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
+                       AND lot.onHandQuantity > 0))
               AND (:q IS NULL
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :q, '%'))
@@ -213,6 +224,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             JOIN p.lot lot
             WHERE p.status = :status
               AND p.farm.id IN :farmIds
+              AND p.stockQuantity > 0
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
               AND lot.onHandQuantity > 0
             GROUP BY p.farm.id
@@ -227,6 +239,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             JOIN p.lot lot
             WHERE p.farm.id = :farmId
               AND p.status = :status
+              AND p.stockQuantity > 0
               AND lot.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
               AND lot.onHandQuantity > 0
             ORDER BY p.publishedAt DESC, p.id DESC

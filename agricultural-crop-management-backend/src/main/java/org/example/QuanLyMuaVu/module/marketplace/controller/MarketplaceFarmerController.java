@@ -10,6 +10,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceFarmerP
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateOrderStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateProductStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerDashboardResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormOptionsResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductSummaryResponse;
@@ -46,6 +47,16 @@ public class MarketplaceFarmerController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
         return ApiResponse.success(marketplaceService.listFarmerProducts(q, status, page, size));
+    }
+
+    @GetMapping("/product-form-options")
+    public ApiResponse<MarketplaceFarmerProductFormOptionsResponse> getProductFormOptions() {
+        return ApiResponse.success(marketplaceService.getFarmerProductFormOptions());
+    }
+
+    @GetMapping("/products/{productId}")
+    public ApiResponse<MarketplaceProductDetailResponse> getProductDetail(@PathVariable Long productId) {
+        return ApiResponse.success(marketplaceService.getFarmerProductDetail(productId));
     }
 
     @PostMapping("/products")

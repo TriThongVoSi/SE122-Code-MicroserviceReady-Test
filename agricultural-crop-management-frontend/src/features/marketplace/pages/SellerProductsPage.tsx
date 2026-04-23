@@ -1,17 +1,9 @@
-import { useMemo, useState, type MouseEvent } from "react";
-import { EyeOff, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Eye, EyeOff, Pencil, Plus, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MarketplaceProductStatus, MarketplaceProductSummary } from "@/shared/api";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Input,
   Table,
   TableBody,
@@ -26,6 +18,10 @@ import {
 } from "../hooks";
 import { SellerMarketplaceTabs } from "../layout";
 import { formatVnd } from "../lib/format";
+import {
+  getNextSellerProductStatusAction,
+  getNextSellerProductStatusLabel,
+} from "../lib/sellerProductStatus";
 
 const actionButtonClassName = "inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -49,48 +45,31 @@ function ProductRowActions({
   product: MarketplaceProductSummary;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const statusMutation = useMarketplaceUpdateFarmerProductStatusMutation(product.id);
-
-  const handleSoftDeleteConfirm = (event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    statusMutation.mutate(
-      { status: "HIDDEN" },
-      {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-        },
-      },
-    );
-  };
+  const nextAction = getNextSellerProductStatusAction(product.status);
+  const nextActionLabel = getNextSellerProductStatusLabel(product.status);
 
   return (
     <div className="flex items-center justify-end gap-0.5">
-      {/* Hide/Show toggle */}
       <button
         type="button"
-        disabled={statusMutation.isPending}
-        onClick={() =>
-          statusMutation.mutate({
-            status: product.status === "HIDDEN" ? "PUBLISHED" : "HIDDEN",
-          })
-        }
+        disabled={statusMutation.isPending || !nextAction}
+        onClick={() => {
+          if (nextAction) {
+            statusMutation.mutate(nextAction);
+          }
+        }}
         className={actionButtonClassName}
-        title={
-          product.status === "HIDDEN"
-            ? t("marketplaceSeller.products.actions.show")
-            : t("marketplaceSeller.products.actions.hide")
-        }
-        aria-label={
-          product.status === "HIDDEN"
-            ? t("marketplaceSeller.products.actions.show")
-            : t("marketplaceSeller.products.actions.hide")
-        }
+        title={nextActionLabel}
+        aria-label={nextActionLabel}
       >
-        <EyeOff className="h-4 w-4" />
+        {product.status === "PUBLISHED" ? (
+          <EyeOff className="h-4 w-4" />
+        ) : (
+          <Eye className="h-4 w-4" />
+        )}
       </button>
 
-      {/* Edit */}
       <Link
         to={`/farmer/marketplace-products/${product.id}/edit`}
         className={actionButtonClassName}
@@ -99,37 +78,6 @@ function ProductRowActions({
       >
         <Pencil className="h-4 w-4" />
       </Link>
-
-      {/* Delete (soft-delete) */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <button
-          type="button"
-          disabled={statusMutation.isPending || product.status === "HIDDEN"}
-          onClick={() => setDeleteDialogOpen(true)}
-          className={`${actionButtonClassName} text-red-400 hover:bg-red-50 hover:text-red-600`}
-          title={t("marketplaceSeller.products.actions.delete")}
-          aria-label={t("marketplaceSeller.products.actions.delete")}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("marketplaceSeller.products.deleteDialog.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("marketplaceSeller.products.deleteDialog.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={statusMutation.isPending}
-              onClick={handleSoftDeleteConfirm}
-            >
-              {statusMutation.isPending ? t("common.processing") : t("marketplaceSeller.products.deleteDialog.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -253,7 +201,12 @@ export function SellerProductsPage() {
                   <TableCell className="text-sm font-medium text-emerald-600">
                     {formatVnd(product.price, locale)}/{product.unit}
                   </TableCell>
-                  <TableCell className="text-sm text-slate-700">{product.stock}</TableCell>
+                  <TableCell className="text-sm text-slate-700">
+                    <div className="space-y-0.5">
+                      <p>{product.stockQuantity} {product.unit}</p>
+                      <p className="text-xs text-slate-500">Available: {product.availableQuantity} {product.unit}</p>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusPillClass(product.status)}`}>
                       {t(`marketplaceSeller.status.product.${product.status}`)}

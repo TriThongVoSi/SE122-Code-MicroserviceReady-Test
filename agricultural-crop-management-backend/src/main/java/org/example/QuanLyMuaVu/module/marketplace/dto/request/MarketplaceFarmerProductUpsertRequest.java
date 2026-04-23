@@ -12,6 +12,7 @@ public record MarketplaceFarmerProductUpsertRequest(
         String shortDescription,
         String description,
         @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal price,
+        @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal stockQuantity,
         String imageUrl,
         List<String> imageUrls,
         @NotNull Integer lotId) {

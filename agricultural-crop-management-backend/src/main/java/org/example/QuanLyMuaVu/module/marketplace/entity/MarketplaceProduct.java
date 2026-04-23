@@ -59,6 +59,9 @@ public class MarketplaceProduct {
     @Column(name = "unit", nullable = false, length = 50)
     String unit;
 
+    @Column(name = "stock_quantity", nullable = false, precision = 19, scale = 3)
+    BigDecimal stockQuantity;
+
     @Column(name = "image_url", length = 1024)
     String imageUrl;
 

@@ -65,6 +65,10 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartIt
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCreateOrderResultResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerDashboardResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormFarmOptionResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormLotOptionResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormOptionsResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormSeasonOptionResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmSummaryResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderAuditLogResponse;
@@ -506,6 +510,7 @@ public class MarketplaceService {
                         .build();
                 orderItems.add(orderItem);
 
+                lockedProduct.setStockQuantity(currentListingQuantity(lockedProduct).subtract(cartItem.getQuantity()));
                 lockedLot.setOnHandQuantity(lockedLot.getOnHandQuantity().subtract(cartItem.getQuantity()));
                 productWarehouseTransactionRepository.save(buildMarketplaceLotTransaction(
                         lockedLot,
@@ -545,6 +550,7 @@ public class MarketplaceService {
             log.debug("Created marketplace order for farmer {} with {} items", farmerUserId, orderItems.size());
         }
 
+        marketplaceProductRepository.saveAll(lockedProducts);
         productWarehouseLotRepository.saveAll(lockedLots);
         marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
 
@@ -846,9 +852,53 @@ public class MarketplaceService {
     }
 
     @Transactional
+    public MarketplaceFarmerProductFormOptionsResponse getFarmerProductFormOptions() {
+        Long farmerUserId = currentUserService.getCurrentUserId();
+
+        List<Farm> farms = farmRepository.findAllByUser_Id(farmerUserId).stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparing((Farm farm) -> normalizeNullable(farm.getName()), Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Farm::getId, Comparator.nullsLast(Integer::compareTo)))
+                .toList();
+
+        List<Season> seasons = seasonRepository.findAllByFarmUserId(farmerUserId).stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator
+                        .comparing((Season season) -> normalizeNullable(season.getSeasonName()),
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(Season::getId, Comparator.nullsLast(Integer::compareTo)))
+                .toList();
+
+        List<ProductWarehouseLot> lots = productWarehouseLotRepository.findSellableByFarmUserId(farmerUserId);
+        Map<Integer, MarketplaceProduct> linkedProductByLotId = lots.isEmpty()
+                ? Collections.emptyMap()
+                : marketplaceProductRepository.findAllByLot_IdIn(lots.stream().map(ProductWarehouseLot::getId).toList()).stream()
+                        .filter(product -> product.getLot() != null && product.getLot().getId() != null)
+                        .collect(Collectors.toMap(product -> product.getLot().getId(), product -> product));
+
+        return new MarketplaceFarmerProductFormOptionsResponse(
+                farms.stream().map(this::toFarmerProductFormFarmOption).toList(),
+                seasons.stream().map(this::toFarmerProductFormSeasonOption).toList(),
+                lots.stream()
+                        .map(lot -> toFarmerProductFormLotOption(lot, linkedProductByLotId.get(lot.getId())))
+                        .toList());
+    }
+
+    @Transactional
+    public MarketplaceProductDetailResponse getFarmerProductDetail(Long productId) {
+        Long farmerUserId = currentUserService.getCurrentUserId();
+        MarketplaceProduct product = getOwnedProductForFarmer(productId, farmerUserId);
+        MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(product.getId()))
+                .get(product.getId());
+        return toProductDetail(product, rating);
+    }
+
+    @Transactional
     public MarketplaceProductDetailResponse createFarmerProduct(MarketplaceFarmerProductUpsertRequest request) {
         User farmer = currentUserService.getCurrentUser();
         ProductWarehouseLot lot = resolveSellableOwnedLot(request.lotId(), farmer.getId());
+        validateFarmerListingStock(request.stockQuantity(), lot);
 
         List<String> imageUrls = normalizeImageUrls(request.imageUrls(), request.imageUrl());
         String primaryImage = imageUrls.isEmpty() ? normalizeNullable(request.imageUrl()) : imageUrls.get(0);
@@ -869,6 +919,7 @@ public class MarketplaceService {
                 .description(normalizeNullable(request.description()))
                 .price(request.price())
                 .unit(lot.getUnit())
+                .stockQuantity(request.stockQuantity())
                 .imageUrl(primaryImage)
                 .imageUrlsJson(toImageUrlsJson(imageUrls))
                 .farmerUser(farmer)
@@ -891,6 +942,7 @@ public class MarketplaceService {
         User farmer = currentUserService.getCurrentUser();
         MarketplaceProduct product = getOwnedProductForFarmer(productId, farmer.getId());
         ProductWarehouseLot lot = resolveOwnedLotForUpsert(request.lotId(), farmer.getId(), product);
+        validateFarmerListingStock(request.stockQuantity(), lot);
 
         List<String> imageUrls = normalizeImageUrls(request.imageUrls(), request.imageUrl());
         String primaryImage = imageUrls.isEmpty() ? normalizeNullable(request.imageUrl()) : imageUrls.get(0);
@@ -907,6 +959,11 @@ public class MarketplaceService {
         MarketplaceProductStatus targetStatus = request.status();
 
         validateFarmerProductStatusTransition(product.getStatus(), targetStatus);
+        if (targetStatus == MarketplaceProductStatus.PENDING_REVIEW) {
+            validateTraceabilityChain(product);
+            ensureLotSellable(product.getLot());
+            ensureListingHasStock(product);
+        }
         product.setStatus(targetStatus);
         if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
             product.setPublishedAt(LocalDateTime.now());
@@ -1013,6 +1070,7 @@ public class MarketplaceService {
             ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
             ensureLotSellable(lockedLot);
+            ensureListingHasStock(product);
         }
         product.setStatus(targetStatus);
         if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
@@ -1372,6 +1430,7 @@ public class MarketplaceService {
                 product.getShortDescription(),
                 product.getPrice(),
                 resolveListingUnit(product),
+                currentListingQuantity(product),
                 currentAvailableQuantity(product),
                 product.getImageUrl(),
                 farmer == null ? null : farmer.getId(),
@@ -1403,6 +1462,7 @@ public class MarketplaceService {
                 product.getDescription(),
                 summary.price(),
                 summary.unit(),
+                summary.stockQuantity(),
                 summary.availableQuantity(),
                 summary.imageUrl(),
                 resolveImageUrls(product),
@@ -1463,6 +1523,43 @@ public class MarketplaceService {
                 productCount);
     }
 
+    private MarketplaceFarmerProductFormFarmOptionResponse toFarmerProductFormFarmOption(Farm farm) {
+        return new MarketplaceFarmerProductFormFarmOptionResponse(
+                farm.getId(),
+                farm.getName());
+    }
+
+    private MarketplaceFarmerProductFormSeasonOptionResponse toFarmerProductFormSeasonOption(Season season) {
+        Integer farmId = season.getPlot() == null || season.getPlot().getFarm() == null
+                ? null
+                : season.getPlot().getFarm().getId();
+        return new MarketplaceFarmerProductFormSeasonOptionResponse(
+                season.getId(),
+                season.getSeasonName(),
+                farmId);
+    }
+
+    private MarketplaceFarmerProductFormLotOptionResponse toFarmerProductFormLotOption(
+            ProductWarehouseLot lot,
+            MarketplaceProduct linkedProduct) {
+        Farm farm = lot.getFarm();
+        Season season = lot.getSeason();
+        return new MarketplaceFarmerProductFormLotOptionResponse(
+                lot.getId(),
+                lot.getLotCode(),
+                farm == null ? null : farm.getId(),
+                farm == null ? null : farm.getName(),
+                season == null ? null : season.getId(),
+                season == null ? null : season.getSeasonName(),
+                lot.getOnHandQuantity() == null ? ZERO_QUANTITY : lot.getOnHandQuantity().max(ZERO_QUANTITY),
+                lot.getHarvestedAt(),
+                lot.getUnit(),
+                lot.getProductName(),
+                lot.getProductVariant(),
+                linkedProduct == null ? null : linkedProduct.getId(),
+                linkedProduct == null ? null : linkedProduct.getStatus());
+    }
+
     private Map<Integer, Long> aggregateFarmProductCounts(Collection<Integer> farmIds) {
         if (farmIds == null || farmIds.isEmpty()) {
             return Collections.emptyMap();
@@ -1491,6 +1588,16 @@ public class MarketplaceService {
     }
 
     private void restoreOrderStock(MarketplaceOrder order, User actor, String reason) {
+        List<Long> productIds = order.getItems().stream()
+                .map(MarketplaceOrderItem::getProduct)
+                .filter(Objects::nonNull)
+                .map(MarketplaceProduct::getId)
+                .distinct()
+                .toList();
+        List<MarketplaceProduct> lockedProducts = marketplaceProductRepository.findAllByIdInForUpdate(productIds);
+        Map<Long, MarketplaceProduct> productById = lockedProducts.stream()
+                .collect(Collectors.toMap(MarketplaceProduct::getId, product -> product));
+
         List<Integer> lotIds = order.getItems().stream()
                 .map(MarketplaceOrderItem::getLot)
                 .filter(Objects::nonNull)
@@ -1502,6 +1609,16 @@ public class MarketplaceService {
                 .collect(Collectors.toMap(ProductWarehouseLot::getId, lot -> lot));
 
         for (MarketplaceOrderItem orderItem : order.getItems()) {
+            MarketplaceProduct orderProduct = orderItem.getProduct();
+            Long productId = orderProduct == null ? null : orderProduct.getId();
+            if (productId != null) {
+                MarketplaceProduct product = productById.get(productId);
+                if (product == null) {
+                    throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
+                }
+                product.setStockQuantity(currentListingQuantity(product).add(orderItem.getQuantity()));
+            }
+
             ProductWarehouseLot orderLot = orderItem.getLot();
             Integer lotId = orderLot == null ? null : orderLot.getId();
             if (lotId == null) {
@@ -1522,6 +1639,7 @@ public class MarketplaceService {
                     actor));
         }
 
+        marketplaceProductRepository.saveAll(lockedProducts);
         productWarehouseLotRepository.saveAll(lockedLots);
     }
 
@@ -1855,6 +1973,7 @@ public class MarketplaceService {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
+        validateTraceabilityReferencesForUpsert(true, lot.getFarm(), lot.getSeason(), lot);
         product.setSlug(generateUniqueSlug(request.name(), product.getId()));
         product.setName(request.name().trim());
         product.setCategory(normalizeNullable(request.category()));
@@ -1862,6 +1981,7 @@ public class MarketplaceService {
         product.setDescription(normalizeNullable(request.description()));
         product.setPrice(request.price());
         product.setUnit(lot.getUnit());
+        product.setStockQuantity(request.stockQuantity());
         product.setImageUrl(primaryImage);
         product.setImageUrlsJson(toImageUrlsJson(imageUrls));
         product.setFarmerUser(farmer);
@@ -1883,6 +2003,20 @@ public class MarketplaceService {
                 || lot.getStatus() != ProductWarehouseLotStatus.IN_STOCK
                 || lot.getOnHandQuantity() == null
                 || lot.getOnHandQuantity().compareTo(ZERO_QUANTITY) <= 0) {
+            throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
+        }
+    }
+
+    private void ensureListingHasStock(MarketplaceProduct product) {
+        if (currentListingQuantity(product).compareTo(ZERO_QUANTITY) <= 0) {
+            throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
+        }
+    }
+
+    private void validateFarmerListingStock(BigDecimal stockQuantity, ProductWarehouseLot lot) {
+        validatePositiveQuantity(stockQuantity);
+        ensureLotSellable(lot);
+        if (lot.getOnHandQuantity() == null || stockQuantity.compareTo(lot.getOnHandQuantity()) > 0) {
             throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
         }
     }
@@ -1927,7 +2061,14 @@ public class MarketplaceService {
         if (product == null || product.getLot() == null || product.getLot().getOnHandQuantity() == null) {
             return ZERO_QUANTITY;
         }
-        return product.getLot().getOnHandQuantity().max(ZERO_QUANTITY);
+        return currentListingQuantity(product).min(product.getLot().getOnHandQuantity().max(ZERO_QUANTITY));
+    }
+
+    private BigDecimal currentListingQuantity(MarketplaceProduct product) {
+        if (product == null || product.getStockQuantity() == null) {
+            return ZERO_QUANTITY;
+        }
+        return product.getStockQuantity().max(ZERO_QUANTITY);
     }
 
     private String resolveListingUnit(MarketplaceProduct product) {

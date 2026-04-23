@@ -49,6 +49,17 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
             ProductWarehouseLotStatus status,
             BigDecimal onHandQuantity);
 
+    @Query("""
+            SELECT l FROM ProductWarehouseLot l
+            LEFT JOIN FETCH l.farm f
+            LEFT JOIN FETCH l.season s
+            WHERE f.user.id = :ownerId
+              AND l.status = org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus.IN_STOCK
+              AND l.onHandQuantity > 0
+            ORDER BY l.harvestedAt DESC, l.id DESC
+            """)
+    List<ProductWarehouseLot> findSellableByFarmUserId(@Param("ownerId") Long ownerId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT l FROM ProductWarehouseLot l WHERE l.id IN :ids")
     List<ProductWarehouseLot> findAllByIdInForUpdate(@Param("ids") Collection<Integer> ids);
@@ -83,8 +94,9 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
             join p.lot l
             where p.farmerUser.id = :farmerUserId
               and p.status = :status
+              and p.stockQuantity > 0
               and l.onHandQuantity > 0
-              and l.onHandQuantity <= :threshold
+              and (case when p.stockQuantity < l.onHandQuantity then p.stockQuantity else l.onHandQuantity end) <= :threshold
             """)
     long countMarketplaceListingsByFarmerAndOnHandLessThanEqual(
             @Param("farmerUserId") Long farmerUserId,

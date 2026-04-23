@@ -9,6 +9,7 @@ import {
   type MarketplaceCreateOrderRequest,
   type MarketplaceCreateReviewRequest,
   type MarketplaceFarmerOrderQuery,
+  type MarketplaceFarmerProductFormOptions,
   type MarketplaceFarmerProductQuery,
   type MarketplaceFarmerProductUpsertRequest,
   type MarketplaceFarmQuery,
@@ -367,6 +368,27 @@ export function useMarketplaceFarmerProducts(query?: MarketplaceFarmerProductQue
   });
 }
 
+export function useMarketplaceFarmerProductFormOptions() {
+  return useQuery({
+    queryKey: [...marketplaceQueryKeys.farmerProductsBase(), "form-options"] as const,
+    queryFn: async (): Promise<MarketplaceFarmerProductFormOptions> => {
+      const response = await marketplaceApi.getFarmerProductFormOptions();
+      return response.result;
+    },
+  });
+}
+
+export function useMarketplaceFarmerProductDetail(productId?: number) {
+  return useQuery({
+    queryKey: marketplaceQueryKeys.farmerProduct(productId),
+    enabled: Boolean(productId && productId > 0),
+    queryFn: async () => {
+      const response = await marketplaceApi.getFarmerProductDetail(productId ?? 0);
+      return response.result;
+    },
+  });
+}
+
 export function useMarketplaceCreateFarmerProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -378,6 +400,7 @@ export function useMarketplaceCreateFarmerProductMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.farmerProductsBase() }),
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.farmerDashboard() }),
+        queryClient.invalidateQueries({ queryKey: [...marketplaceQueryKeys.farmerProductsBase(), "form-options"] }),
       ]);
     },
   });
@@ -394,6 +417,8 @@ export function useMarketplaceUpdateFarmerProductMutation(productId: number) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.farmerProductsBase() }),
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.farmerProduct(productId) }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.farmerDashboard() }),
+        queryClient.invalidateQueries({ queryKey: [...marketplaceQueryKeys.farmerProductsBase(), "form-options"] }),
       ]);
     },
   });

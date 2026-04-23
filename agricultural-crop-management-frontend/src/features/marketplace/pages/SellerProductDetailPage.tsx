@@ -1,20 +1,17 @@
-import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui";
+import { ArrowLeft, Edit, Eye, EyeOff, Package } from "lucide-react";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 import type { MarketplaceProductStatus } from "@/shared/api";
 import {
-  useMarketplaceFarmerProducts,
+  useMarketplaceFarmerProductDetail,
   useMarketplaceUpdateFarmerProductStatusMutation,
 } from "../hooks";
 import { formatVnd } from "../lib/format";
-import { ArrowLeft, Edit, Eye, EyeOff, Package } from "lucide-react";
+import {
+  getNextSellerProductStatusAction,
+  getNextSellerProductStatusLabel,
+} from "../lib/sellerProductStatus";
 
 function statusVariant(status: MarketplaceProductStatus) {
   switch (status) {
@@ -44,7 +41,7 @@ function statusLabel(status: MarketplaceProductStatus): string {
   }
 }
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2">
       <span className="shrink-0 text-sm text-slate-500">{label}</span>
@@ -58,27 +55,28 @@ export function SellerProductDetailPage() {
   const navigate = useNavigate();
   const productId = Number(id ?? 0);
 
-  const productsQuery = useMarketplaceFarmerProducts({ page: 0, size: 200 });
-  const product = useMemo(
-    () => productsQuery.data?.items.find((item) => item.id === productId),
-    [productsQuery.data?.items, productId],
-  );
-
+  const productQuery = useMarketplaceFarmerProductDetail(productId);
+  const product = productQuery.data;
   const statusMutation = useMarketplaceUpdateFarmerProductStatusMutation(productId);
 
-  const handleToggleVisibility = async () => {
-    if (!product) return;
-    const newStatus: MarketplaceProductStatus =
-      product.status === "PUBLISHED" ? "HIDDEN" : "PENDING_REVIEW";
-    try {
-      await statusMutation.mutateAsync({ status: newStatus });
-      await productsQuery.refetch();
-    } catch {
-      // Error handled by TanStack Query
+  async function handleStatusTransition() {
+    if (!product) {
+      return;
     }
-  };
 
-  if (productsQuery.isLoading) {
+    const nextAction = getNextSellerProductStatusAction(product.status);
+    if (!nextAction) {
+      return;
+    }
+
+    try {
+      await statusMutation.mutateAsync(nextAction);
+    } catch {
+      // Query layer handles error presentation elsewhere.
+    }
+  }
+
+  if (productQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600" />
@@ -86,13 +84,13 @@ export function SellerProductDetailPage() {
     );
   }
 
-  if (!product) {
+  if (productQuery.isError || !product) {
     return (
       <div className="py-12 text-center">
         <Package className="mx-auto mb-4 h-12 w-12 text-slate-300" />
         <h2 className="mb-2 text-xl font-bold text-slate-900">Product not found</h2>
         <p className="mb-6 text-sm text-slate-500">
-          This product does not exist or has been removed.
+          This product does not exist or is not available in your seller account.
         </p>
         <Link to="/farmer/marketplace-products">
           <Button>Back to products</Button>
@@ -103,7 +101,6 @@ export function SellerProductDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -114,27 +111,24 @@ export function SellerProductDetailPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Product Detail</h1>
-            <p className="text-sm text-slate-500">View product information and traceability data.</p>
+            <h1 className="text-2xl font-semibold text-slate-900">Marketplace listing detail</h1>
+            <p className="text-sm text-slate-500">
+              Review the harvest link, available quantity, and seller status before publishing changes.
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleToggleVisibility}
+            onClick={handleStatusTransition}
             disabled={statusMutation.isPending}
             className="gap-2"
           >
-            {product.status === "PUBLISHED" ? (
-              <>
-                <EyeOff size={14} /> Hide
-              </>
-            ) : (
-              <>
-                <Eye size={14} /> Submit for review
-              </>
-            )}
+            {product.status === "PUBLISHED" ? <EyeOff size={14} /> : <Eye size={14} />}
+            {statusMutation.isPending
+              ? "Updating..."
+              : getNextSellerProductStatusLabel(product.status)}
           </Button>
           <Link to={`/farmer/marketplace-products/${product.id}/edit`}>
             <Button size="sm" className="gap-2">
@@ -144,20 +138,16 @@ export function SellerProductDetailPage() {
         </div>
       </div>
 
-      {/* Product Info Card */}
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4">
           <div>
             <CardTitle className="text-xl">{product.name}</CardTitle>
-            <p className="mt-1 text-sm text-slate-500">ID: {product.id}</p>
+            <p className="mt-1 text-sm text-slate-500">Listing ID: {product.id}</p>
           </div>
-          <Badge variant={statusVariant(product.status)}>
-            {statusLabel(product.status)}
-          </Badge>
+          <Badge variant={statusVariant(product.status)}>{statusLabel(product.status)}</Badge>
         </CardHeader>
         <CardContent>
           <div className="grid gap-8 md:grid-cols-2">
-            {/* Image */}
             <div>
               <h3 className="mb-3 text-sm font-semibold text-slate-900">Image</h3>
               {product.imageUrl ? (
@@ -174,12 +164,11 @@ export function SellerProductDetailPage() {
               )}
             </div>
 
-            {/* Basic Info */}
             <div className="space-y-4">
               <div>
-                <h3 className="mb-1 text-sm font-semibold text-slate-900">Basic Information</h3>
+                <h3 className="mb-1 text-sm font-semibold text-slate-900">Listing information</h3>
                 <div className="divide-y divide-slate-100 rounded-lg bg-slate-50 px-4">
-                  <DetailRow label="Category" value={product.category || "—"} />
+                  <DetailRow label="Category" value={product.category || "-"} />
                   <DetailRow
                     label="Price"
                     value={
@@ -189,40 +178,33 @@ export function SellerProductDetailPage() {
                     }
                   />
                   <DetailRow
-                    label="Stock"
-                    value={`${product.stock} ${product.unit}`}
+                    label="Listed quantity"
+                    value={`${product.stockQuantity} ${product.unit}`}
+                  />
+                  <DetailRow
+                    label="Available to sell"
+                    value={`${product.availableQuantity} ${product.unit}`}
                   />
                 </div>
               </div>
 
-              {/* Traceability */}
-              {product.traceable && (
-                <div>
-                  <h3 className="mb-1 text-sm font-semibold text-slate-900">Traceability</h3>
-                  <div className="divide-y divide-emerald-100 rounded-lg border border-emerald-100 bg-emerald-50 px-4">
-                    <DetailRow label="Farm" value={product.farmName || "Not linked"} />
-                    <DetailRow
-                      label="Farm ID"
-                      value={product.farmId ? `#${product.farmId}` : "—"}
-                    />
-                    {product.seasonId && (
-                      <DetailRow label="Season ID" value={`#${product.seasonId}`} />
-                    )}
-                    {product.lotId && (
-                      <DetailRow label="Lot ID" value={`#${product.lotId}`} />
-                    )}
-                  </div>
+              <div>
+                <h3 className="mb-1 text-sm font-semibold text-slate-900">Harvest link</h3>
+                <div className="divide-y divide-emerald-100 rounded-lg border border-emerald-100 bg-emerald-50 px-4">
+                  <DetailRow label="Farm" value={product.farmName || "Not linked"} />
+                  <DetailRow label="Season" value={product.seasonName || "Not linked"} />
+                  <DetailRow label="Lot" value={product.traceabilityCode || "Not linked"} />
+                  <DetailRow label="Traceable" value={product.traceable ? "Yes" : "No"} />
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
-          {/* Description */}
-          {product.shortDescription && (
+          {(product.shortDescription || product.description) && (
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h3 className="mb-2 text-sm font-semibold text-slate-900">Description</h3>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                {product.shortDescription}
+                {product.description || product.shortDescription}
               </p>
             </div>
           )}

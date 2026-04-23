@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type {
-  MarketplaceFarmerProductUpsertRequest,
-  MarketplaceProductStatus,
-  MarketplaceUpdateProductStatusRequest,
-} from "@/shared/api";
+import type { MarketplaceFarmerProductUpsertRequest } from "@/shared/api";
 import {
   Button,
   Card,
@@ -13,14 +9,24 @@ import {
   CardTitle,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Textarea,
 } from "@/shared/ui";
 import {
   useMarketplaceCreateFarmerProductMutation,
-  useMarketplaceFarmerProducts,
+  useMarketplaceFarmerProductDetail,
+  useMarketplaceFarmerProductFormOptions,
   useMarketplaceUpdateFarmerProductMutation,
   useMarketplaceUpdateFarmerProductStatusMutation,
 } from "../hooks";
+import {
+  getNextSellerProductStatusAction,
+  getNextSellerProductStatusLabel,
+} from "../lib/sellerProductStatus";
 
 type ProductFormState = {
   name: string;
@@ -28,13 +34,11 @@ type ProductFormState = {
   shortDescription: string;
   description: string;
   price: string;
-  unit: string;
   stockQuantity: string;
   imageUrl: string;
-  farmId: string;
-  seasonId: string;
-  lotId: string;
-  traceable: boolean;
+  selectedFarmId: string;
+  selectedSeasonId: string;
+  selectedLotId: string;
 };
 
 const EMPTY_FORM: ProductFormState = {
@@ -43,44 +47,12 @@ const EMPTY_FORM: ProductFormState = {
   shortDescription: "",
   description: "",
   price: "",
-  unit: "kg",
-  stockQuantity: "0",
+  stockQuantity: "",
   imageUrl: "",
-  farmId: "",
-  seasonId: "",
-  lotId: "",
-  traceable: false,
+  selectedFarmId: "",
+  selectedSeasonId: "",
+  selectedLotId: "",
 };
-
-function nextStatusAction(status: MarketplaceProductStatus): MarketplaceUpdateProductStatusRequest | null {
-  switch (status) {
-    case "DRAFT":
-      return { status: "PENDING_REVIEW" };
-    case "PENDING_REVIEW":
-      return { status: "DRAFT" };
-    case "PUBLISHED":
-      return { status: "HIDDEN" };
-    case "HIDDEN":
-      return { status: "PENDING_REVIEW" };
-    default:
-      return null;
-  }
-}
-
-function nextStatusActionLabel(status: MarketplaceProductStatus): string {
-  switch (status) {
-    case "DRAFT":
-      return "Submit for review";
-    case "PENDING_REVIEW":
-      return "Move back to draft";
-    case "PUBLISHED":
-      return "Hide product";
-    case "HIDDEN":
-      return "Resubmit for review";
-    default:
-      return "Update status";
-  }
-}
 
 export function SellerProductFormPage() {
   const { id } = useParams();
@@ -90,42 +62,151 @@ export function SellerProductFormPage() {
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const productsQuery = useMarketplaceFarmerProducts({
-    page: 0,
-    size: 200,
-  });
-  const product = useMemo(
-    () => productsQuery.data?.items.find((item) => item.id === productId),
-    [productsQuery.data?.items, productId],
-  );
+  const formOptionsQuery = useMarketplaceFarmerProductFormOptions();
+  const productQuery = useMarketplaceFarmerProductDetail(isEdit ? productId : undefined);
+  const product = productQuery.data;
 
   const createMutation = useMarketplaceCreateFarmerProductMutation();
   const updateMutation = useMarketplaceUpdateFarmerProductMutation(productId);
   const statusMutation = useMarketplaceUpdateFarmerProductStatusMutation(productId);
 
   useEffect(() => {
-    if (!isEdit || !product) {
+    if (!isEdit) {
+      setForm(EMPTY_FORM);
       return;
     }
+
+    if (!product) {
+      return;
+    }
+
     setForm({
       name: product.name,
       category: product.category ?? "",
       shortDescription: product.shortDescription ?? "",
-      description: "",
+      description: product.description ?? "",
       price: String(product.price),
-      unit: product.unit,
-      stockQuantity: String(product.stock),
+      stockQuantity: String(product.stockQuantity),
       imageUrl: product.imageUrl ?? "",
-      farmId: product.farmId ? String(product.farmId) : "",
-      seasonId: product.seasonId ? String(product.seasonId) : "",
-      lotId: product.lotId ? String(product.lotId) : "",
-      traceable: product.traceable,
+      selectedFarmId: product.farmId ? String(product.farmId) : "",
+      selectedSeasonId: product.seasonId ? String(product.seasonId) : "",
+      selectedLotId: product.lotId ? String(product.lotId) : "",
     });
   }, [isEdit, product]);
+
+  const selectableLots = useMemo(
+    () =>
+      (formOptionsQuery.data?.lots ?? []).filter(
+        (lot) => lot.linkedProductId == null || lot.linkedProductId === productId,
+      ),
+    [formOptionsQuery.data?.lots, productId],
+  );
+
+  const filteredSeasons = useMemo(() => {
+    const seasons = formOptionsQuery.data?.seasons ?? [];
+    if (!form.selectedFarmId) {
+      return seasons;
+    }
+    return seasons.filter((season) => String(season.farmId ?? "") === form.selectedFarmId);
+  }, [form.selectedFarmId, formOptionsQuery.data?.seasons]);
+
+  const filteredLots = useMemo(() => {
+    return selectableLots.filter((lot) => {
+      const matchesFarm = !form.selectedFarmId || String(lot.farmId ?? "") === form.selectedFarmId;
+      const matchesSeason =
+        !form.selectedSeasonId || String(lot.seasonId ?? "") === form.selectedSeasonId;
+      return matchesFarm && matchesSeason;
+    });
+  }, [form.selectedFarmId, form.selectedSeasonId, selectableLots]);
+
+  const selectedLot = useMemo(
+    () => selectableLots.find((lot) => String(lot.id) === form.selectedLotId),
+    [form.selectedLotId, selectableLots],
+  );
+
+  const lotsAlreadyLinkedCount = useMemo(
+    () =>
+      (formOptionsQuery.data?.lots ?? []).filter(
+        (lot) => lot.linkedProductId != null && lot.linkedProductId !== productId,
+      ).length,
+    [formOptionsQuery.data?.lots, productId],
+  );
+
+  const canSubmit =
+    Boolean(form.name.trim()) &&
+    Boolean(form.selectedLotId) &&
+    Number(form.price) > 0 &&
+    Number(form.stockQuantity) > 0 &&
+    Boolean(selectedLot) &&
+    Number(form.stockQuantity) <= Number(selectedLot?.availableQuantity ?? 0);
+
+  function updateForm(patch: Partial<ProductFormState>) {
+    setForm((current) => ({ ...current, ...patch }));
+  }
+
+  function handleFarmChange(value: string) {
+    updateForm({
+      selectedFarmId: value,
+      selectedSeasonId: "",
+      selectedLotId: "",
+      stockQuantity: "",
+    });
+  }
+
+  function handleSeasonChange(value: string) {
+    updateForm({
+      selectedSeasonId: value,
+      selectedLotId: "",
+      stockQuantity: "",
+    });
+  }
+
+  function handleLotChange(value: string) {
+    const lot = selectableLots.find((candidate) => String(candidate.id) === value);
+    if (!lot) {
+      updateForm({ selectedLotId: "", stockQuantity: "" });
+      return;
+    }
+
+    updateForm({
+      selectedFarmId: lot.farmId ? String(lot.farmId) : "",
+      selectedSeasonId: lot.seasonId ? String(lot.seasonId) : "",
+      selectedLotId: String(lot.id),
+      stockQuantity:
+        form.selectedLotId === String(lot.id) && form.stockQuantity
+          ? form.stockQuantity
+          : String(lot.availableQuantity),
+    });
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
+
+    if (!selectedLot) {
+      setErrorMessage("Choose a harvested lot before saving the listing.");
+      return;
+    }
+
+    const price = Number(form.price);
+    const stockQuantity = Number(form.stockQuantity);
+
+    if (!Number.isFinite(price) || price <= 0) {
+      setErrorMessage("Price must be greater than 0.");
+      return;
+    }
+
+    if (!Number.isFinite(stockQuantity) || stockQuantity <= 0) {
+      setErrorMessage("Quantity to sell must be greater than 0.");
+      return;
+    }
+
+    if (stockQuantity > selectedLot.availableQuantity) {
+      setErrorMessage(
+        `Quantity to sell cannot exceed the harvested lot availability of ${selectedLot.availableQuantity} ${selectedLot.unit ?? ""}.`.trim(),
+      );
+      return;
+    }
 
     try {
       const payload: MarketplaceFarmerProductUpsertRequest = {
@@ -133,30 +214,21 @@ export function SellerProductFormPage() {
         category: form.category.trim() || undefined,
         shortDescription: form.shortDescription.trim() || undefined,
         description: form.description.trim() || undefined,
-        price: Number(form.price),
-        unit: form.unit.trim(),
-        stockQuantity: Number(form.stockQuantity),
+        price,
+        stockQuantity,
         imageUrl: form.imageUrl.trim() || undefined,
-        farmId: Number(form.farmId),
-        seasonId: form.seasonId.trim() ? Number(form.seasonId) : undefined,
-        lotId: form.lotId.trim() ? Number(form.lotId) : undefined,
-        traceable: form.traceable,
+        lotId: Number(form.selectedLotId),
       };
-
-      if (!payload.name || !payload.unit || !Number.isFinite(payload.price) || !Number.isFinite(payload.farmId)) {
-        setErrorMessage("Please fill required fields with valid values.");
-        return;
-      }
 
       if (isEdit) {
         await updateMutation.mutateAsync(payload);
       } else {
         await createMutation.mutateAsync(payload);
       }
+
       navigate("/farmer/marketplace-products");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to save product.";
-      setErrorMessage(message);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to save product.");
     }
   }
 
@@ -164,28 +236,118 @@ export function SellerProductFormPage() {
     if (!product) {
       return;
     }
-    const request = nextStatusAction(product.status);
+
+    const request = getNextSellerProductStatusAction(product.status);
     if (!request) {
       return;
     }
+
     setErrorMessage(null);
     try {
       await statusMutation.mutateAsync(request);
-      await productsQuery.refetch();
+      navigate("/farmer/marketplace-products");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update status.";
-      setErrorMessage(message);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to update product status.");
     }
   }
 
+  const isLoading = formOptionsQuery.isLoading || (isEdit && productQuery.isLoading);
+  const isError = formOptionsQuery.isError || (isEdit && productQuery.isError);
+  const hasNoLots = !formOptionsQuery.isLoading && !formOptionsQuery.isError && selectableLots.length === 0;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
+          </h1>
+          <p className="text-sm text-slate-500">Loading your farms, seasons, and harvested lots.</p>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-sm text-slate-500">Loading seller workflow...</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
+          </h1>
+          <p className="text-sm text-slate-500">This workflow needs live marketplace data.</p>
+        </div>
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm text-red-600">
+              {isEdit
+                ? "Failed to load the product detail or harvest options."
+                : "Failed to load your harvest-based selling options."}
+            </p>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={() => void Promise.all([formOptionsQuery.refetch(), productQuery.refetch()])}>
+                Try again
+              </Button>
+              <Button asChild>
+                <Link to="/farmer/marketplace-products">Back to products</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isEdit && !product) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold text-slate-900">Edit marketplace listing</h1>
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm text-slate-600">This product could not be found for your account.</p>
+            <Button asChild>
+              <Link to="/farmer/marketplace-products">Back to products</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isEdit && hasNoLots) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold text-slate-900">Create marketplace product from harvest</h1>
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <p className="text-sm text-slate-600">
+              You do not have any harvested lots with remaining quantity ready to sell yet.
+            </p>
+            <p className="text-sm text-slate-500">
+              Finish harvest intake first, then come back here to turn a harvested lot into a marketplace listing.
+            </p>
+            <Button asChild>
+              <Link to="/farmer/marketplace-products">Back to products</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
-            {isEdit ? "Edit marketplace product" : "Create marketplace product"}
+            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
           </h1>
-          <p className="text-sm text-slate-500">Image URL MVP and traceability-aware product setup.</p>
+          <p className="text-sm text-slate-500">
+            Choose a harvested lot first. Farm, season, traceability, unit, and max sale quantity are filled in automatically.
+          </p>
         </div>
         <Link to="/farmer/marketplace-products" className="text-sm text-emerald-700 hover:underline">
           Back to products
@@ -194,85 +356,232 @@ export function SellerProductFormPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Product form</CardTitle>
+          <CardTitle>{isEdit ? "Edit listing" : "Harvest selection"}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label>Farm</Label>
+            <Select value={form.selectedFarmId} onValueChange={handleFarmChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose your farm" />
+              </SelectTrigger>
+              <SelectContent>
+                {formOptionsQuery.data?.farms.map((farm) => (
+                  <SelectItem key={farm.id} value={String(farm.id)}>
+                    {farm.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Season</Label>
+            <Select value={form.selectedSeasonId} onValueChange={handleSeasonChange} disabled={!form.selectedFarmId}>
+              <SelectTrigger>
+                <SelectValue placeholder={form.selectedFarmId ? "Choose a season" : "Pick a farm first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredSeasons.map((season) => (
+                  <SelectItem key={season.id} value={String(season.id)}>
+                    {season.seasonName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Harvested lot</Label>
+            <Select value={form.selectedLotId} onValueChange={handleLotChange} disabled={!form.selectedFarmId}>
+              <SelectTrigger>
+                <SelectValue placeholder={form.selectedFarmId ? "Choose a harvested lot" : "Pick a farm first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredLots.map((lot) => (
+                  <SelectItem key={lot.id} value={String(lot.id)}>
+                    {lot.lotCode} - {lot.productName ?? "Harvested lot"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-3">
+            {selectedLot ? (
+              <div className="grid gap-3 md:grid-cols-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Farm</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedLot.farmName ?? "Unknown farm"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Season</p>
+                  <p className="text-sm font-medium text-slate-900">{selectedLot.seasonName ?? "No season"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Available quantity</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Traceability</p>
+                  <p className="text-sm font-medium text-emerald-700">Enabled from harvest lot</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-700">Select a harvested lot to continue.</p>
+                <p className="text-sm text-slate-500">
+                  The listing will stay tied to that lot, and quantity to sell cannot exceed the lot availability.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {lotsAlreadyLinkedCount > 0 && (
+            <p className="text-sm text-slate-500 md:col-span-3">
+              {lotsAlreadyLinkedCount} harvested lot{lotsAlreadyLinkedCount > 1 ? "s are" : " is"} already linked to other marketplace listings and hidden from this picker.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{isEdit ? "Listing details" : "Create draft listing"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="product-name">Name *</Label>
-              <Input id="product-name" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} required />
+              <Label htmlFor="product-name">Listing name *</Label>
+              <Input
+                id="product-name"
+                value={form.name}
+                onChange={(event) => updateForm({ name: event.target.value })}
+                placeholder="Ex: Premium jasmine rice from harvest lot 2026"
+                required
+              />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="product-category">Category</Label>
-              <Input id="product-category" value={form.category} onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))} />
+              <Input
+                id="product-category"
+                value={form.category}
+                onChange={(event) => updateForm({ category: event.target.value })}
+                placeholder="Ex: Grain, Vegetable, Fruit"
+              />
             </div>
+
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="product-short-desc">Short description</Label>
-              <Input id="product-short-desc" value={form.shortDescription} onChange={(event) => setForm((prev) => ({ ...prev, shortDescription: event.target.value }))} />
+              <Input
+                id="product-short-desc"
+                value={form.shortDescription}
+                onChange={(event) => updateForm({ shortDescription: event.target.value })}
+                placeholder="A quick summary farmers and buyers can scan fast"
+              />
             </div>
+
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="product-description">Description</Label>
-              <Textarea id="product-description" value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
+              <Textarea
+                id="product-description"
+                value={form.description}
+                onChange={(event) => updateForm({ description: event.target.value })}
+                placeholder="Add quality notes, harvest details, packaging, or delivery notes"
+              />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="product-price">Price *</Label>
-              <Input id="product-price" type="number" min="0" step="1000" value={form.price} onChange={(event) => setForm((prev) => ({ ...prev, price: event.target.value }))} required />
+              <Input
+                id="product-price"
+                type="number"
+                min="0"
+                step="1000"
+                value={form.price}
+                onChange={(event) => updateForm({ price: event.target.value })}
+                required
+              />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="product-unit">Unit *</Label>
-              <Input id="product-unit" value={form.unit} onChange={(event) => setForm((prev) => ({ ...prev, unit: event.target.value }))} required />
+              <Label htmlFor="product-stock">
+                Quantity to sell *{selectedLot?.unit ? ` (${selectedLot.unit})` : ""}
+              </Label>
+              <Input
+                id="product-stock"
+                type="number"
+                min="0"
+                max={selectedLot?.availableQuantity}
+                step="0.001"
+                value={form.stockQuantity}
+                onChange={(event) => updateForm({ stockQuantity: event.target.value })}
+                required
+              />
+              {selectedLot && (
+                <p className="text-xs text-slate-500">
+                  Max allowed: {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-stock">Stock *</Label>
-              <Input id="product-stock" type="number" min="0" value={form.stockQuantity} onChange={(event) => setForm((prev) => ({ ...prev, stockQuantity: event.target.value }))} required />
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="product-image-url">Main image URL</Label>
+              <Input
+                id="product-image-url"
+                value={form.imageUrl}
+                onChange={(event) => updateForm({ imageUrl: event.target.value })}
+                placeholder="https://..."
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-image-url">Image URL</Label>
-              <Input id="product-image-url" value={form.imageUrl} onChange={(event) => setForm((prev) => ({ ...prev, imageUrl: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-farm-id">Farm ID *</Label>
-              <Input id="product-farm-id" type="number" min="1" value={form.farmId} onChange={(event) => setForm((prev) => ({ ...prev, farmId: event.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-traceable">Traceable</Label>
-              <div className="flex h-10 items-center">
-                <input
-                  id="product-traceable"
-                  type="checkbox"
-                  checked={form.traceable}
-                  onChange={(event) => setForm((prev) => ({ ...prev, traceable: event.target.checked }))}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600"
-                />
+
+            {selectedLot && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 md:col-span-2">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Lot code</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedLot.lotCode}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Default unit</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedLot.unit ?? "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Harvested at</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedLot.harvestedAt ?? "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Traceable listing</p>
+                    <p className="text-sm font-medium text-emerald-700">Yes</p>
+                  </div>
+                </div>
               </div>
-            </div>
-            {form.traceable && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="product-season-id">Season ID *</Label>
-                  <Input id="product-season-id" type="number" min="1" value={form.seasonId} onChange={(event) => setForm((prev) => ({ ...prev, seasonId: event.target.value }))} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="product-lot-id">Lot ID *</Label>
-                  <Input id="product-lot-id" type="number" min="1" value={form.lotId} onChange={(event) => setForm((prev) => ({ ...prev, lotId: event.target.value }))} required />
-                </div>
-              </>
             )}
-            {errorMessage && (
-              <p className="md:col-span-2 text-sm text-red-600">{errorMessage}</p>
-            )}
-            <div className="md:col-span-2 flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                {isEdit ? "Save changes" : "Create product"}
+
+            {errorMessage && <p className="text-sm text-red-600 md:col-span-2">{errorMessage}</p>}
+
+            <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+              <Button type="submit" disabled={!canSubmit || createMutation.isPending || updateMutation.isPending}>
+                {createMutation.isPending || updateMutation.isPending
+                  ? "Saving..."
+                  : isEdit
+                    ? "Save draft changes"
+                    : "Create draft"}
               </Button>
-              {isEdit && product && nextStatusAction(product.status) && (
+
+              {isEdit && product && getNextSellerProductStatusAction(product.status) && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleStatusTransition}
                   disabled={statusMutation.isPending}
                 >
-                  {nextStatusActionLabel(product.status)}
+                  {statusMutation.isPending
+                    ? "Updating..."
+                    : getNextSellerProductStatusLabel(product.status)}
                 </Button>
               )}
             </div>
