@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
 import { useMarketplaceCart, useMarketplaceCartMergeBridge } from "../hooks";
+import "./MarketplacePublicLayout.css";
 
 function resolvePortalRoute(role: string | undefined): string {
   switch (role) {
@@ -27,6 +28,30 @@ function resolvePortalRoute(role: string | undefined): string {
       return "/marketplace/orders";
     default:
       return "/farmer/marketplace-dashboard";
+  }
+}
+
+function resolvePortalButtonLabel(role: string | undefined) {
+  switch (role) {
+    case "admin":
+      return "Quản trị";
+    case "employee":
+      return "Công việc";
+    default:
+      return "Quản lý";
+  }
+}
+
+function formatRoleLabel(role: string | undefined) {
+  switch (role) {
+    case "admin":
+      return "Admin";
+    case "employee":
+      return "Employee";
+    case "farmer":
+      return "Farmer";
+    default:
+      return "Buyer";
   }
 }
 
@@ -76,13 +101,13 @@ function MarketplaceSearchBar({ className = "" }: { className?: string }) {
 
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
-      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
       <input
         type="search"
         placeholder="Tìm kiếm nông sản, nông trại..."
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="w-full rounded-full bg-gray-100 py-2 pl-9 pr-4 text-sm text-gray-700 outline-none transition focus:ring-2 focus:ring-emerald-500"
+        className="w-full rounded-full border border-transparent bg-gray-100 py-2.5 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:border-emerald-200 focus:bg-white focus:ring-2 focus:ring-emerald-500"
       />
     </form>
   );
@@ -160,6 +185,7 @@ function MobileMenu({
   userName,
   userRole,
   cartCount,
+  onLogout,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -167,15 +193,19 @@ function MobileMenu({
   userName?: string;
   userRole?: string;
   cartCount: number;
+  onLogout: () => void;
 }) {
   if (!isOpen) {
     return null;
   }
 
+  const showPortalLink = Boolean(userRole && userRole !== "buyer");
+
   return (
-    <div className="border-t border-gray-200 bg-white md:hidden">
+    <div id="marketplace-mobile-menu" className="marketplace-header__mobile-menu border-t border-gray-200 bg-white">
       <div className="space-y-4 px-4 py-4">
         <MarketplaceSearchBar className="w-full" />
+
         <nav className="flex flex-col gap-3">
           <Link to="/marketplace" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
             Trang chủ
@@ -190,17 +220,34 @@ function MobileMenu({
             <div className="space-y-2">
               <div className="rounded-lg bg-gray-50 px-3 py-2">
                 <p className="text-sm font-medium text-gray-900">{userName ?? "Tài khoản của bạn"}</p>
-                <p className="text-xs capitalize text-gray-500">{userRole ?? "buyer"}</p>
+                <p className="text-xs text-gray-500">{formatRoleLabel(userRole)}</p>
               </div>
+
               <Link to="/marketplace/cart" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
                 <ShoppingCart size={16} /> Giỏ hàng ({cartCount})
               </Link>
+
               <Link to="/marketplace/orders" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
                 <Package size={16} /> Đơn hàng của tôi
               </Link>
-              <Link to={resolvePortalRoute(userRole)} onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
-                <Store size={16} /> Vào trang quản lý
-              </Link>
+
+              {showPortalLink ? (
+                <Link to={resolvePortalRoute(userRole)} onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
+                  <Store size={16} /> {resolvePortalButtonLabel(userRole)}
+                </Link>
+              ) : null}
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full justify-start px-0 text-sm text-gray-700 hover:text-emerald-600"
+                onClick={() => {
+                  onClose();
+                  onLogout();
+                }}
+              >
+                <LogOut size={16} /> Đăng xuất
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -221,6 +268,7 @@ function MobileMenu({
 export function MarketplacePublicLayout() {
   const { isAuthenticated, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const showPortalAction = isAuthenticated && user?.role !== "buyer";
 
   useMarketplaceCartMergeBridge();
   const serverCartQuery = useMarketplaceCart({ enabled: isAuthenticated });
@@ -228,40 +276,33 @@ export function MarketplacePublicLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-6">
+      <header className="marketplace-header sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+        <div className="marketplace-header__inner container mx-auto px-4">
+          <div className="marketplace-header__left">
             <Link to="/marketplace" className="flex items-center gap-2">
               <div className="rounded-md bg-emerald-600 p-1.5 text-white">
                 <Package size={24} />
               </div>
-              <span className="hidden text-xl font-bold text-emerald-800 sm:inline-block">FarmTrace</span>
+              <span className="marketplace-header__brand-text text-xl font-bold text-emerald-800">FarmTrace</span>
             </Link>
 
-            <div className="hidden items-center gap-4 md:flex">
-              <NavLink
-                to="/marketplace"
-                end
-                className={({ isActive }) =>
-                  isActive
-                    ? "text-sm font-medium text-emerald-600"
-                    : "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-600"
-                }
-              >
-                Trang chủ
-              </NavLink>
+            <nav className="marketplace-header__nav">
               {NAV_LINKS.map((link) => (
                 <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
               ))}
-            </div>
+            </nav>
           </div>
 
-          <div className="mx-4 hidden max-w-md flex-1 lg:block">
+          <div className="marketplace-header__desktop-search">
             <MarketplaceSearchBar />
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link to="/marketplace/cart" className="relative p-2 text-gray-600 transition-colors hover:text-emerald-600">
+          <div className="marketplace-header__right">
+            <Link
+              to="/marketplace/cart"
+              aria-label="Giỏ hàng"
+              className="relative rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-emerald-600"
+            >
               <ShoppingCart size={24} />
               {serverCartCount > 0 ? (
                 <span className="absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
@@ -270,21 +311,26 @@ export function MarketplacePublicLayout() {
               ) : null}
             </Link>
 
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="marketplace-header__desktop-actions">
               {isAuthenticated ? (
                 <>
-                  <div className="hidden flex-col items-end sm:flex">
+                  <div className="marketplace-header__user">
                     <span className="text-sm font-medium text-gray-900">{user?.name ?? "Người dùng"}</span>
-                    <span className="text-xs capitalize text-gray-500">{user?.role ?? "buyer"}</span>
+                    <span className="text-xs text-gray-500">{formatRoleLabel(user?.role)}</span>
                   </div>
+
                   <Button asChild variant="outline" size="sm">
                     <Link to="/marketplace/orders">Đơn hàng</Link>
                   </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={resolvePortalRoute(user?.role)}>
-                      <Store size={14} /> Dashboard
-                    </Link>
-                  </Button>
+
+                  {showPortalAction ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={resolvePortalRoute(user?.role)}>
+                        <Store size={14} /> {resolvePortalButtonLabel(user?.role)}
+                      </Link>
+                    </Button>
+                  ) : null}
+
                   <Button variant="ghost" size="icon" onClick={logout} title="Đăng xuất">
                     <LogOut size={18} />
                   </Button>
@@ -305,8 +351,10 @@ export function MarketplacePublicLayout() {
 
             <button
               type="button"
-              className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
+              className="marketplace-header__mobile-toggle rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100"
               onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-controls="marketplace-mobile-menu"
+              aria-expanded={mobileMenuOpen}
               aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -321,6 +369,9 @@ export function MarketplacePublicLayout() {
           userName={user?.name}
           userRole={user?.role}
           cartCount={serverCartCount}
+          onLogout={() => {
+            void logout();
+          }}
         />
       </header>
 
