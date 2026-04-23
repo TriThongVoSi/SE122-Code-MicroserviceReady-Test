@@ -38,6 +38,29 @@ function statusPillClass(status: MarketplaceProductStatus): string {
   }
 }
 
+function TableRowSkeleton() {
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 flex-shrink-0 animate-pulse rounded-[10px] bg-slate-200" />
+          <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+        </div>
+      </TableCell>
+      <TableCell><div className="h-4 w-20 animate-pulse rounded bg-slate-200" /></TableCell>
+      <TableCell><div className="h-4 w-24 animate-pulse rounded bg-slate-200" /></TableCell>
+      <TableCell>
+        <div className="space-y-1">
+          <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
+          <div className="h-3 w-24 animate-pulse rounded bg-slate-200" />
+        </div>
+      </TableCell>
+      <TableCell><div className="h-6 w-20 animate-pulse rounded-full bg-slate-200" /></TableCell>
+      <TableCell><div className="ml-auto h-8 w-16 animate-pulse rounded-md bg-slate-200" /></TableCell>
+    </TableRow>
+  );
+}
+
 function ProductRowActions({
   product,
   t,
@@ -113,7 +136,10 @@ export function SellerProductsPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.products.title")}</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.products.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("marketplaceSeller.products.subtitle")}</p>
+        </div>
         <Link
           to="/farmer/marketplace-products/new"
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
@@ -154,9 +180,6 @@ export function SellerProductsPage() {
 
       {/* Products table */}
       <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
-        {productsQuery.isLoading && (
-          <div className="p-8 text-center text-sm text-slate-500">{t("marketplaceSeller.products.loading")}</div>
-        )}
         {productsQuery.isError && (
           <div className="p-8 text-center text-sm text-red-600">{t("marketplaceSeller.products.error")}</div>
         )}
@@ -164,62 +187,62 @@ export function SellerProductsPage() {
           <div className="p-8 text-center text-sm text-slate-500">{t("marketplaceSeller.products.empty")}</div>
         )}
 
-        {!productsQuery.isLoading && !productsQuery.isError && products.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50">
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.product")}</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.category")}</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.price")}</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.stock")}</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.status")}</TableHead>
-                <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id} className="hover:bg-slate-50/50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-slate-100">
-                        {product.imageUrl ? (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">
-                            {product.name.slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.product")}</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.category")}</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.price")}</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.stock")}</TableHead>
+              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.status")}</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.products.table.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {productsQuery.isLoading
+              ? Array.from({ length: 5 }, (_, i) => <TableRowSkeleton key={i} />)
+              : products.map((product) => (
+                  <TableRow key={product.id} className="hover:bg-slate-50/50">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-slate-100">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">
+                              {product.name.slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-slate-900">{product.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-slate-900">{product.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">{product.category}</TableCell>
-                  <TableCell className="text-sm font-medium text-emerald-600">
-                    {formatVnd(product.price, locale)}/{product.unit}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-700">
-                    <div className="space-y-0.5">
-                      <p>{product.stockQuantity} {product.unit}</p>
-                      <p className="text-xs text-slate-500">Available: {product.availableQuantity} {product.unit}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusPillClass(product.status)}`}>
-                      {t(`marketplaceSeller.status.product.${product.status}`)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <ProductRowActions product={product} t={t} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600">{product.category}</TableCell>
+                    <TableCell className="text-sm font-medium text-emerald-600">
+                      {formatVnd(product.price, locale)}/{product.unit}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-700">
+                      <div className="space-y-0.5">
+                        <p>{product.stockQuantity} {product.unit}</p>
+                        <p className="text-xs text-slate-500">{t("marketplaceSeller.products.table.available")}: {product.availableQuantity} {product.unit}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusPillClass(product.status)}`}>
+                        {t(`marketplaceSeller.status.product.${product.status}`)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <ProductRowActions product={product} t={t} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

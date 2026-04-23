@@ -1,22 +1,20 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShoppingBag } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Badge, Button, Card, CardContent } from "@/shared/ui";
+import { cn } from "@/shared/lib";
 import { type MarketplaceOrderStatus } from "@/shared/api";
 import { useMarketplaceOrders } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
 
-const ORDER_STATUSES: Array<{ value: MarketplaceOrderStatus; label: string }> = [
-  { value: "PENDING", label: "Pending" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PREPARING", label: "Preparing" },
-  { value: "DELIVERING", label: "Delivering" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
+const ORDER_STATUSES: Array<{ value: MarketplaceOrderStatus }> = [
+  { value: "PENDING" },
+  { value: "CONFIRMED" },
+  { value: "PREPARING" },
+  { value: "DELIVERING" },
+  { value: "COMPLETED" },
+  { value: "CANCELLED" },
 ];
-
-function statusLabel(status: MarketplaceOrderStatus): string {
-  return ORDER_STATUSES.find((item) => item.value === status)?.label ?? status;
-}
 
 function statusVariant(status: MarketplaceOrderStatus):
   | "default"
@@ -38,6 +36,24 @@ function statusVariant(status: MarketplaceOrderStatus):
   }
 }
 
+function statusAccentClass(status: MarketplaceOrderStatus): string {
+  switch (status) {
+    case "PENDING":
+      return "border-l-amber-400";
+    case "CONFIRMED":
+    case "PREPARING":
+      return "border-l-blue-400";
+    case "DELIVERING":
+      return "border-l-emerald-400";
+    case "COMPLETED":
+      return "border-l-emerald-600";
+    case "CANCELLED":
+      return "border-l-red-400";
+    default:
+      return "border-l-slate-300";
+  }
+}
+
 function toPositiveInt(value: string | null, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
@@ -45,6 +61,7 @@ function toPositiveInt(value: string | null, fallback: number) {
 
 export function MyOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
   const page = toPositiveInt(searchParams.get("page"), 1);
   const statusParam = searchParams.get("status");
   const selectedStatus = ORDER_STATUSES.some((item) => item.value === statusParam)
@@ -71,7 +88,7 @@ export function MyOrdersPage() {
   if (ordersQuery.isLoading) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        Loading orders...
+        {t("marketplaceBuyer.myOrders.loadingOrders")}
       </div>
     );
   }
@@ -79,7 +96,7 @@ export function MyOrdersPage() {
   if (ordersQuery.isError) {
     return (
       <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        Failed to load orders.
+        {t("marketplaceBuyer.myOrders.errorOrders")}
       </div>
     );
   }
@@ -88,35 +105,55 @@ export function MyOrdersPage() {
   const orders = orderPage?.items ?? [];
   const totalPages = Math.max(orderPage?.totalPages ?? 1, 1);
 
+  const StatusChips = (
+    <div className="flex flex-wrap gap-1.5">
+      <button
+        type="button"
+        onClick={() => updateParams({ status: null })}
+        className={cn(
+          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+          !selectedStatus
+            ? "bg-emerald-600 text-white"
+            : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+        )}
+      >
+        {t("marketplaceBuyer.myOrders.filterAll")}
+      </button>
+      {ORDER_STATUSES.map((s) => (
+        <button
+          key={s.value}
+          type="button"
+          onClick={() => updateParams({ status: s.value === selectedStatus ? null : s.value })}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            selectedStatus === s.value
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+          )}
+        >
+          {t(`marketplaceSeller.status.order.${s.value}`)}
+        </button>
+      ))}
+    </div>
+  );
+
   if (orders.length === 0) {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-slate-900">My orders</h1>
-          <select
-            value={selectedStatus ?? ""}
-            onChange={(event) => updateParams({ status: event.target.value || null })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-          >
-            <option value="">All statuses</option>
-            {ORDER_STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.title")}</h1>
+          {StatusChips}
         </div>
 
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <h2 className="text-xl font-semibold text-slate-900">No order yet</h2>
-          <p className="mt-2 text-sm text-slate-500">
-            You have not created marketplace order.
-          </p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center">
+          <ShoppingBag className="mb-4 text-slate-300" size={48} />
+          <h2 className="text-xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.emptyTitle")}</h2>
+          <p className="mt-2 text-sm text-slate-500">{t("marketplaceBuyer.myOrders.emptyDesc")}</p>
           <Link
             to="/marketplace/products"
-            className="mt-4 inline-flex text-sm text-emerald-700 hover:underline"
+            className="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:underline"
           >
-            Start shopping
+            {t("marketplaceBuyer.myOrders.startShopping")}
           </Link>
         </div>
       </div>
@@ -127,75 +164,67 @@ export function MyOrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">My orders</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.title")}</h1>
           <p className="text-sm text-slate-500">
-            Track fulfillment and payment verification for each farmer order.
+            {t("marketplaceBuyer.myOrders.subtitle")}
           </p>
         </div>
-
-        <select
-          value={selectedStatus ?? ""}
-          onChange={(event) => updateParams({ status: event.target.value || null })}
-          className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-        >
-          <option value="">All statuses</option>
-          {ORDER_STATUSES.map((status) => (
-            <option key={status.value} value={status.value}>
-              {status.label}
-            </option>
-          ))}
-        </select>
+        {StatusChips}
       </div>
 
       {orders.map((order) => (
-        <Card key={order.id}>
+        <Card key={order.id} className={cn("overflow-hidden border-l-4", statusAccentClass(order.status))}>
           <CardContent className="space-y-3 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
                 <p className="text-xs text-slate-500">
-                  Group: {order.orderGroupCode} - {formatDateTime(order.createdAt)}
+                  {t("marketplaceBuyer.myOrders.group")}: {order.orderGroupCode} · {formatDateTime(order.createdAt)}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={statusVariant(order.status)}>{statusLabel(order.status)}</Badge>
+                <Badge variant={statusVariant(order.status)}>
+                  {t(`marketplaceSeller.status.order.${order.status}`)}
+                </Badge>
                 <Badge variant="outline">
-                  {order.payment.method} - {order.payment.verificationStatus}
+                  {order.payment.method} · {order.payment.verificationStatus}
                 </Badge>
               </div>
             </div>
 
-            <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2">
+            <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div className="space-y-1">
-                <p>
-                  Recipient: {order.shippingRecipientName} - {order.shippingPhone}
+                <p className="truncate">
+                  <span className="font-medium text-slate-700">{order.shippingRecipientName}</span>
+                  {" · "}{order.shippingPhone}
                 </p>
-                <p className="line-clamp-1">Address: {order.shippingAddressLine}</p>
+                <p className="line-clamp-1 text-xs text-slate-500">{order.shippingAddressLine}</p>
               </div>
-              <div className="space-y-1 md:text-right">
-                <p>
-                  Total:{" "}
-                  <span className="font-semibold text-emerald-700">
-                    {formatVnd(order.totalAmount)}
-                  </span>
-                </p>
-                <p>{order.canCancel ? "Eligible for cancellation" : "Cannot be cancelled now"}</p>
+              <div className="text-xs text-slate-500 sm:text-right">
+                {order.canCancel
+                  ? t("marketplaceBuyer.myOrders.eligibleForCancellation")
+                  : t("marketplaceBuyer.myOrders.cannotCancel")}
               </div>
             </div>
 
-            <Link
-              to={`/marketplace/orders/${order.id}`}
-              className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
-            >
-              Order detail <ChevronRight size={14} />
-            </Link>
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+              <Link
+                to={`/marketplace/orders/${order.id}`}
+                className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline"
+              >
+                {t("marketplaceBuyer.myOrders.orderDetail")} <ChevronRight size={14} />
+              </Link>
+              <span className="text-sm font-semibold text-slate-900">
+                {formatVnd(order.totalAmount)}
+              </span>
+            </div>
           </CardContent>
         </Card>
       ))}
 
       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
         <p className="text-sm text-slate-500">
-          Page {page} / {totalPages}
+          {t("marketplaceBuyer.myOrders.page")} {page} / {totalPages}
         </p>
         <div className="flex gap-2">
           <Button
@@ -204,7 +233,7 @@ export function MyOrdersPage() {
             disabled={page <= 1}
             onClick={() => updateParams({ page: String(page - 1) })}
           >
-            Previous
+            {t("marketplaceBuyer.myOrders.previous")}
           </Button>
           <Button
             variant="outline"
@@ -212,7 +241,7 @@ export function MyOrdersPage() {
             disabled={page >= totalPages}
             onClick={() => updateParams({ page: String(page + 1) })}
           >
-            Next
+            {t("marketplaceBuyer.myOrders.next")}
           </Button>
         </div>
       </div>
