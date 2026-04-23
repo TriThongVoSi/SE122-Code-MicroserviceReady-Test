@@ -1,19 +1,858 @@
-﻿-- =========================================================
--- ACM Platform - Comprehensive Seed Data (MySQL Compatible)
 -- =========================================================
--- Version: 6.1 - Extended cross-portal scenarios - 2026-03-19
+-- ACM Platform - One-Run Demo Bootstrap (MySQL 8 Compatible)
+-- =========================================================
+-- Version: 7.0 - Full bootstrap with marketplace demo - 2026-04-23
 --
--- Default Admin: admin / Password: Admin@123 (user_id = 1)
--- Default Farmer: farmer / Password: Farmer@123 (user_id = 2)
+-- Demo accounts:
+--   admin    / admin123
+--   farmer   / 12345678
+--   buyer    / 12345678
+--   farmer2  / 12345678
+--   employee / 12345678
+--   employee2/ 12345678
 -- =========================================================
 -- HƯỚNG DẪN SỬ DỤNG:
--- 1. Đảm bảo database schema đã được tạo qua Flyway migrations
--- 2. Đảm bảo có user ID = 1 (admin) và ID = 2 (farmer) trong bảng users
--- 3. Chạy file này để insert dữ liệu mẫu đầy đủ các trường hợp
+-- 1. Chạy trực tiếp file này trên MySQL 8+
+-- 2. File sẽ tự tạo database `quanlymuavu`
+-- 3. File sẽ reset schema demo và nạp dữ liệu mẫu đầy đủ trong một lần chạy
 -- =========================================================
 
+CREATE DATABASE IF NOT EXISTS `quanlymuavu`
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
 USE `quanlymuavu`;
+
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+DROP VIEW IF EXISTS vw_admin_inventory_lot_expiry_base;
+DROP VIEW IF EXISTS vw_admin_inventory_lot_farm;
+DROP VIEW IF EXISTS vw_admin_season_risk;
+
+DROP TABLE IF EXISTS marketplace_product_reviews;
+DROP TABLE IF EXISTS marketplace_addresses;
+DROP TABLE IF EXISTS marketplace_order_items;
+DROP TABLE IF EXISTS marketplace_orders;
+DROP TABLE IF EXISTS marketplace_order_groups;
+DROP TABLE IF EXISTS marketplace_cart_items;
+DROP TABLE IF EXISTS marketplace_carts;
+DROP TABLE IF EXISTS marketplace_products;
+DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS product_warehouse_transactions;
+DROP TABLE IF EXISTS product_warehouse_lots;
+DROP TABLE IF EXISTS payroll_records;
+DROP TABLE IF EXISTS task_progress_logs;
+DROP TABLE IF EXISTS season_employees;
+DROP TABLE IF EXISTS soil_tests;
+DROP TABLE IF EXISTS irrigation_water_analyses;
+DROP TABLE IF EXISTS nutrient_input_events;
+DROP TABLE IF EXISTS crop_nitrogen_references;
+DROP TABLE IF EXISTS document_recent_opens;
+DROP TABLE IF EXISTS document_favorites;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS alerts;
+DROP TABLE IF EXISTS incidents;
+DROP TABLE IF EXISTS inventory_balances;
+DROP TABLE IF EXISTS stock_movements;
+DROP TABLE IF EXISTS stock_locations;
+DROP TABLE IF EXISTS warehouses;
+DROP TABLE IF EXISTS supply_lots;
+DROP TABLE IF EXISTS supply_items;
+DROP TABLE IF EXISTS suppliers;
+DROP TABLE IF EXISTS field_logs;
+DROP TABLE IF EXISTS harvests;
+DROP TABLE IF EXISTS expenses;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS seasons;
+DROP TABLE IF EXISTS plots;
+DROP TABLE IF EXISTS farms;
+DROP TABLE IF EXISTS user_preferences;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS documents;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS varieties;
+DROP TABLE IF EXISTS crops;
+DROP TABLE IF EXISTS wards;
+DROP TABLE IF EXISTS provinces;
+
+-- =========================================================
+-- 0. BOOTSTRAP SCHEMA
+-- =========================================================
+
+CREATE TABLE provinces (
+    Id INT NOT NULL PRIMARY KEY,
+    Name VARCHAR(128) NOT NULL,
+    Slug VARCHAR(128) NOT NULL,
+    Type VARCHAR(32) NOT NULL,
+    NameWithType VARCHAR(256) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE wards (
+    Id INT NOT NULL PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    Slug VARCHAR(255) NOT NULL,
+    Type VARCHAR(64) NOT NULL,
+    NameWithType VARCHAR(512) NOT NULL,
+    ProvinceId INT NOT NULL,
+    CONSTRAINT fk_wards_province FOREIGN KEY (ProvinceId) REFERENCES provinces(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE roles (
+    role_id BIGINT NOT NULL PRIMARY KEY,
+    role_code VARCHAR(100) NOT NULL,
+    role_name VARCHAR(255) NULL,
+    description VARCHAR(500) NULL,
+    CONSTRAINT uk_roles_code UNIQUE (role_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE users (
+    user_id BIGINT NOT NULL PRIMARY KEY,
+    user_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(30) NULL,
+    full_name VARCHAR(255) NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    province_id INT NULL,
+    ward_id INT NULL,
+    joined_date DATETIME NULL,
+    CONSTRAINT uk_users_username UNIQUE (user_name),
+    CONSTRAINT uk_users_email UNIQUE (email),
+    CONSTRAINT fk_users_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
+    CONSTRAINT fk_users_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_roles (
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles(role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE crops (
+    crop_id INT NOT NULL PRIMARY KEY,
+    crop_name VARCHAR(255) NOT NULL,
+    description TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE varieties (
+    id INT NOT NULL PRIMARY KEY,
+    crop_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    CONSTRAINT fk_varieties_crop FOREIGN KEY (crop_id) REFERENCES crops(crop_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE farms (
+    farm_id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NULL,
+    farm_name VARCHAR(255) NOT NULL,
+    province_id INT NOT NULL,
+    ward_id INT NOT NULL,
+    area DECIMAL(19,2) NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_farms_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_farms_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
+    CONSTRAINT fk_farms_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE plots (
+    plot_id INT NOT NULL PRIMARY KEY,
+    farm_id INT NOT NULL,
+    plot_name VARCHAR(255) NOT NULL,
+    area DECIMAL(19,2) NULL,
+    soil_type VARCHAR(50) NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'IN_USE',
+    boundary_geojson LONGTEXT NULL,
+    created_by BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_plots_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_plots_created_by FOREIGN KEY (created_by) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE seasons (
+    season_id INT NOT NULL PRIMARY KEY,
+    season_name VARCHAR(255) NOT NULL,
+    plot_id INT NOT NULL,
+    crop_id INT NOT NULL,
+    variety_id INT NULL,
+    start_date DATE NOT NULL,
+    planned_harvest_date DATE NULL,
+    end_date DATE NULL,
+    status VARCHAR(30) NOT NULL,
+    initial_plant_count INT NOT NULL,
+    current_plant_count INT NULL,
+    expected_yield_kg DECIMAL(19,2) NULL,
+    actual_yield_kg DECIMAL(19,2) NULL,
+    budget_amount DECIMAL(19,2) NULL,
+    notes TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_seasons_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_seasons_crop FOREIGN KEY (crop_id) REFERENCES crops(crop_id),
+    CONSTRAINT fk_seasons_variety FOREIGN KEY (variety_id) REFERENCES varieties(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE tasks (
+    task_id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    season_id INT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NULL,
+    planned_date DATE NULL,
+    due_date DATE NULL,
+    status VARCHAR(30) NULL,
+    actual_start_date DATE NULL,
+    actual_end_date DATE NULL,
+    notes TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_tasks_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_tasks_season FOREIGN KEY (season_id) REFERENCES seasons(season_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE expenses (
+    expense_id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    season_id INT NOT NULL,
+    task_id INT NULL,
+    category VARCHAR(50) NULL,
+    item_name VARCHAR(255) NOT NULL,
+    unit_price DECIMAL(19,2) NOT NULL,
+    quantity INT NOT NULL,
+    total_cost DECIMAL(19,2) NULL,
+    amount DECIMAL(19,2) NULL,
+    payment_status VARCHAR(30) NULL,
+    note TEXT NULL,
+    expense_date DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_expenses_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_expenses_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_expenses_task FOREIGN KEY (task_id) REFERENCES tasks(task_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE harvests (
+    harvest_id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    harvest_date DATE NOT NULL,
+    quantity DECIMAL(19,2) NOT NULL,
+    unit DECIMAL(19,2) NOT NULL,
+    grade VARCHAR(20) NULL,
+    note VARCHAR(500) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_harvests_season FOREIGN KEY (season_id) REFERENCES seasons(season_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE suppliers (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    license_no VARCHAR(100) NULL,
+    contact_email VARCHAR(255) NULL,
+    contact_phone VARCHAR(30) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE supply_items (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    active_ingredient VARCHAR(255) NULL,
+    unit VARCHAR(30) NOT NULL,
+    restricted_flag BOOLEAN NOT NULL DEFAULT FALSE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE supply_lots (
+    id INT NOT NULL PRIMARY KEY,
+    supply_item_id INT NOT NULL,
+    supplier_id INT NULL,
+    batch_code VARCHAR(100) NOT NULL,
+    expiry_date DATE NULL,
+    status VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_supply_lots_item FOREIGN KEY (supply_item_id) REFERENCES supply_items(id),
+    CONSTRAINT fk_supply_lots_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+    CONSTRAINT uk_supply_lots_batch UNIQUE (batch_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE warehouses (
+    id INT NOT NULL PRIMARY KEY,
+    farm_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    type VARCHAR(20) NULL,
+    province_id INT NULL,
+    ward_id INT NULL,
+    CONSTRAINT fk_warehouses_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_warehouses_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
+    CONSTRAINT fk_warehouses_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE stock_locations (
+    id INT NOT NULL PRIMARY KEY,
+    warehouse_id INT NOT NULL,
+    zone VARCHAR(100) NULL,
+    aisle VARCHAR(100) NULL,
+    shelf VARCHAR(100) NULL,
+    bin VARCHAR(100) NULL,
+    CONSTRAINT fk_stock_locations_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE stock_movements (
+    id INT NOT NULL PRIMARY KEY,
+    supply_lot_id INT NOT NULL,
+    warehouse_id INT NOT NULL,
+    location_id INT NULL,
+    movement_type VARCHAR(30) NOT NULL,
+    quantity DECIMAL(19,3) NOT NULL,
+    movement_date DATETIME NOT NULL,
+    season_id INT NULL,
+    task_id INT NULL,
+    note TEXT NULL,
+    CONSTRAINT fk_stock_movements_lot FOREIGN KEY (supply_lot_id) REFERENCES supply_lots(id),
+    CONSTRAINT fk_stock_movements_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+    CONSTRAINT fk_stock_movements_location FOREIGN KEY (location_id) REFERENCES stock_locations(id),
+    CONSTRAINT fk_stock_movements_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_stock_movements_task FOREIGN KEY (task_id) REFERENCES tasks(task_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE inventory_balances (
+    id INT NOT NULL PRIMARY KEY,
+    supply_lot_id INT NOT NULL,
+    warehouse_id INT NOT NULL,
+    location_id INT NULL,
+    quantity DECIMAL(19,3) NOT NULL,
+    CONSTRAINT uk_inventory_balance UNIQUE (supply_lot_id, warehouse_id, location_id),
+    CONSTRAINT fk_inventory_balances_lot FOREIGN KEY (supply_lot_id) REFERENCES supply_lots(id),
+    CONSTRAINT fk_inventory_balances_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+    CONSTRAINT fk_inventory_balances_location FOREIGN KEY (location_id) REFERENCES stock_locations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE field_logs (
+    field_log_id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    log_date DATE NOT NULL,
+    log_type VARCHAR(50) NOT NULL,
+    notes TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_field_logs_season FOREIGN KEY (season_id) REFERENCES seasons(season_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE incidents (
+    id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    reported_by BIGINT NULL,
+    incident_type VARCHAR(50) NULL,
+    severity VARCHAR(20) NULL,
+    status VARCHAR(30) NULL,
+    description TEXT NULL,
+    deadline DATE NULL,
+    resolved_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_incidents_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_incidents_reported_by FOREIGN KEY (reported_by) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE alerts (
+    id INT NOT NULL PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    farm_id INT NULL,
+    season_id INT NULL,
+    plot_id INT NULL,
+    crop_id INT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NULL,
+    suggested_action_type VARCHAR(50) NULL,
+    suggested_action_url VARCHAR(500) NULL,
+    recipient_farmer_ids TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at DATETIME NULL,
+    CONSTRAINT fk_alerts_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_alerts_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_alerts_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_alerts_crop FOREIGN KEY (crop_id) REFERENCES crops(crop_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE notifications (
+    id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255) NULL,
+    message TEXT NULL,
+    link VARCHAR(500) NULL,
+    alert_id INT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME NULL,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_notifications_alert FOREIGN KEY (alert_id) REFERENCES alerts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE documents (
+    document_id INT NOT NULL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(1000) NOT NULL,
+    description TEXT NULL,
+    crop VARCHAR(50) NULL,
+    stage VARCHAR(50) NULL,
+    topic VARCHAR(50) NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by BIGINT NULL,
+    document_type VARCHAR(50) NULL,
+    view_count INT NOT NULL DEFAULT 0,
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL,
+    CONSTRAINT fk_documents_created_by FOREIGN KEY (created_by) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE document_favorites (
+    id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    document_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_document_favorites UNIQUE (user_id, document_id),
+    CONSTRAINT fk_document_favorites_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_document_favorites_document FOREIGN KEY (document_id) REFERENCES documents(document_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE document_recent_opens (
+    id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    document_id INT NOT NULL,
+    opened_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_document_recent_user FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_document_recent_document FOREIGN KEY (document_id) REFERENCES documents(document_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_preferences (
+    id INT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    currency_code VARCHAR(10) NULL,
+    weight_unit VARCHAR(20) NULL,
+    locale VARCHAR(20) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    CONSTRAINT uk_user_preferences_user UNIQUE (user_id),
+    CONSTRAINT fk_user_preferences_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE audit_logs (
+    audit_log_id BIGINT NOT NULL PRIMARY KEY,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INT NOT NULL,
+    operation VARCHAR(50) NOT NULL,
+    performed_by VARCHAR(255) NOT NULL,
+    performed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    snapshot_data TEXT NULL,
+    reason VARCHAR(500) NULL,
+    ip_address VARCHAR(45) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE crop_nitrogen_references (
+    id INT NOT NULL PRIMARY KEY,
+    crop_id INT NOT NULL,
+    n_content_kg_per_kg_yield DECIMAL(12,6) NOT NULL,
+    source_reference VARCHAR(255) NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_crop_n_ref_crop FOREIGN KEY (crop_id) REFERENCES crops(crop_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE nutrient_input_events (
+    id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    plot_id INT NOT NULL,
+    input_source VARCHAR(40) NOT NULL,
+    n_kg DECIMAL(19,4) NOT NULL,
+    applied_date DATE NULL,
+    measured BOOLEAN NOT NULL DEFAULT TRUE,
+    data_source VARCHAR(120) NULL,
+    note TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_nutrient_input_event_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_nutrient_input_event_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE irrigation_water_analyses (
+    id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    plot_id INT NOT NULL,
+    sample_date DATE NOT NULL,
+    nitrate_mg_per_l DECIMAL(19,4) NULL,
+    ammonium_mg_per_l DECIMAL(19,4) NULL,
+    total_n_mg_per_l DECIMAL(19,4) NULL,
+    irrigation_volume_m3 DECIMAL(19,4) NOT NULL,
+    legacy_n_contribution_kg DECIMAL(19,4) NULL,
+    legacy_event_id INT NULL,
+    legacy_derived BOOLEAN NOT NULL DEFAULT FALSE,
+    measured BOOLEAN NOT NULL DEFAULT TRUE,
+    source_type VARCHAR(40) NULL,
+    source_document VARCHAR(255) NULL,
+    lab_reference VARCHAR(255) NULL,
+    note TEXT NULL,
+    created_by_user_id BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_irrigation_analysis_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_irrigation_analysis_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_irrigation_analysis_user FOREIGN KEY (created_by_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE soil_tests (
+    id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    plot_id INT NOT NULL,
+    sample_date DATE NOT NULL,
+    soil_organic_matter_pct DECIMAL(12,4) NULL,
+    mineral_n_kg_per_ha DECIMAL(19,4) NOT NULL,
+    nitrate_mg_per_kg DECIMAL(19,4) NULL,
+    ammonium_mg_per_kg DECIMAL(19,4) NULL,
+    legacy_n_contribution_kg DECIMAL(19,4) NULL,
+    legacy_event_id INT NULL,
+    legacy_derived BOOLEAN NOT NULL DEFAULT FALSE,
+    measured BOOLEAN NOT NULL DEFAULT TRUE,
+    source_type VARCHAR(40) NULL,
+    source_document VARCHAR(255) NULL,
+    lab_reference VARCHAR(255) NULL,
+    note TEXT NULL,
+    created_by_user_id BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_soil_test_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_soil_test_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_soil_test_user FOREIGN KEY (created_by_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE season_employees (
+    id INT NOT NULL PRIMARY KEY,
+    season_id INT NOT NULL,
+    employee_user_id BIGINT NOT NULL,
+    added_by_user_id BIGINT NULL,
+    wage_per_task DECIMAL(15,2) NULL,
+    active BIT(1) NOT NULL DEFAULT b'1',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_season_employee UNIQUE (season_id, employee_user_id),
+    CONSTRAINT fk_season_employee_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_season_employee_user FOREIGN KEY (employee_user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_season_employee_added_by FOREIGN KEY (added_by_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE task_progress_logs (
+    id INT NOT NULL PRIMARY KEY,
+    task_id INT NOT NULL,
+    employee_user_id BIGINT NOT NULL,
+    progress_percent INT NOT NULL,
+    note TEXT NULL,
+    evidence_url VARCHAR(1000) NULL,
+    logged_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_task_progress_task FOREIGN KEY (task_id) REFERENCES tasks(task_id),
+    CONSTRAINT fk_task_progress_employee FOREIGN KEY (employee_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE payroll_records (
+    id INT NOT NULL PRIMARY KEY,
+    employee_user_id BIGINT NOT NULL,
+    season_id INT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    total_assigned_tasks INT NOT NULL DEFAULT 0,
+    total_completed_tasks INT NOT NULL DEFAULT 0,
+    wage_per_task DECIMAL(15,2) NOT NULL DEFAULT 0,
+    total_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    generated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    note TEXT NULL,
+    CONSTRAINT uk_payroll_employee_season_period UNIQUE (employee_user_id, season_id, period_start, period_end),
+    CONSTRAINT fk_payroll_employee FOREIGN KEY (employee_user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_payroll_season FOREIGN KEY (season_id) REFERENCES seasons(season_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE product_warehouse_lots (
+    id INT NOT NULL PRIMARY KEY,
+    lot_code VARCHAR(100) NOT NULL,
+    product_id INT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    product_variant VARCHAR(255) NULL,
+    season_id INT NULL,
+    farm_id INT NOT NULL,
+    plot_id INT NOT NULL,
+    harvest_id INT NULL,
+    warehouse_id INT NOT NULL,
+    location_id INT NULL,
+    harvested_at DATE NOT NULL,
+    received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    unit VARCHAR(30) NOT NULL,
+    initial_quantity DECIMAL(19,3) NOT NULL,
+    on_hand_quantity DECIMAL(19,3) NOT NULL,
+    grade VARCHAR(50) NULL,
+    quality_status VARCHAR(50) NULL,
+    traceability_data TEXT NULL,
+    note TEXT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'IN_STOCK',
+    created_by BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_product_warehouse_lot_code UNIQUE (lot_code),
+    CONSTRAINT uk_product_warehouse_harvest UNIQUE (harvest_id),
+    CONSTRAINT fk_product_warehouse_lot_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_product_warehouse_lot_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_product_warehouse_lot_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_product_warehouse_lot_harvest FOREIGN KEY (harvest_id) REFERENCES harvests(harvest_id),
+    CONSTRAINT fk_product_warehouse_lot_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+    CONSTRAINT fk_product_warehouse_lot_location FOREIGN KEY (location_id) REFERENCES stock_locations(id),
+    CONSTRAINT fk_product_warehouse_lot_created_by FOREIGN KEY (created_by) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE product_warehouse_transactions (
+    id INT NOT NULL PRIMARY KEY,
+    lot_id INT NOT NULL,
+    transaction_type VARCHAR(40) NOT NULL,
+    quantity DECIMAL(19,3) NOT NULL,
+    unit VARCHAR(30) NOT NULL,
+    resulting_on_hand DECIMAL(19,3) NOT NULL,
+    reference_type VARCHAR(50) NULL,
+    reference_id VARCHAR(100) NULL,
+    note TEXT NULL,
+    created_by BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_product_warehouse_tx_lot FOREIGN KEY (lot_id) REFERENCES product_warehouse_lots(id),
+    CONSTRAINT fk_product_warehouse_tx_created_by FOREIGN KEY (created_by) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE password_reset_tokens (
+    id BIGINT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token_hash VARCHAR(128) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    request_ip VARCHAR(45) NULL,
+    user_agent VARCHAR(512) NULL,
+    CONSTRAINT uk_password_reset_token_hash UNIQUE (token_hash),
+    CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_products (
+    id BIGINT NOT NULL PRIMARY KEY,
+    slug VARCHAR(191) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(120) NULL,
+    short_description VARCHAR(500) NULL,
+    description TEXT NULL,
+    price DECIMAL(19,2) NOT NULL,
+    unit VARCHAR(50) NOT NULL,
+    stock_quantity DECIMAL(19,3) NOT NULL,
+    image_url VARCHAR(1024) NULL,
+    image_urls_json TEXT NULL,
+    farmer_user_id BIGINT NOT NULL,
+    farm_id INT NULL,
+    season_id INT NULL,
+    lot_id INT NOT NULL,
+    traceable BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+    published_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_products_slug UNIQUE (slug),
+    CONSTRAINT uk_marketplace_products_lot UNIQUE (lot_id),
+    CONSTRAINT fk_marketplace_products_farmer_user FOREIGN KEY (farmer_user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_marketplace_products_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_marketplace_products_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_marketplace_products_lot FOREIGN KEY (lot_id) REFERENCES product_warehouse_lots(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_carts (
+    id BIGINT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_carts_user UNIQUE (user_id),
+    CONSTRAINT fk_marketplace_carts_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_cart_items (
+    id BIGINT NOT NULL PRIMARY KEY,
+    cart_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    quantity DECIMAL(19,3) NOT NULL,
+    unit_price_snapshot DECIMAL(19,2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_cart_items_cart_product UNIQUE (cart_id, product_id),
+    CONSTRAINT fk_marketplace_cart_items_cart FOREIGN KEY (cart_id) REFERENCES marketplace_carts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_marketplace_cart_items_product FOREIGN KEY (product_id) REFERENCES marketplace_products(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_order_groups (
+    id BIGINT NOT NULL PRIMARY KEY,
+    group_code VARCHAR(64) NOT NULL,
+    buyer_user_id BIGINT NOT NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    request_fingerprint VARCHAR(128) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_order_groups_group_code UNIQUE (group_code),
+    CONSTRAINT uk_marketplace_order_groups_idempotency UNIQUE (buyer_user_id, idempotency_key),
+    CONSTRAINT fk_marketplace_order_groups_buyer_user FOREIGN KEY (buyer_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_orders (
+    id BIGINT NOT NULL PRIMARY KEY,
+    order_group_id BIGINT NOT NULL,
+    order_code VARCHAR(64) NOT NULL,
+    buyer_user_id BIGINT NOT NULL,
+    farmer_user_id BIGINT NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    payment_method VARCHAR(40) NOT NULL,
+    payment_verification_status VARCHAR(40) NOT NULL DEFAULT 'NOT_REQUIRED',
+    payment_proof_file_name VARCHAR(255) NULL,
+    payment_proof_content_type VARCHAR(150) NULL,
+    payment_proof_storage_path VARCHAR(1000) NULL,
+    payment_proof_uploaded_at TIMESTAMP NULL,
+    payment_verified_at TIMESTAMP NULL,
+    payment_verified_by_user_id BIGINT NULL,
+    payment_verification_note VARCHAR(500) NULL,
+    shipping_recipient_name VARCHAR(255) NOT NULL,
+    shipping_phone VARCHAR(30) NOT NULL,
+    shipping_address_line VARCHAR(500) NOT NULL,
+    note TEXT NULL,
+    subtotal DECIMAL(19,2) NOT NULL,
+    shipping_fee DECIMAL(19,2) NOT NULL,
+    total_amount DECIMAL(19,2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_orders_order_code UNIQUE (order_code),
+    CONSTRAINT fk_marketplace_orders_order_group FOREIGN KEY (order_group_id) REFERENCES marketplace_order_groups(id),
+    CONSTRAINT fk_marketplace_orders_buyer_user FOREIGN KEY (buyer_user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_marketplace_orders_farmer_user FOREIGN KEY (farmer_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_order_items (
+    id BIGINT NOT NULL PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    product_name_snapshot VARCHAR(255) NOT NULL,
+    product_slug_snapshot VARCHAR(191) NOT NULL,
+    image_url_snapshot VARCHAR(1024) NULL,
+    unit_price_snapshot DECIMAL(19,2) NOT NULL,
+    quantity DECIMAL(19,3) NOT NULL,
+    line_total DECIMAL(19,2) NOT NULL,
+    traceable_snapshot BOOLEAN NOT NULL DEFAULT FALSE,
+    farm_id INT NULL,
+    season_id INT NULL,
+    lot_id INT NULL,
+    CONSTRAINT fk_marketplace_order_items_order FOREIGN KEY (order_id) REFERENCES marketplace_orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_marketplace_order_items_product FOREIGN KEY (product_id) REFERENCES marketplace_products(id),
+    CONSTRAINT fk_marketplace_order_items_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
+    CONSTRAINT fk_marketplace_order_items_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
+    CONSTRAINT fk_marketplace_order_items_lot FOREIGN KEY (lot_id) REFERENCES product_warehouse_lots(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_addresses (
+    id BIGINT NOT NULL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    province VARCHAR(120) NOT NULL,
+    district VARCHAR(120) NOT NULL,
+    ward VARCHAR(120) NOT NULL,
+    street VARCHAR(255) NOT NULL,
+    detail VARCHAR(500) NULL,
+    label VARCHAR(30) NOT NULL DEFAULT 'home',
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_marketplace_addresses_user FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE marketplace_product_reviews (
+    id BIGINT NOT NULL PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    order_id BIGINT NOT NULL,
+    buyer_user_id BIGINT NOT NULL,
+    rating TINYINT NOT NULL,
+    comment TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_marketplace_reviews_product_order_buyer UNIQUE (product_id, order_id, buyer_user_id),
+    CONSTRAINT fk_marketplace_reviews_product FOREIGN KEY (product_id) REFERENCES marketplace_products(id),
+    CONSTRAINT fk_marketplace_reviews_order FOREIGN KEY (order_id) REFERENCES marketplace_orders(id),
+    CONSTRAINT fk_marketplace_reviews_buyer_user FOREIGN KEY (buyer_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_wards_province ON wards(ProvinceId);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_province ON users(province_id);
+CREATE INDEX idx_farms_user ON farms(user_id);
+CREATE INDEX idx_plots_farm ON plots(farm_id);
+CREATE INDEX idx_plots_status ON plots(status);
+CREATE INDEX idx_season_plot_name ON seasons(plot_id, season_name);
+CREATE INDEX idx_season_status ON seasons(status);
+CREATE INDEX idx_tasks_season ON tasks(season_id);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_expense_category ON expenses(category);
+CREATE INDEX idx_expense_date ON expenses(expense_date);
+CREATE INDEX idx_expense_item_name ON expenses(item_name);
+CREATE INDEX idx_stock_movements_lot_date ON stock_movements(supply_lot_id, movement_date);
+CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at);
+CREATE INDEX idx_audit_logs_entity_lookup ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_logs_performed_at ON audit_logs(performed_at);
+CREATE INDEX idx_crop_n_ref_crop_active ON crop_nitrogen_references(crop_id, active);
+CREATE INDEX idx_nutrient_input_events_season_plot ON nutrient_input_events(season_id, plot_id);
+CREATE INDEX idx_irrigation_analysis_season_plot ON irrigation_water_analyses(season_id, plot_id);
+CREATE INDEX idx_soil_test_season_plot ON soil_tests(season_id, plot_id);
+CREATE INDEX idx_season_employee_season ON season_employees(season_id);
+CREATE INDEX idx_task_progress_task ON task_progress_logs(task_id);
+CREATE INDEX idx_payroll_employee ON payroll_records(employee_user_id);
+CREATE INDEX idx_product_warehouse_lot_farm ON product_warehouse_lots(farm_id);
+CREATE INDEX idx_product_warehouse_lot_season ON product_warehouse_lots(season_id);
+CREATE INDEX idx_product_warehouse_lot_status ON product_warehouse_lots(status);
+CREATE INDEX idx_product_warehouse_tx_lot ON product_warehouse_transactions(lot_id);
+CREATE INDEX idx_marketplace_products_status ON marketplace_products(status);
+CREATE INDEX idx_marketplace_products_category ON marketplace_products(category);
+CREATE INDEX idx_marketplace_products_traceable ON marketplace_products(traceable);
+CREATE INDEX idx_marketplace_products_farmer_user ON marketplace_products(farmer_user_id);
+CREATE INDEX idx_marketplace_products_farm ON marketplace_products(farm_id);
+CREATE INDEX idx_marketplace_products_stock_quantity ON marketplace_products(stock_quantity);
+CREATE INDEX idx_marketplace_cart_items_product ON marketplace_cart_items(product_id);
+CREATE INDEX idx_marketplace_orders_buyer_user ON marketplace_orders(buyer_user_id);
+CREATE INDEX idx_marketplace_orders_farmer_user ON marketplace_orders(farmer_user_id);
+CREATE INDEX idx_marketplace_orders_status ON marketplace_orders(status);
+CREATE INDEX idx_marketplace_orders_payment_verification_status ON marketplace_orders(payment_verification_status);
+CREATE INDEX idx_marketplace_order_items_order ON marketplace_order_items(order_id);
+CREATE INDEX idx_marketplace_order_items_product ON marketplace_order_items(product_id);
+CREATE INDEX idx_marketplace_addresses_user ON marketplace_addresses(user_id);
+CREATE INDEX idx_marketplace_reviews_product ON marketplace_product_reviews(product_id);
+CREATE INDEX idx_marketplace_reviews_order ON marketplace_product_reviews(order_id);
+
+-- =========================================================
+-- 0.1 LOCATIONS, ROLES, USERS
+-- =========================================================
+INSERT INTO provinces (Id, Name, Slug, Type, NameWithType) VALUES
+    (24, 'Đồng Tháp', 'dong-thap', 'tinh', 'Tỉnh Đồng Tháp'),
+    (30, 'Lâm Đồng', 'lam-dong', 'tinh', 'Tỉnh Lâm Đồng');
+
+INSERT INTO wards (Id, Name, Slug, Type, NameWithType, ProvinceId) VALUES
+    (25112, 'Mỹ An', 'my-an', 'phuong', 'Phường Mỹ An', 24),
+    (30001, 'Xuân Trường', 'xuan-truong', 'xa', 'Xã Xuân Trường', 30);
+
+INSERT INTO roles (role_id, role_code, role_name, description) VALUES
+    (1, 'ADMIN', 'Admin', 'Administrator user with full access'),
+    (2, 'FARMER', 'Farmer', 'Farmer user'),
+    (3, 'BUYER', 'Buyer', 'Marketplace buyer user'),
+    (4, 'EMPLOYEE', 'Employee', 'Employee user');
+
+INSERT INTO users (user_id, user_name, email, phone, full_name, password_hash, status, province_id, ward_id, joined_date) VALUES
+    (1, 'admin', 'admin@acm.local', '0900000000', 'Administrator', '$2a$10$7iN9nIqCTnm9sE2zrREqXu6KXcc6RTcTM2Dqx02qBS0NFjgIQ4442', 'ACTIVE', 24, 25112, '2024-01-01 08:00:00'),
+    (2, 'farmer', 'farmer@acm.local', '0901234567', 'Nguyen Van Farmer', '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy', 'ACTIVE', 24, 25112, '2024-06-01 08:00:00'),
+    (3, 'buyer', 'buyer@acm.local', '0903234000', 'Tran Thi Buyer', '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy', 'ACTIVE', 24, 25112, '2025-12-01 08:00:00'),
+    (4, 'farmer2', 'farmer2@acm.local', '0904234567', 'Le Thi Farmer 2', '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy', 'ACTIVE', 30, 30001, '2025-12-15 08:00:00'),
+    (5, 'employee', 'employee@acm.local', '0902234567', 'Nguyen Van Employee', '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy', 'ACTIVE', 24, 25112, '2025-11-01 08:00:00'),
+    (6, 'employee2', 'employee2@acm.local', '0903234567', 'Tran Thi Employee', '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy', 'ACTIVE', 24, 25112, '2026-01-10 08:00:00');
+
+INSERT INTO user_roles (user_id, role_id) VALUES
+    (1, 1),
+    (2, 2),
+    (3, 3),
+    (4, 2),
+    (5, 4),
+    (6, 4);
 
 -- =========================================================
 -- 1. CROPS & VARIETIES
@@ -35,7 +874,7 @@ INSERT INTO varieties (id, crop_id, name, description) VALUES
                                                            (7, 5, 'Ngô lai NK7328', 'Giống ngô lai cho năng suất cao, chống chịu tốt');
 
 -- =========================================================
--- 2. FARMS (user_id = 2)
+-- 2. FARMS (primary farmer = user_id 2)
 -- =========================================================
 INSERT INTO farms (farm_id, user_id, farm_name, province_id, ward_id, area, active) VALUES
                                                                                         (1, 2, 'Nông trại Phú Điền', 24, 25112, 15.50, TRUE),
@@ -134,7 +973,9 @@ INSERT INTO harvests (harvest_id, season_id, harvest_date, quantity, unit, grade
 (5, 2, '2024-11-20', 1600.00, 8500.00, 'A', 'Thu hoạch lúa nước đợt 2 - hoàn thành', '2024-11-20 10:00:00'),
 -- Season 9 (Archived)
 (6, 9, '2024-07-03', 1400.00, 8000.00, 'A', 'Thu hoạch lúa nước hè', '2024-07-03 10:00:00'),
-(7, 9, '2024-07-05', 1350.00, 8000.00, 'B', 'Đợt cuối', '2024-07-05 10:00:00');-- =========================================================
+(7, 9, '2024-07-05', 1350.00, 8000.00, 'B', 'Đợt cuối', '2024-07-05 10:00:00');
+
+-- =========================================================
 -- 8. SUPPLIERS
 -- =========================================================
 INSERT INTO suppliers (id, name, license_no, contact_email, contact_phone) VALUES
@@ -158,10 +999,10 @@ INSERT INTO supply_items (id, name, active_ingredient, unit, restricted_flag) VA
 -- =========================================================
 INSERT INTO supply_lots (id, supply_item_id, supplier_id, batch_code, expiry_date, status) VALUES
                                                                                                (1, 1, 1, 'NPK-2025-001', '2027-06-30', 'IN_STOCK'),
-                                                                                               (2, 2, 1, 'BT-2024-001', '2025-03-15', 'IN_STOCK'),  -- Sắp hết hạn
+                                                                                               (2, 2, 1, 'BT-2024-001', '2025-03-15', 'IN_STOCK'),
                                                                                                (3, 3, 2, 'UREA-2025-001', '2027-12-31', 'IN_STOCK'),
                                                                                                (4, 4, 2, 'DAP-2025-001', '2027-12-31', 'IN_STOCK'),
-                                                                                               (5, 5, 1, 'WEED-2024-001', '2025-02-01', 'EXPIRED'),  -- Đã hết hạn
+                                                                                               (5, 5, 1, 'WEED-2024-001', '2025-02-01', 'EXPIRED'),
                                                                                                (6, 6, 2, 'KALI-2025-001', '2027-06-30', 'IN_STOCK');
 
 -- =========================================================
@@ -200,29 +1041,23 @@ INSERT INTO stock_movements (id, supply_lot_id, warehouse_id, location_id, movem
 -- 14. INVENTORY BALANCES
 -- =========================================================
 INSERT INTO inventory_balances (id, supply_lot_id, warehouse_id, location_id, quantity) VALUES
-                                                                                            (1, 1, 1, 1, 145.00),
-                                                                                            (2, 2, 1, 2, 40.00),
-                                                                                            (3, 3, 1, 3, 440.00),
-                                                                                            (4, 6, 3, 4, 150.00);
+                                                                                            (1, 1, 1, 1, 145.000),
+                                                                                            (2, 2, 1, 2, 40.000),
+                                                                                            (3, 3, 1, 3, 440.000),
+                                                                                            (4, 6, 3, 4, 150.000);
 
 -- =========================================================
--- 15. FIELD LOGS (Various log types)
+-- 15. DOCUMENTS
 -- =========================================================
-INSERT INTO field_logs (field_log_id, season_id, log_date, log_type, notes, created_at) VALUES
--- Season 3 logs
-(1, 3, '2025-01-06', 'TRANSPLANT', 'Cấy 1200 cây đậu nành, tỉ lệ sống 96%', '2025-01-06 17:00:00'),
-(2, 3, '2025-01-15', 'WEATHER', 'Trời nắng ấm 28°C, thuận lợi cho sinh trưởng', '2025-01-15 08:00:00'),
-(3, 3, '2025-01-20', 'GROWTH', 'Cây cao 25cm, bắt đầu phân cành', '2025-01-20 10:00:00'),
-(4, 3, '2025-02-01', 'PEST', 'Phát hiện rầy mềm, mật độ thấp', '2025-02-01 09:00:00'),
-(5, 3, '2025-02-05', 'FERTILIZE', 'Bón NPK thúc đợt 1, 20kg/sào', '2025-02-05 16:00:00'),
--- Season 4 logs
-(6, 4, '2025-01-10', 'IRRIGATE', 'Bơm nước vào ruộng, mực nước 5cm', '2025-01-10 06:00:00'),
-(7, 4, '2025-01-25', 'GROWTH', 'Lúa nước bắt đầu đẻ nhánh', '2025-01-25 10:00:00'),
-(8, 4, '2025-02-10', 'WEATHER', 'Mưa nhỏ, thuận lợi cho giai đoạn làm đòng', '2025-02-10 08:00:00'),
--- Season 5 logs
-(9, 5, '2025-01-12', 'OTHER', 'Rau mọc đều, tỉ lệ nảy mầm 90%', '2025-01-12 08:00:00'),
-(10, 5, '2025-01-20', 'WEED', 'Nhổ cỏ xung quanh luống', '2025-01-20 16:00:00');
-
+INSERT INTO documents (document_id, title, url, description, crop, stage, topic, is_active, is_public, created_by, document_type, view_count, is_pinned, created_at, updated_at) VALUES
+                                                                                                                                                                                                 (1, 'Quy trình trồng đậu nành theo GAP', 'https://example.com/docs/soybean-gap.pdf', 'Hướng dẫn kỹ thuật trồng đậu nành theo tiêu chuẩn GAP', 'Đậu nành', 'ALL', 'GUIDE', TRUE, TRUE, 1, 'GUIDE', 125, TRUE, '2024-01-15 08:00:00', NOW()),
+                                                                                                                                                                                                 (2, 'Lịch thời vụ 2025', 'https://example.com/docs/calendar-2025.pdf', 'Lịch thời vụ các loại cây trồng chính năm 2025', NULL, 'ALL', 'CALENDAR', TRUE, TRUE, 1, 'GUIDE', 89, TRUE, '2024-12-01 08:00:00', NOW()),
+                                                                                                                                                                                                 (3, 'Kỹ thuật canh tác lúa nước Đài Thơm 8', 'https://example.com/docs/dai-thom-8-guide.pdf', 'Hướng dẫn chi tiết kỹ thuật canh tác giống lúa nước Đài Thơm 8', 'Lúa nước', 'GROWING', 'GUIDE', TRUE, TRUE, 1, 'GUIDE', 67, FALSE, '2024-06-01 08:00:00', NOW()),
+                                                                                                                                                                                                 (4, 'Phòng trừ sâu bệnh hại đậu nành', 'https://example.com/docs/soybean-pest.pdf', 'Các bệnh thường gặp và biện pháp phòng trừ', 'Đậu nành', 'ALL', 'PEST_CONTROL', TRUE, TRUE, 1, 'GUIDE', 45, FALSE, '2024-08-01 08:00:00', NOW()),
+                                                                                                                                                                                                 (5, 'Mẫu sổ nhật ký đồng ruộng', 'https://example.com/docs/field-log-template.xlsx', 'Mẫu sổ ghi chép hoạt động sản xuất', NULL, 'ALL', 'TEMPLATE', TRUE, TRUE, 1, 'TEMPLATE', 33, FALSE, '2024-03-01 08:00:00', NOW()),
+                                                                                                                                                                                                 (6, 'Thông báo: Cập nhật hệ thống', 'https://example.com/docs/system-update-2025.pdf', 'Thông báo các tính năng mới của hệ thống ACM 2025', NULL, 'ALL', 'ANNOUNCEMENT', TRUE, TRUE, 1, 'ANNOUNCEMENT', 156, TRUE, '2025-01-01 08:00:00', NOW()),
+                                                                                                                                                                                                 (7, 'Hướng dẫn sử dụng ứng dụng', 'https://example.com/docs/user-guide.pdf', 'Hướng dẫn sử dụng toàn bộ tính năng hệ thống', NULL, 'ALL', 'HELP', TRUE, TRUE, 1, 'SYSTEM_HELP', 210, FALSE, '2024-01-01 08:00:00', NOW());
+ 
 -- =========================================================
 -- 16. INCIDENTS (All severities & statuses)
 -- =========================================================
@@ -269,16 +1104,22 @@ INSERT INTO notifications (id, user_id, title, message, link, alert_id, created_
 (7, 2, 'Chào mừng!', 'Chào mừng bạn đến với hệ thống Quản lý Mùa vụ ACM', '/dashboard', NULL, '2024-06-01 08:00:00', '2024-06-01 08:30:00');
 
 -- =========================================================
--- 19. DOCUMENTS
+-- 19. FIELD LOGS
 -- =========================================================
-INSERT INTO documents (document_id, title, url, description, crop, stage, topic, is_active, is_public, created_by, document_type, view_count, is_pinned, created_at, updated_at) VALUES
-                                                                                                                                                                                                 (1, 'Quy trình trồng đậu nành theo GAP', 'https://example.com/docs/soybean-gap.pdf', 'Hướng dẫn kỹ thuật trồng đậu nành theo tiêu chuẩn GAP', 'Đậu nành', 'ALL', 'GUIDE', TRUE, TRUE, 1, 'GUIDE', 125, TRUE, '2024-01-15 08:00:00', NOW()),
-                                                                                                                                                                                                 (2, 'Lịch thời vụ 2025', 'https://example.com/docs/calendar-2025.pdf', 'Lịch thời vụ các loại cây trồng chính năm 2025', NULL, 'ALL', 'CALENDAR', TRUE, TRUE, 1, 'GUIDE', 89, TRUE, '2024-12-01 08:00:00', NOW()),
-                                                                                                                                                                                                 (3, 'Kỹ thuật canh tác lúa nước Đài Thơm 8', 'https://example.com/docs/dai-thom-8-guide.pdf', 'Hướng dẫn chi tiết kỹ thuật canh tác giống lúa nước Đài Thơm 8', 'Lúa nước', 'GROWING', 'GUIDE', TRUE, TRUE, 1, 'GUIDE', 67, FALSE, '2024-06-01 08:00:00', NOW()),
-                                                                                                                                                                                                 (4, 'Phòng trừ sâu bệnh hại đậu nành', 'https://example.com/docs/soybean-pest.pdf', 'Các bệnh thường gặp và biện pháp phòng trừ', 'Đậu nành', 'ALL', 'PEST_CONTROL', TRUE, TRUE, 1, 'GUIDE', 45, FALSE, '2024-08-01 08:00:00', NOW()),
-                                                                                                                                                                                                 (5, 'Mẫu sổ nhật ký đồng ruộng', 'https://example.com/docs/field-log-template.xlsx', 'Mẫu sổ ghi chép hoạt động sản xuất', NULL, 'ALL', 'TEMPLATE', TRUE, TRUE, 1, 'TEMPLATE', 33, FALSE, '2024-03-01 08:00:00', NOW()),
-                                                                                                                                                                                                 (6, 'Thông báo: Cập nhật hệ thống', 'https://example.com/docs/system-update-2025.pdf', 'Thông báo các tính năng mới của hệ thống ACM 2025', NULL, 'ALL', 'ANNOUNCEMENT', TRUE, TRUE, 1, 'ANNOUNCEMENT', 156, TRUE, '2025-01-01 08:00:00', NOW()),
-                                                                                                                                                                                                 (7, 'Hướng dẫn sử dụng ứng dụng', 'https://example.com/docs/user-guide.pdf', 'Hướng dẫn sử dụng toàn bộ tính năng hệ thống', NULL, 'ALL', 'HELP', TRUE, TRUE, 1, 'SYSTEM_HELP', 210, FALSE, '2024-01-01 08:00:00', NOW());
+INSERT INTO field_logs (field_log_id, season_id, log_date, log_type, notes, created_at) VALUES
+-- Season 3 logs
+(1, 3, '2025-01-06', 'TRANSPLANT', 'Cấy 1200 cây đậu nành, tỉ lệ sống 96%', '2025-01-06 17:00:00'),
+(2, 3, '2025-01-15', 'WEATHER', 'Trời nắng ấm 28°C, thuận lợi cho sinh trưởng', '2025-01-15 08:00:00'),
+(3, 3, '2025-01-20', 'GROWTH', 'Cây cao 25cm, bắt đầu phân cành', '2025-01-20 10:00:00'),
+(4, 3, '2025-02-01', 'PEST', 'Phát hiện rầy mềm, mật độ thấp', '2025-02-01 09:00:00'),
+(5, 3, '2025-02-05', 'FERTILIZE', 'Bón NPK thúc đợt 1, 20kg/sào', '2025-02-05 16:00:00'),
+-- Season 4 logs
+(6, 4, '2025-01-10', 'IRRIGATE', 'Bơm nước vào ruộng, mực nước 5cm', '2025-01-10 06:00:00'),
+(7, 4, '2025-01-25', 'GROWTH', 'Lúa nước bắt đầu đẻ nhánh', '2025-01-25 10:00:00'),
+(8, 4, '2025-02-10', 'WEATHER', 'Mưa nhỏ, thuận lợi cho giai đoạn làm đòng', '2025-02-10 08:00:00'),
+-- Season 5 logs
+(9, 5, '2025-01-12', 'OTHER', 'Rau mọc đều, tỉ lệ nảy mầm 90%', '2025-01-12 08:00:00'),
+(10, 5, '2025-01-20', 'WEED', 'Nhổ cỏ xung quanh luống', '2025-01-20 16:00:00');
 
 -- =========================================================
 -- 20. DOCUMENT FAVORITES & RECENT OPENS (for user_id = 2)
@@ -296,7 +1137,7 @@ INSERT INTO document_recent_opens (id, user_id, document_id, opened_at) VALUES
                                                                             (5, 2, 2, '2025-01-20 09:00:00');
 
 -- =========================================================
--- 21. USER PREFERENCES (for user_id = 2)
+-- 21. USER PREFERENCES
 -- =========================================================
 INSERT INTO user_preferences (id, user_id, currency_code, weight_unit, locale, created_at, updated_at) VALUES
     (1, 2, 'VND', 'KG', 'vi-VN', '2024-06-01 08:00:00', NOW());
@@ -467,36 +1308,37 @@ VALUES
     (6, 3, 'ADJUSTMENT', -30.000, 'kg', 150.000, 'INVENTORY_CHECK', 'ADJ-2025-001', 'Điều chỉnh hao hụt sau phân loại', 2, '2025-02-10 09:00:00');
 
 -- =========================================================
--- =========================================================
 -- 31. 2026-2027 CROSS-PORTAL SCENARIOS (PAST/CURRENT/FUTURE)
 -- =========================================================
 SET @admin_user_id := COALESCE((SELECT user_id FROM users WHERE user_name = 'admin' LIMIT 1), 1);
 SET @farmer_user_id := COALESCE((SELECT user_id FROM users WHERE user_name = 'farmer' LIMIT 1), 2);
 
-INSERT INTO roles (role_code, role_name, description)
-SELECT 'EMPLOYEE', 'Employee', 'Employee role for labor portal'
+INSERT INTO roles (role_id, role_code, role_name, description)
+SELECT 4, 'EMPLOYEE', 'Employee', 'Employee role for labor portal'
 WHERE NOT EXISTS (SELECT 1 FROM roles WHERE role_code = 'EMPLOYEE');
 
-INSERT INTO users (user_name, email, phone, full_name, password_hash, status, province_id, ward_id, joined_date)
+INSERT INTO users (user_id, user_name, email, phone, full_name, password_hash, status, province_id, ward_id, joined_date)
 SELECT
+    5,
     'employee',
     'employee@acm.local',
     '0902234567',
     'Nguyen Van Employee',
-    COALESCE((SELECT password_hash FROM users WHERE user_name = 'farmer' LIMIT 1), '$2a$10$7EqJtq98hPqEX7fNZaFWoO/8xQWfhKGXT5VqC7EIgA6GrCVuVi//.'),
+    '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy',
     'ACTIVE',
     24,
     25112,
     '2025-11-01 08:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE user_name = 'employee');
 
-INSERT INTO users (user_name, email, phone, full_name, password_hash, status, province_id, ward_id, joined_date)
+INSERT INTO users (user_id, user_name, email, phone, full_name, password_hash, status, province_id, ward_id, joined_date)
 SELECT
+    6,
     'employee2',
     'employee2@acm.local',
     '0903234567',
     'Tran Thi Employee',
-    COALESCE((SELECT password_hash FROM users WHERE user_name = 'farmer' LIMIT 1), '$2a$10$7EqJtq98hPqEX7fNZaFWoO/8xQWfhKGXT5VqC7EIgA6GrCVuVi//.'),
+    '$2a$10$BzROX8TgxrKpb./sQD9w..VmxFh1AJjAQAH8mxhJfdmpb2C7aWLIy',
     'ACTIVE',
     24,
     25112,
@@ -655,12 +1497,191 @@ VALUES
     (11, 5, 'STOCK_OUT', 160.000, 'kg', 310.000, 'ORDER', 'SO-2026-018', 'Xuất đơn online và đại lý', @farmer_user_id, '2026-03-18 09:35:00');
 
 -- =========================================================
+-- 32. MARKETPLACE SELLER EXPANSION
+-- =========================================================
+SET @buyer_user_id := COALESCE((SELECT user_id FROM users WHERE user_name = 'buyer' LIMIT 1), 3);
+SET @farmer2_user_id := COALESCE((SELECT user_id FROM users WHERE user_name = 'farmer2' LIMIT 1), 4);
+
+INSERT INTO farms (farm_id, user_id, farm_name, province_id, ward_id, area, active) VALUES
+    (4, @farmer2_user_id, 'Nông trại Cao Nguyên Xanh', 30, 30001, 12.80, TRUE);
+
+INSERT INTO plots (plot_id, farm_id, plot_name, area, soil_type, status, created_by, created_at, updated_at) VALUES
+    (9, 4, 'Lô C1 - Ngô cao nguyên', 4.60, 'LOAM', 'IN_USE', @farmer2_user_id, '2026-01-12 08:00:00', '2026-03-20 08:00:00');
+
+INSERT INTO seasons (season_id, season_name, plot_id, crop_id, variety_id, start_date, planned_harvest_date, end_date, status, initial_plant_count, current_plant_count, expected_yield_kg, actual_yield_kg, budget_amount, notes, created_at) VALUES
+    (14, 'Vụ Ngô Cao Nguyên 2026', 9, 5, 7, '2026-01-15', '2026-03-25', '2026-03-28', 'COMPLETED', 1800, 1720, 980.00, 940.00, 6800000.00, 'Mùa vụ hoàn tất để demo seller thứ hai trên marketplace', '2026-01-15 08:00:00');
+
+INSERT INTO harvests (harvest_id, season_id, harvest_date, quantity, unit, grade, note, created_at) VALUES
+    (15, 14, '2026-03-26', 940.00, 15000.00, 'A', 'Thu hoạch ngô ngọt cao nguyên phục vụ kênh online', '2026-03-26 16:30:00');
+
+INSERT INTO warehouses (id, farm_id, name, type, province_id, ward_id) VALUES
+    (4, 4, 'Kho Cao Nguyên Xanh', 'OUTPUT', 30, 30001);
+
+INSERT INTO stock_locations (id, warehouse_id, zone, aisle, shelf, bin) VALUES
+    (5, 4, 'Khu C', 'Hàng 1', 'Kệ 1', 'Ô 1');
+
+INSERT INTO product_warehouse_lots
+    (id, lot_code, product_id, product_name, product_variant, season_id, farm_id, plot_id, harvest_id, warehouse_id, location_id,
+     harvested_at, received_at, unit, initial_quantity, on_hand_quantity, grade, quality_status, traceability_data, note, status,
+     created_by, created_at, updated_at)
+VALUES
+    (6, 'LOT-CORN-2026-03', 5001, 'Ngô ngọt NK7328', 'Loại A', 14, 4, 9, 15, 4, 5,
+     '2026-03-26', '2026-03-26 18:00:00', 'kg', 940.000, 900.000, 'A', 'FRESH',
+     '{"harvestTaskId":null,"route":"plot-9->warehouse-4"}', 'Lô ngô của seller thứ hai trên marketplace', 'IN_STOCK',
+     @farmer2_user_id, '2026-03-26 18:00:00', '2026-03-28 08:00:00');
+
+INSERT INTO product_warehouse_transactions
+    (id, lot_id, transaction_type, quantity, unit, resulting_on_hand, reference_type, reference_id, note, created_by, created_at)
+VALUES
+    (12, 6, 'RECEIPT_FROM_HARVEST', 940.000, 'kg', 940.000, 'HARVEST', '15', 'Nhập kho ngô cao nguyên', @farmer2_user_id, '2026-03-26 18:05:00'),
+    (13, 6, 'STOCK_OUT', 40.000, 'kg', 900.000, 'ORDER', 'SO-2026-024', 'Xuất thử nghiệm cho đơn demo marketplace', @farmer2_user_id, '2026-03-29 09:00:00');
+
+INSERT INTO user_preferences (id, user_id, currency_code, weight_unit, locale, created_at, updated_at) VALUES
+    (4, @buyer_user_id, 'VND', 'KG', 'vi-VN', '2026-04-01 08:00:00', '2026-04-01 08:00:00'),
+    (5, @farmer2_user_id, 'VND', 'KG', 'vi-VN', '2026-04-01 08:05:00', '2026-04-01 08:05:00');
+
+-- =========================================================
+-- 33. MARKETPLACE DEMO DATA
+-- =========================================================
+INSERT INTO marketplace_products
+    (id, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
+     farmer_user_id, farm_id, season_id, lot_id, traceable, status, published_at, created_at, updated_at)
+VALUES
+    (1, 'dau-nanh-ags398-thu-nghiem', 'Đậu nành AGS398 thử nghiệm', 'SOYBEAN', 'Listing bản nháp cho luồng farmer', 'Sản phẩm đang ở trạng thái nháp để demo quy trình tạo listing của nông hộ.', 155000.00, 'kg', 180.000,
+     'https://images.example.com/marketplace/soybean-draft-cover.jpg', '["https://images.example.com/marketplace/soybean-draft-cover.jpg","https://images.example.com/marketplace/soybean-draft-detail.jpg"]',
+     2, 1, 3, 1, TRUE, 'DRAFT', NULL, '2026-04-01 08:00:00', '2026-04-01 08:00:00'),
+    (2, 'gao-om5451-chon-loc', 'Gạo OM5451 chọn lọc', 'RICE', 'Gạo lúa nước truy xuất đầy đủ từ kho thành phẩm.', 'Sản phẩm demo chính cho catalog buyer, farm detail và traceability.', 125000.00, 'kg', 600.000,
+     'https://images.example.com/marketplace/rice-om5451-cover.jpg', '["https://images.example.com/marketplace/rice-om5451-cover.jpg","https://images.example.com/marketplace/rice-om5451-pack.jpg"]',
+     2, 1, 4, 2, TRUE, 'PUBLISHED', '2026-04-02 08:00:00', '2026-04-02 08:00:00', '2026-04-20 08:00:00'),
+    (3, 'lac-tuoi-an-phat', 'Lạc tươi An Phát', 'PEANUT', 'Listing đang chờ duyệt từ nông trại An Phát.', 'Dùng để demo dashboard farmer với trạng thái pending review.', 92000.00, 'kg', 120.000,
+     'https://images.example.com/marketplace/peanut-cover.jpg', '["https://images.example.com/marketplace/peanut-cover.jpg"]',
+     2, 2, 5, 3, TRUE, 'PENDING_REVIEW', NULL, '2026-04-03 08:00:00', '2026-04-03 08:00:00'),
+    (4, 'dau-den-cao-cap-tet-2026', 'Đậu đen cao cấp Tết 2026', 'BLACK_BEAN', 'Listing đã ẩn sau chiến dịch Tết.', 'Dùng để demo trạng thái hidden trong dashboard admin/farmer.', 98000.00, 'kg', 1500.000,
+     'https://images.example.com/marketplace/blackbean-cover.jpg', '["https://images.example.com/marketplace/blackbean-cover.jpg"]',
+     2, 2, 10, 4, TRUE, 'HIDDEN', '2026-03-01 08:00:00', '2026-03-01 08:00:00', '2026-04-05 08:00:00'),
+    (5, 'dau-nanh-ags398-say-kho-2026', 'Đậu nành AGS398 sấy khô 2026', 'SOYBEAN', 'Lô mới cho mùa vụ hiện tại, phù hợp đơn bán lẻ.', 'Sản phẩm published dùng cho demo order completed, review và pending bank transfer.', 145000.00, 'kg', 260.000,
+     'https://images.example.com/marketplace/soybean-2026-cover.jpg', '["https://images.example.com/marketplace/soybean-2026-cover.jpg","https://images.example.com/marketplace/soybean-2026-detail.jpg"]',
+     2, 1, 11, 5, TRUE, 'PUBLISHED', '2026-04-10 08:00:00', '2026-04-10 08:00:00', '2026-04-21 08:00:00'),
+    (6, 'ngo-ngot-cao-nguyen-xanh', 'Ngô ngọt Cao Nguyên Xanh', 'CORN', 'Sản phẩm published của seller thứ hai để demo split order.', 'Listing published của farmer2 với traceability đầy đủ và khu vực khác để demo lọc theo vùng.', 170000.00, 'kg', 820.000,
+     'https://images.example.com/marketplace/corn-highland-cover.jpg', '["https://images.example.com/marketplace/corn-highland-cover.jpg","https://images.example.com/marketplace/corn-highland-detail.jpg"]',
+     @farmer2_user_id, 4, 14, 6, TRUE, 'PUBLISHED', '2026-04-12 08:00:00', '2026-04-12 08:00:00', '2026-04-22 08:00:00');
+
+INSERT INTO marketplace_carts (id, user_id, created_at, updated_at) VALUES
+    (1, @buyer_user_id, '2026-04-20 10:00:00', '2026-04-22 16:00:00');
+
+INSERT INTO marketplace_cart_items (id, cart_id, product_id, quantity, unit_price_snapshot, created_at, updated_at) VALUES
+    (1, 1, 2, 0.750, 125000.00, '2026-04-22 15:30:00', '2026-04-22 15:30:00'),
+    (2, 1, 6, 1.500, 170000.00, '2026-04-22 16:00:00', '2026-04-22 16:00:00');
+
+INSERT INTO marketplace_addresses
+    (id, user_id, full_name, phone, province, district, ward, street, detail, label, is_default, created_at, updated_at)
+VALUES
+    (1, @buyer_user_id, 'Tran Thi Buyer', '0903234000', 'Đồng Tháp', 'Cao Lãnh', 'Mỹ An', '123 Đường Demo', 'Căn góc, gần trường học', 'home', TRUE, '2026-04-18 08:00:00', '2026-04-18 08:00:00'),
+    (2, @buyer_user_id, 'Tran Thi Buyer', '0903234000', 'Hồ Chí Minh', 'Quận 7', 'Tân Phú', '88 Đường Thử Nghiệm', 'Tòa nhà văn phòng', 'office', FALSE, '2026-04-18 08:05:00', '2026-04-18 08:05:00');
+
+INSERT INTO marketplace_order_groups
+    (id, group_code, buyer_user_id, idempotency_key, request_fingerprint, created_at)
+VALUES
+    (1, 'MOG-2026-0001', @buyer_user_id, 'demo-split-order-20260420', 'fp-split-order-20260420', '2026-04-20 09:00:00'),
+    (2, 'MOG-2026-0002', @buyer_user_id, 'demo-bank-transfer-20260422', 'fp-bank-transfer-20260422', '2026-04-22 11:00:00');
+
+INSERT INTO marketplace_orders
+    (id, order_group_id, order_code, buyer_user_id, farmer_user_id, status, payment_method, payment_verification_status,
+     payment_proof_file_name, payment_proof_content_type, payment_proof_storage_path, payment_proof_uploaded_at,
+     payment_verified_at, payment_verified_by_user_id, payment_verification_note, shipping_recipient_name, shipping_phone,
+     shipping_address_line, note, subtotal, shipping_fee, total_amount, created_at, updated_at)
+VALUES
+    (1, 1, 'MPO-2026-0001', @buyer_user_id, 2, 'COMPLETED', 'COD', 'NOT_REQUIRED',
+     NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Tran Thi Buyer', '0903234000',
+     '123 Đường Demo, Mỹ An, Cao Lãnh, Đồng Tháp', 'Đơn COD hoàn tất để demo lịch sử đơn hàng và review.', 290000.00, 20000.00, 310000.00, '2026-04-20 09:05:00', '2026-04-21 16:00:00'),
+    (2, 1, 'MPO-2026-0002', @buyer_user_id, @farmer2_user_id, 'PREPARING', 'BANK_TRANSFER', 'VERIFIED',
+     'proof-order-2.png', 'image/png', 'storage/marketplace/payment-proofs/order-2/proof-order-2.png', '2026-04-20 09:12:00',
+     '2026-04-20 10:30:00', 1, 'Đã xác minh chuyển khoản cho đơn split order seller 2.', 'Tran Thi Buyer', '0903234000',
+     '123 Đường Demo, Mỹ An, Cao Lãnh, Đồng Tháp', 'Đơn đã xác minh thanh toán để demo admin payment verification.', 212500.00, 20000.00, 232500.00, '2026-04-20 09:10:00', '2026-04-22 09:00:00'),
+    (3, 2, 'MPO-2026-0003', @buyer_user_id, 2, 'PENDING', 'BANK_TRANSFER', 'SUBMITTED',
+     'proof-order-3.jpg', 'image/jpeg', 'storage/marketplace/payment-proofs/order-3/proof-order-3.jpg', '2026-04-22 11:05:00',
+     NULL, NULL, 'Buyer đã nộp minh chứng, chờ admin xác minh.', 'Tran Thi Buyer', '0903234000',
+     '123 Đường Demo, Mỹ An, Cao Lãnh, Đồng Tháp', 'Đơn chờ xác minh để demo trạng thái SUBMITTED.', 437500.00, 20000.00, 457500.00, '2026-04-22 11:00:00', '2026-04-22 11:05:00');
+
+INSERT INTO marketplace_order_items
+    (id, order_id, product_id, product_name_snapshot, product_slug_snapshot, image_url_snapshot, unit_price_snapshot,
+     quantity, line_total, traceable_snapshot, farm_id, season_id, lot_id)
+VALUES
+    (1, 1, 5, 'Đậu nành AGS398 sấy khô 2026', 'dau-nanh-ags398-say-kho-2026', 'https://images.example.com/marketplace/soybean-2026-cover.jpg',
+     145000.00, 2.000, 290000.00, TRUE, 1, 11, 5),
+    (2, 2, 6, 'Ngô ngọt Cao Nguyên Xanh', 'ngo-ngot-cao-nguyen-xanh', 'https://images.example.com/marketplace/corn-highland-cover.jpg',
+     170000.00, 1.250, 212500.00, TRUE, 4, 14, 6),
+    (3, 3, 2, 'Gạo OM5451 chọn lọc', 'gao-om5451-chon-loc', 'https://images.example.com/marketplace/rice-om5451-cover.jpg',
+     125000.00, 3.500, 437500.00, TRUE, 1, 4, 2);
+
+INSERT INTO marketplace_product_reviews
+    (id, product_id, order_id, buyer_user_id, rating, comment, created_at)
+VALUES
+    (1, 5, 1, @buyer_user_id, 5, 'Chất lượng đậu nành rất tốt, đóng gói gọn và giao đúng hẹn.', '2026-04-21 18:00:00');
+
+INSERT INTO audit_logs (audit_log_id, entity_type, entity_id, operation, performed_by, performed_at, snapshot_data, reason, ip_address) VALUES
+    (4, 'MARKETPLACE_ORDER', 1, 'CREATE', 'buyer', '2026-04-20 09:05:00', '{"status":"COMPLETED","paymentMethod":"COD","orderCode":"MPO-2026-0001"}', 'Tạo đơn demo COD hoàn tất', '10.10.0.21'),
+    (5, 'MARKETPLACE_ORDER', 2, 'PAYMENT_VERIFIED', 'admin', '2026-04-20 10:30:00', '{"status":"PREPARING","paymentVerificationStatus":"VERIFIED","orderCode":"MPO-2026-0002"}', 'Xác minh chuyển khoản cho đơn seller 2', '10.10.0.11'),
+    (6, 'MARKETPLACE_ORDER', 3, 'PAYMENT_PROOF_SUBMITTED', 'buyer', '2026-04-22 11:05:00', '{"status":"PENDING","paymentVerificationStatus":"SUBMITTED","orderCode":"MPO-2026-0003"}', 'Buyer tải minh chứng chuyển khoản', '10.10.0.21');
+
+-- =========================================================
+-- 34. ADMIN READ VIEWS
+-- =========================================================
+CREATE OR REPLACE VIEW vw_admin_season_risk AS
+SELECT
+    s.season_id AS season_id,
+    s.season_name AS season_name,
+    s.status AS season_status,
+    p.plot_id AS plot_id,
+    p.plot_name AS plot_name,
+    f.farm_id AS farm_id,
+    f.farm_name AS farm_name,
+    COALESCE(incident_agg.incident_count, 0) AS incident_count,
+    COALESCE(task_agg.overdue_task_count, 0) AS overdue_task_count,
+    (COALESCE(incident_agg.incident_count, 0) + COALESCE(task_agg.overdue_task_count, 0)) AS risk_score
+FROM seasons s
+JOIN plots p ON p.plot_id = s.plot_id
+JOIN farms f ON f.farm_id = p.farm_id
+LEFT JOIN (
+    SELECT i.season_id, COUNT(DISTINCT i.id) AS incident_count
+    FROM incidents i
+    GROUP BY i.season_id
+) incident_agg ON incident_agg.season_id = s.season_id
+LEFT JOIN (
+    SELECT t.season_id, COUNT(DISTINCT t.task_id) AS overdue_task_count
+    FROM tasks t
+    WHERE t.status = 'OVERDUE'
+    GROUP BY t.season_id
+) task_agg ON task_agg.season_id = s.season_id;
+
+CREATE OR REPLACE VIEW vw_admin_inventory_lot_farm AS
+SELECT DISTINCT
+    sm.supply_lot_id AS supply_lot_id,
+    w.farm_id AS farm_id
+FROM stock_movements sm
+JOIN warehouses w ON w.id = sm.warehouse_id
+WHERE sm.supply_lot_id IS NOT NULL
+  AND w.farm_id IS NOT NULL;
+
+CREATE OR REPLACE VIEW vw_admin_inventory_lot_expiry_base AS
+SELECT
+    f.farm_id AS farm_id,
+    f.farm_name AS farm_name,
+    sl.id AS supply_lot_id,
+    sl.expiry_date AS expiry_date
+FROM supply_lots sl
+JOIN vw_admin_inventory_lot_farm lot_farm ON lot_farm.supply_lot_id = sl.id
+JOIN farms f ON f.farm_id = lot_farm.farm_id
+WHERE sl.expiry_date IS NOT NULL;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =========================================================
 -- KIỂM TRA KẾT QUẢ
 -- =========================================================
-SELECT '=== KẾT QUẢ INSERT DỮ LIỆU MẪU ĐẦY ĐỦ ===' AS '';
+SELECT '=== KẾT QUẢ BOOTSTRAP DỮ LIỆU DEMO ===' AS '';
+SELECT CONCAT('Users: ', COUNT(*)) AS result FROM users;
+SELECT CONCAT('Roles: ', COUNT(*)) AS result FROM roles;
 SELECT CONCAT('Crops: ', COUNT(*)) AS result FROM crops;
 SELECT CONCAT('Varieties: ', COUNT(*)) AS result FROM varieties;
 SELECT CONCAT('Farms: ', COUNT(*)) AS result FROM farms;
@@ -686,4 +1707,53 @@ SELECT CONCAT('Task Progress Logs: ', COUNT(*)) AS result FROM task_progress_log
 SELECT CONCAT('Payroll Records: ', COUNT(*)) AS result FROM payroll_records;
 SELECT CONCAT('Product Warehouse Lots: ', COUNT(*)) AS result FROM product_warehouse_lots;
 SELECT CONCAT('Product Warehouse Transactions: ', COUNT(*)) AS result FROM product_warehouse_transactions;
+SELECT CONCAT('Marketplace Products: ', COUNT(*)) AS result FROM marketplace_products;
+SELECT CONCAT('Marketplace Carts: ', COUNT(*)) AS result FROM marketplace_carts;
+SELECT CONCAT('Marketplace Cart Items: ', COUNT(*)) AS result FROM marketplace_cart_items;
+SELECT CONCAT('Marketplace Order Groups: ', COUNT(*)) AS result FROM marketplace_order_groups;
+SELECT CONCAT('Marketplace Orders: ', COUNT(*)) AS result FROM marketplace_orders;
+SELECT CONCAT('Marketplace Order Items: ', COUNT(*)) AS result FROM marketplace_order_items;
+SELECT CONCAT('Marketplace Addresses: ', COUNT(*)) AS result FROM marketplace_addresses;
+SELECT CONCAT('Marketplace Reviews: ', COUNT(*)) AS result FROM marketplace_product_reviews;
 
+SELECT
+    p.id,
+    p.slug,
+    p.status,
+    p.stock_quantity,
+    lot.on_hand_quantity
+FROM marketplace_products p
+JOIN product_warehouse_lots lot ON lot.id = p.lot_id
+ORDER BY p.id;
+
+SELECT
+    og.group_code,
+    COUNT(o.id) AS split_order_count,
+    SUM(o.total_amount) AS group_total_amount
+FROM marketplace_order_groups og
+LEFT JOIN marketplace_orders o ON o.order_group_id = og.id
+GROUP BY og.id, og.group_code
+ORDER BY og.id;
+
+SELECT
+    payment_method,
+    payment_verification_status,
+    COUNT(*) AS order_count
+FROM marketplace_orders
+GROUP BY payment_method, payment_verification_status
+ORDER BY payment_method, payment_verification_status;
+
+SELECT
+    status,
+    COUNT(*) AS product_count
+FROM marketplace_products
+GROUP BY status
+ORDER BY status;
+
+SELECT
+    product_id,
+    COUNT(*) AS review_count,
+    ROUND(AVG(rating), 2) AS average_rating
+FROM marketplace_product_reviews
+GROUP BY product_id
+ORDER BY product_id;
