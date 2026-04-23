@@ -28,10 +28,12 @@ export function ProductDetailPage() {
     if (!product) {
       return false;
     }
-    return quantity < product.stock;
+    return quantity < product.availableQuantity;
   }, [product, quantity]);
 
-  const quantityValue = product ? Math.min(Math.max(quantity, 1), Math.max(product.stock, 1)) : quantity;
+  const quantityValue = product
+    ? Math.min(Math.max(quantity, 1), Math.max(product.availableQuantity, 1))
+    : quantity;
 
   if (productQuery.isLoading) {
     return (
@@ -87,7 +89,7 @@ export function ProductDetailPage() {
               <span className="text-sm text-slate-500">/{product.unit}</span>
             </div>
 
-            <p className="text-sm text-slate-500">Stock: {product.stock}</p>
+            <p className="text-sm text-slate-500">Stock: {product.availableQuantity}</p>
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
@@ -121,7 +123,7 @@ export function ProductDetailPage() {
               {isAuthenticated ? (
                 <>
                   <Button
-                    disabled={isAdding || product.stock <= 0}
+                    disabled={isAdding || product.availableQuantity <= 0}
                     onClick={async () => {
                       await addToCart(product.id, quantity);
                     }}

@@ -142,7 +142,7 @@ export function ProductListPage() {
 
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-emerald-700">{formatVnd(product.price)}</p>
-                    <p className="text-xs text-slate-500">Stock {product.stock}</p>
+                    <p className="text-xs text-slate-500">Stock {product.availableQuantity}</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -156,7 +156,7 @@ export function ProductListPage() {
                       <Button
                         size="sm"
                         className="flex-1 text-xs"
-                        disabled={isAdding || product.stock <= 0}
+                        disabled={isAdding || product.availableQuantity <= 0}
                         onClick={async () => {
                           await addToCart(product.id, 1);
                         }}

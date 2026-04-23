@@ -31,8 +31,8 @@ export function SellerDashboardPage() {
   const dashboard = dashboardQuery.data;
   const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
   const lowStockProducts = (lowStockProductsQuery.data?.items ?? [])
-    .filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
-    .sort((left, right) => left.stock - right.stock)
+    .filter((product) => product.availableQuantity <= LOW_STOCK_THRESHOLD)
+    .sort((left, right) => left.availableQuantity - right.availableQuantity)
     .slice(0, 4);
 
   const cards = [
@@ -157,7 +157,7 @@ export function SellerDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-900">{product.name}</p>
                     <p className="text-xs text-slate-500">
-                      {t("marketplaceSeller.dashboard.stock")}: <span className="font-semibold text-red-600">{product.stock} {product.unit}</span>
+                      {t("marketplaceSeller.dashboard.stock")}: <span className="font-semibold text-red-600">{product.availableQuantity} {product.unit}</span>
                     </p>
                   </div>
                 </div>

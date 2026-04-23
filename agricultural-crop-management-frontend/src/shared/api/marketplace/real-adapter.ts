@@ -19,6 +19,7 @@ import type {
   MarketplaceCreateReviewRequest,
   MarketplaceFarmerDashboard,
   MarketplaceFarmerOrderQuery,
+  MarketplaceFarmerProductFormOptions,
   MarketplaceFarmerProductQuery,
   MarketplaceFarmerProductUpsertRequest,
   MarketplaceFarmDetail,
@@ -202,6 +203,18 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
     listFarmerProducts(query?: MarketplaceFarmerProductQuery) {
       return requestEnvelope<MarketplaceProductPage>(() =>
         httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/products`, { params: query }),
+      );
+    },
+
+    getFarmerProductFormOptions() {
+      return requestEnvelope<MarketplaceFarmerProductFormOptions>(() =>
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/product-form-options`),
+      );
+    },
+
+    getFarmerProductDetail(productId: number) {
+      return requestEnvelope<MarketplaceProductDetail>(() =>
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/products/${productId}`),
       );
     },
 

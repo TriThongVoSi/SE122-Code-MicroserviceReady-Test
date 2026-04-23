@@ -19,6 +19,8 @@ export {
   useMarketplaceFarmerDashboard,
   useMarketplaceFarmerOrderDetail,
   useMarketplaceFarmerOrders,
+  useMarketplaceFarmerProductDetail,
+  useMarketplaceFarmerProductFormOptions,
   useMarketplaceFarmerProducts,
   useMarketplaceFarmDetail,
   useMarketplaceFarms,

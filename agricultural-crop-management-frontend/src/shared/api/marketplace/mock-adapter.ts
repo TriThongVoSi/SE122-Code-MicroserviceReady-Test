@@ -15,6 +15,7 @@ import type {
   MarketplaceCreateOrderResult,
   MarketplaceCreateReviewRequest,
   MarketplaceFarmerDashboard,
+  MarketplaceFarmerProductFormOptions,
   MarketplaceFarmerProductUpsertRequest,
   MarketplaceFarmDetail,
   MarketplaceFarmSummary,
@@ -41,6 +42,7 @@ type MarketplaceMockOptions = {
 
 type SeasonRef = {
   id: number;
+  farmId: number;
   name: string;
   startDate: string;
   plannedHarvestDate: string;
@@ -48,10 +50,16 @@ type SeasonRef = {
 
 type LotRef = {
   id: number;
+  farmId: number;
+  farmName: string;
+  seasonId: number | null;
+  seasonName: string | null;
   lotCode: string;
   harvestedAt: string;
   unit: string;
-  initialQuantity: number;
+  availableQuantity: number;
+  productName: string;
+  productVariant: string | null;
 };
 
 const DEFAULT_FALLBACK_USER_ID = 2;
@@ -179,6 +187,7 @@ export function createMarketplaceMockAdapter(
       301,
       {
         id: 301,
+        farmId: 101,
         name: "Soybean Spring 2026",
         startDate: "2026-02-15",
         plannedHarvestDate: "2026-05-20",
@@ -188,9 +197,20 @@ export function createMarketplaceMockAdapter(
       302,
       {
         id: 302,
+        farmId: 101,
         name: "Rice Winter-Spring 2026",
         startDate: "2025-12-20",
         plannedHarvestDate: "2026-03-15",
+      },
+    ],
+    [
+      303,
+      {
+        id: 303,
+        farmId: 101,
+        name: "Summer Fruit 2026",
+        startDate: "2026-03-01",
+        plannedHarvestDate: "2026-06-10",
       },
     ],
   ]);
@@ -200,30 +220,64 @@ export function createMarketplaceMockAdapter(
       401,
       {
         id: 401,
+        farmId: 101,
+        farmName: "Phu Dien Farm",
+        seasonId: 301,
+        seasonName: "Soybean Spring 2026",
         lotCode: "LOT-SOY-2026-001",
         harvestedAt: "2026-03-10",
         unit: "kg",
-        initialQuantity: 280,
+        availableQuantity: 280,
+        productName: "Cherry Tomato",
+        productVariant: "Greenhouse",
       },
     ],
     [
       402,
       {
         id: 402,
+        farmId: 101,
+        farmName: "Phu Dien Farm",
+        seasonId: 302,
+        seasonName: "Rice Winter-Spring 2026",
         lotCode: "LOT-RICE-2026-001",
         harvestedAt: "2026-02-28",
         unit: "kg",
-        initialQuantity: 900,
+        availableQuantity: 900,
+        productName: "Premium Rice",
+        productVariant: "5kg bag",
       },
     ],
     [
       403,
       {
         id: 403,
+        farmId: 102,
+        farmName: "An Phat Farm",
+        seasonId: 301,
+        seasonName: "Soybean Spring 2026",
         lotCode: "LOT-FRUIT-2026-001",
         harvestedAt: "2026-03-12",
         unit: "kg",
-        initialQuantity: 320,
+        availableQuantity: 320,
+        productName: "Durian Ri6",
+        productVariant: null,
+      },
+    ],
+    [
+      404,
+      {
+        id: 404,
+        farmId: 101,
+        farmName: "Phu Dien Farm",
+        seasonId: 303,
+        seasonName: "Summer Fruit 2026",
+        lotCode: "LOT-MANGO-2026-001",
+        harvestedAt: "2026-04-12",
+        unit: "kg",
+        availableQuantity: 120,
+        productName: "Mango",
+        productVariant: "Cat Chu",
       },
     ],
   ]);
@@ -244,7 +298,8 @@ export function createMarketplaceMockAdapter(
         "Daily harvested tomato from protected farming area with full lot tracking.",
       price: 45000,
       unit: "kg",
-      stock: 160,
+      stockQuantity: 160,
+      availableQuantity: 160,
       imageUrl: "https://picsum.photos/seed/acm-product-201/800/800",
       imageUrls: [
         "https://picsum.photos/seed/acm-product-201/800/800",
@@ -275,7 +330,8 @@ export function createMarketplaceMockAdapter(
       description: "5kg rice bag from tracked season and warehouse lot.",
       price: 180000,
       unit: "bag",
-      stock: 90,
+      stockQuantity: 90,
+      availableQuantity: 90,
       imageUrl: "https://picsum.photos/seed/acm-product-202/800/800",
       imageUrls: ["https://picsum.photos/seed/acm-product-202/800/800"],
       farmerUserId: 2,
@@ -303,7 +359,8 @@ export function createMarketplaceMockAdapter(
       description: "Clean lettuce with controlled nutrition process.",
       price: 30000,
       unit: "pack",
-      stock: 220,
+      stockQuantity: 220,
+      availableQuantity: 220,
       imageUrl: "https://picsum.photos/seed/acm-product-203/800/800",
       imageUrls: ["https://picsum.photos/seed/acm-product-203/800/800"],
       farmerUserId: 5,
@@ -331,7 +388,8 @@ export function createMarketplaceMockAdapter(
       description: "Premium fruit harvested from monitored lot and season.",
       price: 120000,
       unit: "kg",
-      stock: 60,
+      stockQuantity: 60,
+      availableQuantity: 60,
       imageUrl: "https://picsum.photos/seed/acm-product-204/800/800",
       imageUrls: ["https://picsum.photos/seed/acm-product-204/800/800"],
       farmerUserId: 5,
@@ -576,12 +634,157 @@ export function createMarketplaceMockAdapter(
     return next;
   }
 
+  function getOwnedFarmerProduct(productId: number, farmerUserId: number): MarketplaceProductDetail {
+    const product = products.find(
+      (candidate) => candidate.id === productId && candidate.farmerUserId === farmerUserId,
+    );
+    if (!product) {
+      throw new MarketplaceApiClientError(
+        "Product does not exist.",
+        "ERR_MARKETPLACE_PRODUCT_NOT_FOUND",
+        404,
+      );
+    }
+    syncProductAvailability(product);
+    if (product.availableQuantity <= 0) {
+      throw new MarketplaceApiClientError(
+        "Product is not available.",
+        "ERR_MARKETPLACE_PRODUCT_NOT_FOUND",
+        404,
+      );
+    }
+    return product;
+  }
+
+  function resolveLotForFarmer(lotId: number, farmerUserId: number): LotRef {
+    const lot = lots.get(lotId);
+    const farm = farms.find((candidate) => candidate.id === lot?.farmId);
+    if (!lot || farm?.ownerUserId !== farmerUserId) {
+      throw new MarketplaceApiClientError(
+        "Harvest lot does not belong to the current farmer.",
+        "NOT_OWNER",
+        403,
+      );
+    }
+    return lot;
+  }
+
+  function validateFarmerListingRequest(
+    request: MarketplaceFarmerProductUpsertRequest,
+    lot: LotRef,
+    excludeProductId?: number,
+  ): void {
+    assertHasText(request.name, "ERR_BAD_REQUEST", "Product name is required.");
+    if (!Number.isFinite(request.price) || request.price <= 0) {
+      throw new MarketplaceApiClientError(
+        "Price must be greater than 0.",
+        "ERR_BAD_REQUEST",
+        400,
+      );
+    }
+    if (!Number.isFinite(request.stockQuantity) || request.stockQuantity <= 0) {
+      throw new MarketplaceApiClientError(
+        "Quantity to sell must be greater than 0.",
+        "ERR_BAD_REQUEST",
+        400,
+      );
+    }
+    if (request.stockQuantity > lot.availableQuantity) {
+      throw new MarketplaceApiClientError(
+        "Marketplace stock is not sufficient for requested quantity.",
+        "ERR_MARKETPLACE_STOCK_CONFLICT",
+        409,
+      );
+    }
+    const duplicate = products.find(
+      (product) => product.lotId === request.lotId && product.id !== excludeProductId,
+    );
+    if (duplicate) {
+      throw new MarketplaceApiClientError(
+        "Resource already exists.",
+        "ERR_DUPLICATE_RESOURCE",
+        409,
+      );
+    }
+  }
+
+  function syncProductAvailability(product: MarketplaceProductDetail): void {
+    const lot = product.lotId ? lots.get(product.lotId) : null;
+    if (!lot) {
+      product.availableQuantity = product.stockQuantity;
+      return;
+    }
+    product.availableQuantity = Math.min(product.stockQuantity, lot.availableQuantity);
+  }
+
+  function restoreProductAndLotAvailability(productId: number, quantity: number): void {
+    const product = products.find((candidate) => candidate.id === productId);
+    if (!product) {
+      return;
+    }
+
+    product.stockQuantity += quantity;
+    if (product.lotId) {
+      const lot = lots.get(product.lotId);
+      if (lot) {
+        lot.availableQuantity += quantity;
+      }
+    }
+    syncProductAvailability(product);
+    product.updatedAt = nowIso();
+  }
+
+  function buildFarmerProductFormOptions(farmerUserId: number): MarketplaceFarmerProductFormOptions {
+    const ownedFarms = farms.filter((farm) => farm.ownerUserId === farmerUserId);
+    const ownedFarmIds = new Set(ownedFarms.map((farm) => farm.id));
+
+    return {
+      farms: ownedFarms.map((farm) => ({
+        id: farm.id,
+        name: farm.name,
+      })),
+      seasons: Array.from(seasons.values())
+        .filter((season) => ownedFarmIds.has(season.farmId))
+        .map((season) => ({
+          id: season.id,
+          seasonName: season.name,
+          farmId: season.farmId,
+        })),
+      lots: Array.from(lots.values())
+        .filter((lot) => ownedFarmIds.has(lot.farmId) && lot.availableQuantity > 0)
+        .map((lot) => {
+          const linkedProduct = products.find((product) => product.lotId === lot.id) ?? null;
+          return {
+            id: lot.id,
+            lotCode: lot.lotCode,
+            farmId: lot.farmId,
+            farmName: lot.farmName,
+            seasonId: lot.seasonId,
+            seasonName: lot.seasonName,
+            availableQuantity: lot.availableQuantity,
+            harvestedAt: lot.harvestedAt,
+            unit: lot.unit,
+            productName: lot.productName,
+            productVariant: lot.productVariant,
+            linkedProductId: linkedProduct?.id ?? null,
+            linkedProductStatus: linkedProduct?.status ?? null,
+          };
+        })
+        .sort((left, right) => right.harvestedAt.localeCompare(left.harvestedAt)),
+    };
+  }
+
   return {
     async listProducts(query) {
       const normalizedSearch = normalizeString(query?.q).toLowerCase();
 
       const filtered = products
+        .map((product) => {
+          syncProductAvailability(product);
+          return product;
+        })
         .filter((product) => product.status === "PUBLISHED")
+        .filter((product) => product.availableQuantity > 0)
         .filter((product) => {
           if (query?.traceable === true && !product.traceable) {
             return false;
@@ -636,6 +839,14 @@ export function createMarketplaceMockAdapter(
         );
       }
 
+      syncProductAvailability(product);
+      if (product.availableQuantity <= 0) {
+        throw new MarketplaceApiClientError(
+          "Product does not exist.",
+          "ERR_MARKETPLACE_PRODUCT_NOT_FOUND",
+          404,
+        );
+      }
       ensureTraceabilityChain(product);
       return okMarketplaceResponse(product);
     },
@@ -751,7 +962,7 @@ export function createMarketplaceMockAdapter(
       const existing = cartItems.find((item) => item.productId === request.productId);
       const targetQuantity = (existing?.quantity ?? 0) + request.quantity;
 
-      if (targetQuantity > product.stock) {
+      if (targetQuantity > product.availableQuantity) {
         throw new MarketplaceApiClientError(
           "Insufficient stock.",
           "ERR_MARKETPLACE_STOCK_CONFLICT",
@@ -769,7 +980,7 @@ export function createMarketplaceMockAdapter(
           imageUrl: product.imageUrl,
           unitPrice: product.price,
           quantity: request.quantity,
-          maxQuantity: product.stock,
+          maxQuantity: product.availableQuantity,
           farmerUserId: product.farmerUserId,
           traceable: product.traceable,
         });
@@ -791,7 +1002,7 @@ export function createMarketplaceMockAdapter(
           404,
         );
       }
-      if (request.quantity > product.stock) {
+      if (request.quantity > product.availableQuantity) {
         throw new MarketplaceApiClientError(
           "Insufficient stock.",
           "ERR_MARKETPLACE_STOCK_CONFLICT",
@@ -799,7 +1010,7 @@ export function createMarketplaceMockAdapter(
         );
       }
       existing.quantity = request.quantity;
-      existing.maxQuantity = product.stock;
+      existing.maxQuantity = product.availableQuantity;
       return okMarketplaceResponse(buildCart(userId));
     },
 
@@ -823,7 +1034,7 @@ export function createMarketplaceMockAdapter(
         const existing = cartItems.find((candidate) => candidate.productId === item.productId);
         const mergedQuantity = (existing?.quantity ?? 0) + item.quantity;
 
-        if (mergedQuantity > product.stock) {
+        if (mergedQuantity > product.availableQuantity) {
           throw new MarketplaceApiClientError(
             `Insufficient stock for product ${product.name}.`,
             "ERR_MARKETPLACE_STOCK_CONFLICT",
@@ -833,7 +1044,7 @@ export function createMarketplaceMockAdapter(
 
         if (existing) {
           existing.quantity = mergedQuantity;
-          existing.maxQuantity = product.stock;
+          existing.maxQuantity = product.availableQuantity;
         } else {
           cartItems.push({
             productId: product.id,
@@ -842,7 +1053,7 @@ export function createMarketplaceMockAdapter(
             imageUrl: product.imageUrl,
             unitPrice: product.price,
             quantity: item.quantity,
-            maxQuantity: product.stock,
+            maxQuantity: product.availableQuantity,
             farmerUserId: product.farmerUserId,
             traceable: product.traceable,
           });
@@ -929,7 +1140,7 @@ export function createMarketplaceMockAdapter(
 
       for (const cartItem of cart) {
         const product = findPublishedProduct(cartItem.productId);
-        if (product.stock < cartItem.quantity) {
+        if (product.availableQuantity < cartItem.quantity) {
           throw new MarketplaceApiClientError(
             `Insufficient stock for product ${product.name}.`,
             "ERR_MARKETPLACE_STOCK_CONFLICT",
@@ -1003,7 +1214,14 @@ export function createMarketplaceMockAdapter(
 
       for (const cartItem of cart) {
         const product = findPublishedProduct(cartItem.productId);
-        product.stock -= cartItem.quantity;
+        product.stockQuantity -= cartItem.quantity;
+        if (product.lotId) {
+          const lot = lots.get(product.lotId);
+          if (lot) {
+            lot.availableQuantity -= cartItem.quantity;
+          }
+        }
+        syncProductAvailability(product);
         product.updatedAt = nowIso();
       }
 
@@ -1076,6 +1294,9 @@ export function createMarketplaceMockAdapter(
         );
       }
 
+      for (const item of order.items) {
+        restoreProductAndLotAvailability(item.productId, item.quantity);
+      }
       order.status = "CANCELLED";
       order.updatedAt = nowIso();
       order.canCancel = false;
@@ -1283,6 +1504,7 @@ export function createMarketplaceMockAdapter(
     async getFarmerDashboard() {
       const farmerUserId = resolveAuthenticatedUserId();
       const farmerProducts = products.filter((product) => product.farmerUserId === farmerUserId);
+      farmerProducts.forEach(syncProductAvailability);
       const farmerOrders = allOrdersFlat().filter((order) => order.farmerUserId === farmerUserId);
 
       const pendingOrders = farmerOrders.filter((order) => order.status === "PENDING").length;
@@ -1298,7 +1520,7 @@ export function createMarketplaceMockAdapter(
         pendingReviewProducts: farmerProducts.filter((product) => product.status === "PENDING_REVIEW").length,
         publishedProducts: farmerProducts.filter((product) => product.status === "PUBLISHED").length,
         lowStockProducts: farmerProducts.filter(
-          (product) => product.status === "PUBLISHED" && product.stock <= 10,
+          (product) => product.status === "PUBLISHED" && product.availableQuantity <= 10,
         ).length,
         pendingOrders,
         totalRevenue: completedRevenue,
@@ -1314,6 +1536,10 @@ export function createMarketplaceMockAdapter(
 
       const filtered = products
         .filter((product) => product.farmerUserId === farmerUserId)
+        .map((product) => {
+          syncProductAvailability(product);
+          return product;
+        })
         .filter((product) => (query?.status ? product.status === query.status : true))
         .filter((product) => {
           if (!search) return true;
@@ -1329,11 +1555,25 @@ export function createMarketplaceMockAdapter(
       return okMarketplaceResponse(page);
     },
 
+    async getFarmerProductFormOptions() {
+      const farmerUserId = resolveAuthenticatedUserId();
+      return okMarketplaceResponse(buildFarmerProductFormOptions(farmerUserId));
+    },
+
+    async getFarmerProductDetail(productId: number) {
+      const farmerUserId = resolveAuthenticatedUserId();
+      const product = getOwnedFarmerProduct(productId, farmerUserId);
+      return okMarketplaceResponse(product);
+    },
+
     async createFarmerProduct(request: MarketplaceFarmerProductUpsertRequest) {
       const farmerUserId = resolveAuthenticatedUserId();
+      const lot = resolveLotForFarmer(request.lotId, farmerUserId);
+      validateFarmerListingRequest(request, lot);
       const createdAt = nowIso();
       const imageUrls = (request.imageUrls ?? []).filter((url) => normalizeString(url).length > 0);
       const imageUrl = normalizeString(request.imageUrl) || imageUrls[0] || "";
+      const farm = farms.find((candidate) => candidate.id === lot.farmId) ?? null;
 
       const product: MarketplaceProductDetail = {
         id: Math.max(0, ...products.map((item) => item.id)) + 1,
@@ -1343,20 +1583,21 @@ export function createMarketplaceMockAdapter(
         shortDescription: request.shortDescription?.trim() || "",
         description: request.description?.trim() || "",
         price: request.price,
-        unit: request.unit.trim(),
-        stock: request.stockQuantity,
+        unit: lot.unit,
+        stockQuantity: request.stockQuantity,
+        availableQuantity: Math.min(request.stockQuantity, lot.availableQuantity),
         imageUrl,
         imageUrls: imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [],
         farmerUserId,
-        farmerDisplayName: "Farmer User",
-        farmId: request.farmId,
-        farmName: `Farm #${request.farmId}`,
-        seasonId: request.traceable ? request.seasonId ?? null : null,
-        seasonName: request.traceable && request.seasonId ? `Season #${request.seasonId}` : null,
-        lotId: request.traceable ? request.lotId ?? null : null,
-        region: null,
-        traceable: Boolean(request.traceable),
-        traceabilityCode: request.traceable && request.lotId ? `LOT-${request.lotId}` : null,
+        farmerDisplayName: farm?.ownerDisplayName ?? "Farmer User",
+        farmId: lot.farmId,
+        farmName: lot.farmName,
+        seasonId: lot.seasonId,
+        seasonName: lot.seasonName,
+        lotId: lot.id,
+        region: farm?.region ?? null,
+        traceable: true,
+        traceabilityCode: lot.lotCode,
         ratingAverage: 0,
         ratingCount: 0,
         status: "DRAFT",
@@ -1370,20 +1611,12 @@ export function createMarketplaceMockAdapter(
 
     async updateFarmerProduct(productId: number, request: MarketplaceFarmerProductUpsertRequest) {
       const farmerUserId = resolveAuthenticatedUserId();
-      const product = products.find(
-        (candidate) => candidate.id === productId && candidate.farmerUserId === farmerUserId,
-      );
-
-      if (!product) {
-        throw new MarketplaceApiClientError(
-          "Product does not exist.",
-          "ERR_MARKETPLACE_PRODUCT_NOT_FOUND",
-          404,
-        );
-      }
-
+      const product = getOwnedFarmerProduct(productId, farmerUserId);
+      const lot = resolveLotForFarmer(request.lotId, farmerUserId);
+      validateFarmerListingRequest(request, lot, productId);
       const imageUrls = (request.imageUrls ?? []).filter((url) => normalizeString(url).length > 0);
       const imageUrl = normalizeString(request.imageUrl) || imageUrls[0] || product.imageUrl;
+      const farm = farms.find((candidate) => candidate.id === lot.farmId) ?? null;
 
       product.slug = generateUniqueSlug(request.name, product.id);
       product.name = request.name.trim();
@@ -1391,21 +1624,22 @@ export function createMarketplaceMockAdapter(
       product.shortDescription = request.shortDescription?.trim() || "";
       product.description = request.description?.trim() || "";
       product.price = request.price;
-      product.unit = request.unit.trim();
-      product.stock = request.stockQuantity;
+      product.unit = lot.unit;
+      product.stockQuantity = request.stockQuantity;
       product.imageUrl = imageUrl;
       product.imageUrls = imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
-      product.farmId = request.farmId;
-      product.farmName = `Farm #${request.farmId}`;
-      product.traceable = Boolean(request.traceable);
-      product.seasonId = product.traceable ? request.seasonId ?? null : null;
-      product.seasonName = product.traceable && request.seasonId ? `Season #${request.seasonId}` : null;
-      product.lotId = product.traceable ? request.lotId ?? null : null;
-      product.traceabilityCode = product.traceable && request.lotId ? `LOT-${request.lotId}` : null;
+      product.farmerDisplayName = farm?.ownerDisplayName ?? product.farmerDisplayName;
+      product.farmId = lot.farmId;
+      product.farmName = lot.farmName;
+      product.seasonId = lot.seasonId;
+      product.seasonName = lot.seasonName;
+      product.lotId = lot.id;
+      product.region = farm?.region ?? null;
+      product.traceable = true;
+      product.traceabilityCode = lot.lotCode;
+      syncProductAvailability(product);
       product.updatedAt = nowIso();
-      if (product.status === "PUBLISHED") {
-        product.status = "PENDING_REVIEW";
-      }
+      product.status = "DRAFT";
 
       return okMarketplaceResponse(product, "Product updated.");
     },
@@ -1485,11 +1719,7 @@ export function createMarketplaceMockAdapter(
 
       if (request.status === "CANCELLED") {
         for (const item of order.items) {
-          const product = products.find((candidate) => candidate.id === item.productId);
-          if (product) {
-            product.stock += item.quantity;
-            product.updatedAt = nowIso();
-          }
+          restoreProductAndLotAvailability(item.productId, item.quantity);
         }
         order.canCancel = false;
       }

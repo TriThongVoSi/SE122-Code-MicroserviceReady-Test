@@ -12,6 +12,7 @@ public record MarketplaceProductSummaryResponse(
         String shortDescription,
         BigDecimal price,
         String unit,
+        BigDecimal stockQuantity,
         BigDecimal availableQuantity,
         String imageUrl,
         Long farmerUserId,

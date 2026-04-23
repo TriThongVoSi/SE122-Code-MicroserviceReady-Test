@@ -12,6 +12,7 @@ import type {
   MarketplaceCreateReviewRequest,
   MarketplaceFarmerDashboard,
   MarketplaceFarmerOrderQuery,
+  MarketplaceFarmerProductFormOptions,
   MarketplaceFarmerProductQuery,
   MarketplaceFarmerProductUpsertRequest,
   MarketplaceFarmDetail,
@@ -117,6 +118,12 @@ export interface MarketplaceApiAdapter {
   listFarmerProducts(
     query?: MarketplaceFarmerProductQuery,
   ): Promise<MarketplaceApiResponse<MarketplaceProductPage>>;
+
+  getFarmerProductFormOptions(): Promise<MarketplaceApiResponse<MarketplaceFarmerProductFormOptions>>;
+
+  getFarmerProductDetail(
+    productId: number,
+  ): Promise<MarketplaceApiResponse<MarketplaceProductDetail>>;
 
   createFarmerProduct(
     request: MarketplaceFarmerProductUpsertRequest,

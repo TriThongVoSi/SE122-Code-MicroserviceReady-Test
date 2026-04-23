@@ -14,6 +14,7 @@ public record MarketplaceProductDetailResponse(
         String description,
         BigDecimal price,
         String unit,
+        BigDecimal stockQuantity,
         BigDecimal availableQuantity,
         String imageUrl,
         List<String> imageUrls,

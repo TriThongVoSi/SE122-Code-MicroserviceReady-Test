@@ -30,7 +30,8 @@ export type MarketplaceProductSummary = {
   shortDescription: string;
   price: number;
   unit: string;
-  stock: number;
+  stockQuantity: number;
+  availableQuantity: number;
   imageUrl: string;
   farmerUserId: number;
   farmerDisplayName: string;
@@ -297,14 +298,43 @@ export type MarketplaceFarmerProductUpsertRequest = {
   shortDescription?: string;
   description?: string;
   price: number;
-  unit: string;
   stockQuantity: number;
   imageUrl?: string;
   imageUrls?: string[];
-  farmId: number;
-  seasonId?: number;
-  lotId?: number;
-  traceable?: boolean;
+  lotId: number;
+};
+
+export type MarketplaceFarmerProductFormFarmOption = {
+  id: number;
+  name: string;
+};
+
+export type MarketplaceFarmerProductFormSeasonOption = {
+  id: number;
+  seasonName: string;
+  farmId: number | null;
+};
+
+export type MarketplaceFarmerProductFormLotOption = {
+  id: number;
+  lotCode: string;
+  farmId: number | null;
+  farmName: string | null;
+  seasonId: number | null;
+  seasonName: string | null;
+  availableQuantity: number;
+  harvestedAt: string | null;
+  unit: string | null;
+  productName: string | null;
+  productVariant: string | null;
+  linkedProductId: number | null;
+  linkedProductStatus: MarketplaceProductStatus | null;
+};
+
+export type MarketplaceFarmerProductFormOptions = {
+  farms: MarketplaceFarmerProductFormFarmOption[];
+  seasons: MarketplaceFarmerProductFormSeasonOption[];
+  lots: MarketplaceFarmerProductFormLotOption[];
 };
 
 export type MarketplaceUpdateProductStatusRequest = {

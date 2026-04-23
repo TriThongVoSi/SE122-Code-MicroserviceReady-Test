@@ -19,6 +19,7 @@ import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
+import org.example.QuanLyMuaVu.module.farm.entity.Plot;
 import org.example.QuanLyMuaVu.module.farm.repository.FarmRepository;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.incident.service.NotificationService;
@@ -49,6 +50,7 @@ import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceOrderGro
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceOrderRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceProductRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceProductReviewRepository;
+import org.example.QuanLyMuaVu.module.season.entity.Season;
 import org.example.QuanLyMuaVu.module.season.repository.SeasonRepository;
 import org.example.QuanLyMuaVu.module.shared.security.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,6 +139,8 @@ class MarketplaceServiceTest {
 
         lenient().when(marketplaceProductReviewRepository.findByOrder_IdAndBuyerUser_Id(anyLong(), anyLong()))
                 .thenReturn(List.of());
+        lenient().when(marketplaceProductRepository.saveAll(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(productWarehouseTransactionRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(productWarehouseLotRepository.saveAll(any()))
@@ -277,6 +281,8 @@ class MarketplaceServiceTest {
             assertNotNull(response);
             assertEquals(2, response.splitCount());
             assertEquals("MOG-SPLIT", response.orderGroupCode());
+            assertEquals(0, productA.getStockQuantity().compareTo(new BigDecimal("8")));
+            assertEquals(0, productB.getStockQuantity().compareTo(new BigDecimal("19")));
             assertEquals(0, lotA.getOnHandQuantity().compareTo(new BigDecimal("8")));
             assertEquals(0, lotB.getOnHandQuantity().compareTo(new BigDecimal("19")));
             verify(marketplaceCartItemRepository).deleteAllByCartId(100L);
@@ -389,14 +395,136 @@ class MarketplaceServiceTest {
             order.setItems(List.of(orderItem));
 
             when(marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(300L, 10L)).thenReturn(Optional.of(order));
+            when(marketplaceProductRepository.findAllByIdInForUpdate(List.of(200L))).thenReturn(List.of(product));
             when(productWarehouseLotRepository.findAllByIdInForUpdate(List.of(1))).thenReturn(List.of(reservedLot));
             when(marketplaceOrderRepository.save(any(MarketplaceOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            product.setStockQuantity(new BigDecimal("8"));
 
             MarketplaceOrderResponse response = marketplaceService.cancelOrder(300L);
 
             assertEquals(MarketplaceOrderStatus.CANCELLED, response.status());
             assertEquals(0, reservedLot.getOnHandQuantity().compareTo(new BigDecimal("10")));
+            assertEquals(0, product.getStockQuantity().compareTo(new BigDecimal("10")));
             verify(marketplaceOrderRepository).save(order);
+        }
+    }
+
+    @Nested
+    @DisplayName("farmer products")
+    class FarmerProductTests {
+
+        @Test
+        void createFarmerProduct_ValidOwnedLot_SavesDraft() {
+            User farmer = User.builder().id(20L).build();
+            ProductWarehouseLot ownedLot = buildLot(5, "12");
+
+            when(currentUserService.getCurrentUser()).thenReturn(farmer);
+            when(productWarehouseLotRepository.findByIdAndFarmUserIdAndStatusAndOnHandQuantityGreaterThan(
+                    5,
+                    20L,
+                    ProductWarehouseLotStatus.IN_STOCK,
+                    BigDecimal.ZERO)).thenReturn(Optional.of(ownedLot));
+            when(marketplaceProductRepository.findByLot_Id(5)).thenReturn(Optional.empty());
+            when(marketplaceProductRepository.save(any(MarketplaceProduct.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            MarketplaceFarmerProductUpsertRequest request = new MarketplaceFarmerProductUpsertRequest(
+                    "Fresh Rice",
+                    "Grain",
+                    "A good harvest",
+                    "Harvest-backed listing",
+                    new BigDecimal("12000"),
+                    new BigDecimal("10"),
+                    null,
+                    null,
+                    5);
+
+            MarketplaceProductDetailResponse response = marketplaceService.createFarmerProduct(request);
+
+            assertEquals(MarketplaceProductStatus.DRAFT, response.status());
+            assertEquals(Integer.valueOf(5), response.lotId());
+            assertEquals(0, response.stockQuantity().compareTo(new BigDecimal("10")));
+            assertEquals(0, response.availableQuantity().compareTo(new BigDecimal("10")));
+        }
+
+        @Test
+        void createFarmerProduct_NonPositiveStock_ThrowsBadRequest() {
+            User farmer = User.builder().id(20L).build();
+            ProductWarehouseLot ownedLot = buildLot(5, "12");
+
+            when(currentUserService.getCurrentUser()).thenReturn(farmer);
+            when(productWarehouseLotRepository.findByIdAndFarmUserIdAndStatusAndOnHandQuantityGreaterThan(
+                    5,
+                    20L,
+                    ProductWarehouseLotStatus.IN_STOCK,
+                    BigDecimal.ZERO)).thenReturn(Optional.of(ownedLot));
+
+            MarketplaceFarmerProductUpsertRequest request = new MarketplaceFarmerProductUpsertRequest(
+                    "Fresh Rice",
+                    "Grain",
+                    "A good harvest",
+                    "Harvest-backed listing",
+                    new BigDecimal("12000"),
+                    BigDecimal.ZERO,
+                    null,
+                    null,
+                    5);
+
+            AppException ex = assertThrows(AppException.class, () -> marketplaceService.createFarmerProduct(request));
+            assertEquals(ErrorCode.BAD_REQUEST, ex.getErrorCode());
+        }
+
+        @Test
+        void createFarmerProduct_StockExceedsLot_ThrowsConflict() {
+            User farmer = User.builder().id(20L).build();
+            ProductWarehouseLot ownedLot = buildLot(5, "12");
+
+            when(currentUserService.getCurrentUser()).thenReturn(farmer);
+            when(productWarehouseLotRepository.findByIdAndFarmUserIdAndStatusAndOnHandQuantityGreaterThan(
+                    5,
+                    20L,
+                    ProductWarehouseLotStatus.IN_STOCK,
+                    BigDecimal.ZERO)).thenReturn(Optional.of(ownedLot));
+
+            MarketplaceFarmerProductUpsertRequest request = new MarketplaceFarmerProductUpsertRequest(
+                    "Fresh Rice",
+                    "Grain",
+                    "A good harvest",
+                    "Harvest-backed listing",
+                    new BigDecimal("12000"),
+                    new BigDecimal("15"),
+                    null,
+                    null,
+                    5);
+
+            AppException ex = assertThrows(AppException.class, () -> marketplaceService.createFarmerProduct(request));
+            assertEquals(ErrorCode.MARKETPLACE_STOCK_CONFLICT, ex.getErrorCode());
+        }
+
+        @Test
+        void getFarmerProductDetail_Owner_ReturnsProduct() {
+            MarketplaceProduct ownedProduct = buildProduct(901L, "rice-lot", "Rice Lot", new BigDecimal("15000"), buildLot(5, "12"), 20L);
+            ownedProduct.setStatus(MarketplaceProductStatus.DRAFT);
+
+            when(currentUserService.getCurrentUserId()).thenReturn(20L);
+            when(marketplaceProductRepository.findById(901L)).thenReturn(Optional.of(ownedProduct));
+            when(marketplaceProductReviewRepository.aggregateRatingsByProductIds(List.of(901L))).thenReturn(List.of());
+
+            MarketplaceProductDetailResponse response = marketplaceService.getFarmerProductDetail(901L);
+
+            assertEquals(901L, response.id());
+            assertEquals(0, response.stockQuantity().compareTo(new BigDecimal("12")));
+        }
+
+        @Test
+        void getFarmerProductDetail_NotOwner_ThrowsNotOwner() {
+            MarketplaceProduct otherFarmerProduct = buildProduct(901L, "rice-lot", "Rice Lot", new BigDecimal("15000"), buildLot(5, "12"), 99L);
+
+            when(currentUserService.getCurrentUserId()).thenReturn(20L);
+            when(marketplaceProductRepository.findById(901L)).thenReturn(Optional.of(otherFarmerProduct));
+
+            AppException ex = assertThrows(AppException.class, () -> marketplaceService.getFarmerProductDetail(901L));
+            assertEquals(ErrorCode.NOT_OWNER, ex.getErrorCode());
         }
     }
 
@@ -417,6 +545,7 @@ class MarketplaceServiceTest {
                     "short",
                     "desc",
                     new BigDecimal("12000"),
+                    new BigDecimal("4"),
                     null,
                     null,
                     1);
@@ -451,12 +580,17 @@ class MarketplaceServiceTest {
     }
 
     private ProductWarehouseLot buildLot(int id, String onHand) {
-        Farm farm = Farm.builder().id(1).name("Green Farm").build();
+        User farmer = User.builder().id(20L).build();
+        Farm farm = Farm.builder().id(1).name("Green Farm").user(farmer).build();
+        Plot plot = Plot.builder().id(1).farm(farm).plotName("Plot A").build();
+        Season season = Season.builder().id(1).seasonName("Spring 2026").plot(plot).build();
         return ProductWarehouseLot.builder()
                 .id(id)
                 .lotCode("LOT-" + id)
                 .productName("Produce " + id)
                 .farm(farm)
+                .season(season)
+                .plot(plot)
                 .unit("kg")
                 .initialQuantity(new BigDecimal(onHand))
                 .onHandQuantity(new BigDecimal(onHand))
@@ -477,10 +611,12 @@ class MarketplaceServiceTest {
                 .name(name)
                 .price(price)
                 .unit("kg")
+                .stockQuantity(lot.getOnHandQuantity())
                 .status(MarketplaceProductStatus.PUBLISHED)
                 .traceable(false)
                 .lot(lot)
                 .farm(lot.getFarm())
+                .season(lot.getSeason())
                 .farmerUser(User.builder().id(farmerId).username("farmer-" + farmerId).build())
                 .build();
     }
