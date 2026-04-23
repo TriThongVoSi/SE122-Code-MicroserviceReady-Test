@@ -1,12 +1,12 @@
+import { useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Facebook, Instagram, Search, ShoppingCart, Store, Twitter, Wheat } from "lucide-react";
+import { Facebook, Instagram, Menu, Search, ShoppingCart, Store, Twitter, Wheat, X } from "lucide-react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
 import {
   useMarketplaceCart,
   useMarketplaceCartMergeBridge,
 } from "../hooks";
-import { useState, type FormEvent } from "react";
 
 function resolvePortalRoute(role: string | undefined): string {
   switch (role) {
@@ -21,13 +21,21 @@ function resolvePortalRoute(role: string | undefined): string {
   }
 }
 
-function MarketplaceNavLink({ to, label }: { to: string; label: string }) {
+const NAV_LINKS = [
+  { to: "/marketplace", label: "Home" },
+  { to: "/marketplace/products", label: "Products" },
+  { to: "/marketplace/farms", label: "Farms" },
+  { to: "/marketplace/traceability", label: "Traceability" },
+];
+
+function MarketplaceNavLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
   return (
     <NavLink
       to={to}
+      onClick={onClick}
       className={({ isActive }) =>
         isActive
-          ? "text-emerald-700 font-semibold"
+          ? "font-semibold text-emerald-700"
           : "text-slate-600 hover:text-emerald-700"
       }
       end={to === "/marketplace"}
@@ -37,7 +45,7 @@ function MarketplaceNavLink({ to, label }: { to: string; label: string }) {
   );
 }
 
-function MarketplaceSearchBar() {
+function MarketplaceSearchBar({ className = "" }: { className?: string }) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
@@ -45,21 +53,80 @@ function MarketplaceSearchBar() {
     e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
-      navigate(`/marketplace/products?search=${encodeURIComponent(trimmed)}`);
+      navigate(`/marketplace/products?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative hidden lg:block">
+    <form onSubmit={handleSubmit} className={`relative ${className}`}>
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
       <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search products, farms..."
-        className="w-64 rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 xl:w-80"
+        className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
       />
     </form>
+  );
+}
+
+function MobileMenu({
+  isOpen,
+  onClose,
+  isAuthenticated,
+  user,
+  cartCount,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  isAuthenticated: boolean;
+  user: { role?: string } | null;
+  cartCount: number;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="border-t border-slate-200 bg-white md:hidden">
+      <div className="space-y-4 px-4 py-4">
+        <MarketplaceSearchBar className="w-full" />
+        <nav className="flex flex-col gap-3 text-sm">
+          {NAV_LINKS.map((link) => (
+            <MarketplaceNavLink key={link.to} to={link.to} label={link.label} onClick={onClose} />
+          ))}
+        </nav>
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+          {isAuthenticated ? (
+            <>
+              <Link to="/marketplace/cart" onClick={onClose}>
+                <Button variant="outline" size="sm" className="w-full justify-start gap-2">
+                  <ShoppingCart size={16} />
+                  Cart {cartCount > 0 ? `(${cartCount})` : ""}
+                </Button>
+              </Link>
+              <Link to="/marketplace/orders" onClick={onClose}>
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  Orders
+                </Button>
+              </Link>
+              <Link to={resolvePortalRoute(user?.role)} onClick={onClose}>
+                <Button size="sm" className="w-full justify-start gap-2">
+                  <Store size={14} /> Internal portal
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/sign-up" onClick={onClose}>
+                <Button size="sm" className="w-full">Create account</Button>
+              </Link>
+              <Link to="/sign-in" onClick={onClose}>
+                <Button variant="outline" size="sm" className="w-full">Sign in</Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -118,18 +185,10 @@ function MarketplaceFooter() {
           <div>
             <h3 className="mb-4 text-sm font-semibold text-white">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <span className="cursor-default text-slate-400">FAQ</span>
-              </li>
-              <li>
-                <span className="cursor-default text-slate-400">Shipping Policy</span>
-              </li>
-              <li>
-                <span className="cursor-default text-slate-400">Returns &amp; Refunds</span>
-              </li>
-              <li>
-                <span className="cursor-default text-slate-400">Contact Us</span>
-              </li>
+              <li><span className="cursor-default text-slate-400">FAQ</span></li>
+              <li><span className="cursor-default text-slate-400">Shipping Policy</span></li>
+              <li><span className="cursor-default text-slate-400">Returns &amp; Refunds</span></li>
+              <li><span className="cursor-default text-slate-400">Contact Us</span></li>
             </ul>
           </div>
 
@@ -142,12 +201,8 @@ function MarketplaceFooter() {
                   Register to Sell
                 </Link>
               </li>
-              <li>
-                <span className="cursor-default text-slate-400">Seller Guide</span>
-              </li>
-              <li>
-                <span className="cursor-default text-slate-400">Quality Standards</span>
-              </li>
+              <li><span className="cursor-default text-slate-400">Seller Guide</span></li>
+              <li><span className="cursor-default text-slate-400">Quality Standards</span></li>
             </ul>
           </div>
         </div>
@@ -162,6 +217,7 @@ function MarketplaceFooter() {
 
 export function MarketplacePublicLayout() {
   const { isAuthenticated, user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useMarketplaceCartMergeBridge();
   const serverCartQuery = useMarketplaceCart({ enabled: isAuthenticated });
@@ -181,54 +237,71 @@ export function MarketplacePublicLayout() {
           </Link>
 
           <nav className="hidden items-center gap-5 text-sm md:flex">
-            <MarketplaceNavLink to="/marketplace" label="Home" />
-            <MarketplaceNavLink to="/marketplace/products" label="Products" />
-            <MarketplaceNavLink to="/marketplace/farms" label="Farms" />
-            <MarketplaceNavLink to="/marketplace/traceability" label="Traceability" />
+            {NAV_LINKS.map((link) => (
+              <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
+            ))}
           </nav>
 
-          <MarketplaceSearchBar />
+          <MarketplaceSearchBar className="hidden lg:block lg:w-64 xl:w-80" />
 
           <div className="flex shrink-0 items-center gap-2">
-            {isAuthenticated ? (
-              <>
-                <Link to="/marketplace/cart" className="relative inline-flex">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <ShoppingCart size={16} /> Cart
-                  </Button>
-                  {serverCartCount > 0 ? (
-                    <span className="absolute -right-2 -top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white">
-                      {serverCartCount}
-                    </span>
-                  ) : null}
-                </Link>
-                <Link to="/marketplace/orders">
-                  <Button variant="outline" size="sm">
-                    Orders
-                  </Button>
-                </Link>
-                <Link to={resolvePortalRoute(user?.role)}>
-                  <Button size="sm" className="gap-2">
-                    <Store size={14} />
-                    Internal portal
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <span className="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 sm:inline-flex">
-                  Guest mode
-                </span>
-                <Link to="/sign-up">
-                  <Button size="sm">Create account</Button>
-                </Link>
-                <Link to="/sign-in">
-                  <Button variant="outline" size="sm">Sign in</Button>
-                </Link>
-              </>
-            )}
+            {/* Desktop auth buttons */}
+            <div className="hidden items-center gap-2 md:flex">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/marketplace/cart" className="relative inline-flex">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <ShoppingCart size={16} /> Cart
+                    </Button>
+                    {serverCartCount > 0 ? (
+                      <span className="absolute -right-2 -top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white">
+                        {serverCartCount}
+                      </span>
+                    ) : null}
+                  </Link>
+                  <Link to="/marketplace/orders">
+                    <Button variant="outline" size="sm">Orders</Button>
+                  </Link>
+                  <Link to={resolvePortalRoute(user?.role)}>
+                    <Button size="sm" className="gap-2">
+                      <Store size={14} /> Internal portal
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <span className="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 sm:inline-flex">
+                    Guest mode
+                  </span>
+                  <Link to="/sign-up">
+                    <Button size="sm">Create account</Button>
+                  </Link>
+                  <Link to="/sign-in">
+                    <Button variant="outline" size="sm">Sign in</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              className="rounded-md p-2 text-slate-600 hover:bg-slate-100 md:hidden"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+
+        <MobileMenu
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          cartCount={serverCartCount}
+        />
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

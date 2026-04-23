@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, Minus, Plus, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { Badge, Button, Card, CardContent } from "@/shared/ui";
@@ -10,6 +10,19 @@ import {
   useMarketplaceTraceability,
 } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
+
+function StarRating({ rating }: { rating?: number }) {
+  const score = Math.min(Math.max(Math.round(rating ?? 5), 1), 5);
+  return (
+    <div className="flex items-center gap-0.5 text-base">
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < score ? "text-amber-400" : "text-slate-200"}>
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -25,9 +38,7 @@ export function ProductDetailPage() {
   const traceabilityQuery = useMarketplaceTraceability(product?.traceable ? product.id : null);
 
   const canIncrease = useMemo(() => {
-    if (!product) {
-      return false;
-    }
+    if (!product) return false;
     return quantity < product.availableQuantity;
   }, [product, quantity]);
 
@@ -89,7 +100,12 @@ export function ProductDetailPage() {
               <span className="text-sm text-slate-500">/{product.unit}</span>
             </div>
 
-            <p className="text-sm text-slate-500">Stock: {product.availableQuantity}</p>
+            <p className="text-sm text-slate-500">
+              Stock:{" "}
+              <span className={product.availableQuantity <= 10 ? "font-semibold text-red-600" : "text-slate-700"}>
+                {product.availableQuantity}
+              </span>
+            </p>
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
@@ -210,13 +226,18 @@ export function ProductDetailPage() {
             ) : reviewsQuery.isError ? (
               <p className="text-sm text-red-600">Failed to load reviews.</p>
             ) : reviewsQuery.data && reviewsQuery.data.items.length > 0 ? (
-              reviewsQuery.data.items.map((review) => (
-                <div key={review.id} className="rounded-md border border-slate-200 p-3">
-                  <p className="text-sm font-medium">{review.buyerDisplayName}</p>
-                  <p className="text-xs text-slate-500">{formatDateTime(review.createdAt)}</p>
-                  <p className="mt-1 text-sm">{review.comment}</p>
-                </div>
-              ))
+              <div className="space-y-3">
+                {reviewsQuery.data.items.map((review) => (
+                  <div key={review.id} className="rounded-md border border-slate-200 p-3">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-slate-900">{review.buyerDisplayName}</p>
+                      <StarRating rating={(review as { rating?: number }).rating} />
+                    </div>
+                    <p className="text-xs text-slate-400">{formatDateTime(review.createdAt)}</p>
+                    <p className="mt-1.5 text-sm text-slate-600">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="text-sm text-slate-500">No review yet.</p>
             )}
@@ -227,7 +248,7 @@ export function ProductDetailPage() {
       {product.traceable ? (
         <section>
           <Card>
-            <CardContent className="space-y-3 p-6">
+            <CardContent className="space-y-4 p-6">
               <h2 className="text-lg font-semibold text-slate-900">Traceability chain</h2>
 
               {traceabilityQuery.isLoading ? (
@@ -235,23 +256,53 @@ export function ProductDetailPage() {
               ) : traceabilityQuery.isError ? (
                 <p className="text-sm text-red-600">Failed to validate traceability chain.</p>
               ) : traceabilityQuery.data?.traceable ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-md border border-slate-200 p-3">
-                    <p className="text-xs text-slate-500">Farm</p>
-                    <p className="text-sm font-medium">{traceabilityQuery.data.farm?.name}</p>
-                    <p className="text-xs text-slate-500">{traceabilityQuery.data.farm?.region}</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  {/* Farm step */}
+                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+                        1
+                      </div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Farm</p>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.farm?.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{traceabilityQuery.data.farm?.region}</p>
                   </div>
-                  <div className="rounded-md border border-slate-200 p-3">
-                    <p className="text-xs text-slate-500">Season</p>
-                    <p className="text-sm font-medium">{traceabilityQuery.data.season?.name}</p>
-                    <p className="text-xs text-slate-500">
-                      Planned harvest: {traceabilityQuery.data.season?.plannedHarvestDate ?? "N/A"}
+
+                  <div className="flex items-center justify-center text-slate-300">
+                    <ChevronRight size={24} className="hidden sm:block" />
+                    <div className="h-px w-full bg-slate-200 sm:hidden" />
+                  </div>
+
+                  {/* Season step */}
+                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+                        2
+                      </div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Season</p>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.season?.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Harvest: {traceabilityQuery.data.season?.plannedHarvestDate ?? "N/A"}
                     </p>
                   </div>
-                  <div className="rounded-md border border-slate-200 p-3">
-                    <p className="text-xs text-slate-500">Lot</p>
-                    <p className="text-sm font-medium">{traceabilityQuery.data.lot?.lotCode}</p>
-                    <p className="text-xs text-slate-500">
+
+                  <div className="flex items-center justify-center text-slate-300">
+                    <ChevronRight size={24} className="hidden sm:block" />
+                    <div className="h-px w-full bg-slate-200 sm:hidden" />
+                  </div>
+
+                  {/* Lot step */}
+                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+                        3
+                      </div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Lot</p>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.lot?.lotCode}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
                       Harvested: {traceabilityQuery.data.lot?.harvestedAt ?? "N/A"}
                     </p>
                   </div>
