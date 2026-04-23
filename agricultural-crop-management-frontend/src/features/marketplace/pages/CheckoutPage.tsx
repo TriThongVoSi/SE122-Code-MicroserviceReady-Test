@@ -3,7 +3,7 @@ import { Banknote, Building2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/shared/lib";
-import { Button, Card, CardContent, Input } from "@/shared/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import type {
   MarketplaceAddress,
   MarketplaceAddressUpsertRequest,
@@ -191,30 +191,36 @@ export function CheckoutPage() {
 
   if (cartQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        {t("marketplaceBuyer.checkout.loadingCart")}
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+          {t("marketplaceBuyer.checkout.loadingCart")}
+        </div>
       </div>
     );
   }
 
   if (cartQuery.isError) {
     return (
-      <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        {t("marketplaceBuyer.checkout.errorCart")}
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
+          {t("marketplaceBuyer.checkout.errorCart")}
+        </div>
       </div>
     );
   }
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">{t("marketplaceBuyer.checkout.emptyCartTitle")}</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          {t("marketplaceBuyer.checkout.emptyCartDesc")}
-        </p>
-        <Button className="mt-4" onClick={() => navigate("/marketplace/cart")}>
-          {t("marketplaceBuyer.checkout.backToCart")}
-        </Button>
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
+          <h1 className="text-xl font-semibold text-gray-900">{t("marketplaceBuyer.checkout.emptyCartTitle")}</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            {t("marketplaceBuyer.checkout.emptyCartDesc")}
+          </p>
+          <Button className="mt-4" onClick={() => navigate("/marketplace/cart")}>
+            {t("marketplaceBuyer.checkout.backToCart")}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -226,7 +232,7 @@ export function CheckoutPage() {
       ? createOrderMutation.error.message
       : null;
 
-  const saveAddress = async () => {
+  async function saveAddress() {
     setAddressFormMessage(null);
     if (!isAddressFormValid(addressForm)) {
       setAddressFormMessage(t("marketplaceBuyer.checkout.addressForm.validationError"));
@@ -250,229 +256,25 @@ export function CheckoutPage() {
     setAddressMode("saved");
     setEditingAddressId(null);
     setAddressForm(emptyAddressForm());
-  };
+  }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-      <section className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.checkout.title")}</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="mb-8 text-2xl font-bold text-gray-900">Thanh toán</h1>
 
-        {/* Shipping address */}
-        <Card>
-          <CardContent className="space-y-4 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.shippingAddressTitle")}</h2>
-                <p className="text-sm text-slate-500">
-                  {t("marketplaceBuyer.checkout.shippingAddressDesc")}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={addressMode === "saved" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setAddressMode("saved");
-                    setEditingAddressId(null);
-                    setAddressForm(emptyAddressForm());
-                    setAddressFormMessage(null);
-                  }}
-                >
-                  {t("marketplaceBuyer.checkout.savedAddresses")}
-                </Button>
-                <Button
-                  variant={addressMode === "new" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setAddressMode("new");
-                    setEditingAddressId(null);
-                    setAddressForm(emptyAddressForm());
-                    setAddressFormMessage(null);
-                  }}
-                >
-                  <Plus size={14} className="mr-1" />
-                  {t("marketplaceBuyer.checkout.newAddress")}
-                </Button>
-              </div>
-            </div>
-
-            {addressMode === "saved" ? (
-              <div className="space-y-3">
-                {addressesQuery.data && addressesQuery.data.length > 0 ? (
-                  <>
-                    <select
-                      className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
-                      value={selectedAddress?.id ?? ""}
-                      onChange={(event) => {
-                        const next = Number(event.target.value);
-                        setSelectedAddressId(Number.isFinite(next) ? next : null);
-                      }}
-                    >
-                      {addressesQuery.data.map((address) => (
-                        <option key={address.id} value={address.id}>
-                          {formatAddressLabel(address)}
-                        </option>
-                      ))}
-                    </select>
-
-                    {selectedAddress ? (
-                      <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="space-y-1 text-sm text-slate-600">
-                            <p className="font-medium text-slate-900">{selectedAddress.fullName}</p>
-                            <p>{selectedAddress.phone}</p>
-                            <p>{formatAddressLabel(selectedAddress)}</p>
-                            {selectedAddress.isDefault ? (
-                              <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
-                                {t("marketplaceBuyer.checkout.defaultBadge")}
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setAddressMode("new");
-                                setEditingAddressId(selectedAddress.id);
-                                setAddressForm(toAddressForm(selectedAddress));
-                                setAddressFormMessage(null);
-                              }}
-                            >
-                              <Pencil size={14} className="mr-1" />
-                              {t("marketplaceBuyer.checkout.editAddress")}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={deleteAddressMutation.isPending}
-                              onClick={async () => {
-                                await deleteAddressMutation.mutateAsync(selectedAddress.id);
-                                setSelectedAddressId(null);
-                              }}
-                            >
-                              <Trash2 size={14} className="mr-1" />
-                              {t("marketplaceBuyer.checkout.deleteAddress")}
-                            </Button>
-                          </div>
-                        </div>
-                        {deleteAddressError ? (
-                          <p className="text-sm text-red-600">{deleteAddressError}</p>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                    {t("marketplaceBuyer.checkout.noSavedAddress")}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.recipientName")}
-                    value={addressForm.fullName}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, fullName: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.phone")}
-                    value={addressForm.phone}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, phone: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.province")}
-                    value={addressForm.province}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, province: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.district")}
-                    value={addressForm.district}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, district: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.ward")}
-                    value={addressForm.ward}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, ward: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder={t("marketplaceBuyer.checkout.addressForm.street")}
-                    value={addressForm.street}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({ ...current, street: event.target.value }))
-                    }
-                  />
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex-1 space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle>Thông tin giao hàng</CardTitle>
+                  <p className="mt-1 text-sm text-gray-500">{t("marketplaceBuyer.checkout.shippingAddressDesc")}</p>
                 </div>
-
-                <Input
-                  placeholder={t("marketplaceBuyer.checkout.addressForm.detail")}
-                  value={addressForm.detail ?? ""}
-                  onChange={(event) =>
-                    setAddressForm((current) => ({ ...current, detail: event.target.value }))
-                  }
-                />
-
-                <div className="grid gap-3 sm:grid-cols-[160px_1fr] sm:items-center">
-                  <select
-                    value={addressForm.label ?? "home"}
-                    onChange={(event) =>
-                      setAddressForm((current) => ({
-                        ...current,
-                        label: event.target.value as MarketplaceAddress["label"],
-                      }))
-                    }
-                    className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                  >
-                    <option value="home">{t("marketplaceBuyer.checkout.addressForm.labelHome")}</option>
-                    <option value="office">{t("marketplaceBuyer.checkout.addressForm.labelOffice")}</option>
-                    <option value="other">{t("marketplaceBuyer.checkout.addressForm.labelOther")}</option>
-                  </select>
-                  <label className="flex items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={addressForm.isDefault ?? false}
-                      onChange={(event) =>
-                        setAddressForm((current) => ({
-                          ...current,
-                          isDefault: event.target.checked,
-                        }))
-                      }
-                    />
-                    {t("marketplaceBuyer.checkout.addressForm.setDefault")}
-                  </label>
-                </div>
-
-                {addressFormMessage ? (
-                  <p className="text-sm text-red-600">{addressFormMessage}</p>
-                ) : null}
-                {addressMutationError ? (
-                  <p className="text-sm text-red-600">{addressMutationError}</p>
-                ) : null}
-
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2">
                   <Button
-                    disabled={currentAddressMutation.isPending}
-                    onClick={saveAddress}
-                  >
-                    {currentAddressMutation.isPending
-                      ? t("marketplaceBuyer.checkout.addressForm.saving")
-                      : editingAddressId == null
-                        ? t("marketplaceBuyer.checkout.addressForm.saveAddress")
-                        : t("marketplaceBuyer.checkout.addressForm.updateAddress")}
-                  </Button>
-                  <Button
-                    variant="outline"
+                    variant={addressMode === "saved" ? "default" : "outline"}
+                    size="sm"
                     onClick={() => {
                       setAddressMode("saved");
                       setEditingAddressId(null);
@@ -480,173 +282,394 @@ export function CheckoutPage() {
                       setAddressFormMessage(null);
                     }}
                   >
-                    {t("marketplaceBuyer.checkout.addressForm.cancel")}
+                    Địa chỉ đã lưu
+                  </Button>
+                  <Button
+                    variant={addressMode === "new" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setAddressMode("new");
+                      setEditingAddressId(null);
+                      setAddressForm(emptyAddressForm());
+                      setAddressFormMessage(null);
+                    }}
+                  >
+                    <Plus size={14} className="mr-1" />
+                    Địa chỉ mới
                   </Button>
                 </div>
               </div>
-            )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {addressMode === "saved" ? (
+                <div className="space-y-3">
+                  {addressesQuery.data && addressesQuery.data.length > 0 ? (
+                    <>
+                      <select
+                        className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"
+                        value={selectedAddress?.id ?? ""}
+                        onChange={(event) => {
+                          const next = Number(event.target.value);
+                          setSelectedAddressId(Number.isFinite(next) ? next : null);
+                        }}
+                      >
+                        {addressesQuery.data.map((address) => (
+                          <option key={address.id} value={address.id}>
+                            {formatAddressLabel(address)}
+                          </option>
+                        ))}
+                      </select>
 
-            {/* Optional overrides */}
-            <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("marketplaceBuyer.checkout.overrideSection")}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input
-                  placeholder={t("marketplaceBuyer.checkout.recipientOverride")}
-                  value={recipientName}
-                  onChange={(event) => setRecipientName(event.target.value)}
-                />
-                <Input
-                  placeholder={t("marketplaceBuyer.checkout.phoneOverride")}
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                />
-              </div>
-              <Input
-                placeholder={t("marketplaceBuyer.checkout.addressOverride")}
-                value={addressLine}
-                onChange={(event) => setAddressLine(event.target.value)}
-              />
-            </div>
-
-            <Input
-              placeholder={t("marketplaceBuyer.checkout.orderNote")}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Payment method */}
-        <Card>
-          <CardContent className="space-y-3 p-5">
-            <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.paymentMethodTitle")}</h2>
-            <label
-              className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
-                paymentMethod === "COD"
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-slate-200 hover:border-slate-300",
-              )}
-            >
-              <input
-                type="radio"
-                name="marketplace-payment"
-                className="accent-emerald-600"
-                checked={paymentMethod === "COD"}
-                onChange={() => setPaymentMethod("COD")}
-              />
-              <Banknote size={18} className="shrink-0 text-slate-500" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">{t("marketplaceBuyer.checkout.codLabel")}</p>
-                <p className="text-xs text-slate-500">{t("marketplaceBuyer.checkout.codDesc")}</p>
-              </div>
-            </label>
-
-            <label
-              className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
-                paymentMethod === "BANK_TRANSFER"
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-slate-200 hover:border-slate-300",
-              )}
-            >
-              <input
-                type="radio"
-                name="marketplace-payment"
-                className="accent-emerald-600"
-                checked={paymentMethod === "BANK_TRANSFER"}
-                onChange={() => setPaymentMethod("BANK_TRANSFER")}
-              />
-              <Building2 size={18} className="shrink-0 text-slate-500" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">{t("marketplaceBuyer.checkout.bankTransferLabel")}</p>
-                <p className="text-xs text-slate-500">{t("marketplaceBuyer.checkout.bankTransferDesc")}</p>
-              </div>
-            </label>
-          </CardContent>
-        </Card>
-      </section>
-
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <Card>
-          <CardContent className="space-y-4 p-5">
-            <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.orderSummaryTitle")}</h2>
-
-            <div className="space-y-2 text-sm">
-              {cart.items.map((item) => (
-                <div key={item.productId} className="flex items-center justify-between gap-2">
-                  <span className="line-clamp-1 text-slate-600">
-                    {item.name} x{item.quantity}
-                  </span>
-                  <span className="font-medium text-slate-900">
-                    {formatVnd(item.unitPrice * item.quantity)}
-                  </span>
+                      {selectedAddress ? (
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p className="font-medium text-gray-900">{selectedAddress.fullName}</p>
+                              <p>{selectedAddress.phone}</p>
+                              <p>{formatAddressLabel(selectedAddress)}</p>
+                              {selectedAddress.isDefault ? (
+                                <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+                                  {t("marketplaceBuyer.checkout.defaultBadge")}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setAddressMode("new");
+                                  setEditingAddressId(selectedAddress.id);
+                                  setAddressForm(toAddressForm(selectedAddress));
+                                  setAddressFormMessage(null);
+                                }}
+                              >
+                                <Pencil size={14} className="mr-1" />
+                                Sửa
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={deleteAddressMutation.isPending}
+                                onClick={async () => {
+                                  await deleteAddressMutation.mutateAsync(selectedAddress.id);
+                                  setSelectedAddressId(null);
+                                }}
+                              >
+                                <Trash2 size={14} className="mr-1" />
+                                Xóa
+                              </Button>
+                            </div>
+                          </div>
+                          {deleteAddressError ? (
+                            <p className="mt-2 text-sm text-red-600">{deleteAddressError}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+                      {t("marketplaceBuyer.checkout.noSavedAddress")}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Họ tên</label>
+                      <Input
+                        value={addressForm.fullName}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, fullName: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Số điện thoại</label>
+                      <Input
+                        value={addressForm.phone}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, phone: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Tỉnh / Thành</label>
+                      <Input
+                        value={addressForm.province}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, province: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Quận / Huyện</label>
+                      <Input
+                        value={addressForm.district}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, district: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Phường / Xã</label>
+                      <Input
+                        value={addressForm.ward}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, ward: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Đường</label>
+                      <Input
+                        value={addressForm.street}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({ ...current, street: event.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
 
-            <div className="space-y-2 border-t border-slate-200 pt-3 text-sm">
-              <div className="flex justify-between text-slate-600">
-                <span>{t("marketplaceBuyer.checkout.subtotal")}</span>
-                <span>{formatVnd(cart.subtotal)}</span>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Chi tiết thêm</label>
+                    <Input
+                      value={addressForm.detail ?? ""}
+                      onChange={(event) =>
+                        setAddressForm((current) => ({ ...current, detail: event.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-[160px_1fr] sm:items-center">
+                    <select
+                      value={addressForm.label ?? "home"}
+                      onChange={(event) =>
+                        setAddressForm((current) => ({
+                          ...current,
+                          label: event.target.value as MarketplaceAddress["label"],
+                        }))
+                      }
+                      className="h-10 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                    >
+                      <option value="home">Nhà riêng</option>
+                      <option value="office">Văn phòng</option>
+                      <option value="other">Khác</option>
+                    </select>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={addressForm.isDefault ?? false}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({
+                            ...current,
+                            isDefault: event.target.checked,
+                          }))
+                        }
+                      />
+                      Đặt làm địa chỉ mặc định
+                    </label>
+                  </div>
+
+                  {addressFormMessage ? <p className="text-sm text-red-600">{addressFormMessage}</p> : null}
+                  {addressMutationError ? <p className="text-sm text-red-600">{addressMutationError}</p> : null}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button disabled={currentAddressMutation.isPending} onClick={saveAddress}>
+                      {currentAddressMutation.isPending
+                        ? t("marketplaceBuyer.checkout.addressForm.saving")
+                        : editingAddressId == null
+                          ? "Lưu địa chỉ"
+                          : "Cập nhật địa chỉ"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setAddressMode("saved");
+                        setEditingAddressId(null);
+                        setAddressForm(emptyAddressForm());
+                        setAddressFormMessage(null);
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-lg border border-dashed border-gray-200 p-4">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">{t("marketplaceBuyer.checkout.overrideSection")}</p>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input
+                    placeholder={t("marketplaceBuyer.checkout.recipientOverride")}
+                    value={recipientName}
+                    onChange={(event) => setRecipientName(event.target.value)}
+                  />
+                  <Input
+                    placeholder={t("marketplaceBuyer.checkout.phoneOverride")}
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                </div>
+                <Input
+                  className="mt-3"
+                  placeholder={t("marketplaceBuyer.checkout.addressOverride")}
+                  value={addressLine}
+                  onChange={(event) => setAddressLine(event.target.value)}
+                />
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span>{t("marketplaceBuyer.checkout.shipping")}</span>
-                <span>{formatVnd(shippingFee)}</span>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Ghi chú</label>
+                <Input
+                  placeholder={t("marketplaceBuyer.checkout.orderNote")}
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                />
               </div>
-              <div className="flex justify-between font-semibold text-slate-900">
-                <span>{t("marketplaceBuyer.checkout.total")}</span>
-                <span className="text-emerald-700">{formatVnd(total)}</span>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Phương thức thanh toán</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center rounded-lg border p-4 transition-colors",
+                  paymentMethod === "COD"
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-gray-200 hover:bg-gray-50",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="marketplace-payment"
+                  className="text-emerald-600 focus:ring-emerald-500"
+                  checked={paymentMethod === "COD"}
+                  onChange={() => setPaymentMethod("COD")}
+                />
+                <div className="ml-3 flex items-start gap-3">
+                  <Banknote size={18} className="mt-0.5 shrink-0 text-gray-500" />
+                  <div>
+                    <span className="block text-sm font-medium text-gray-900">{t("marketplaceBuyer.checkout.codLabel")}</span>
+                    <span className="block text-sm text-gray-500">{t("marketplaceBuyer.checkout.codDesc")}</span>
+                  </div>
+                </div>
+              </label>
+
+              <label
+                className={cn(
+                  "flex cursor-pointer items-center rounded-lg border p-4 transition-colors",
+                  paymentMethod === "BANK_TRANSFER"
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-gray-200 hover:bg-gray-50",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="marketplace-payment"
+                  className="text-emerald-600 focus:ring-emerald-500"
+                  checked={paymentMethod === "BANK_TRANSFER"}
+                  onChange={() => setPaymentMethod("BANK_TRANSFER")}
+                />
+                <div className="ml-3 flex items-start gap-3">
+                  <Building2 size={18} className="mt-0.5 shrink-0 text-gray-500" />
+                  <div>
+                    <span className="block text-sm font-medium text-gray-900">{t("marketplaceBuyer.checkout.bankTransferLabel")}</span>
+                    <span className="block text-sm text-gray-500">{t("marketplaceBuyer.checkout.bankTransferDesc")}</span>
+                  </div>
+                </div>
+              </label>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="w-full shrink-0 lg:w-96">
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle>Đơn hàng của bạn</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6 space-y-4">
+                {cart.items.map((item) => (
+                  <div key={item.productId} className="flex justify-between text-sm">
+                    <div className="flex-1 pr-4">
+                      <span className="font-medium text-gray-900">{item.name}</span>
+                      <span className="ml-2 text-gray-500">x{item.quantity}</span>
+                    </div>
+                    <span className="font-medium">{formatVnd(item.unitPrice * item.quantity)}</span>
+                  </div>
+                ))}
               </div>
-            </div>
 
-            {effectiveRecipientName && effectivePhone && effectiveShippingAddressLine ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                <p className="font-medium text-slate-900">{t("marketplaceBuyer.checkout.deliverTo")}</p>
-                <p>{effectiveRecipientName}</p>
-                <p>{effectivePhone}</p>
-                <p>{effectiveShippingAddressLine}</p>
+              <div className="mb-6 space-y-3 border-t border-gray-200 pt-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("marketplaceBuyer.checkout.subtotal")}</span>
+                  <span className="font-medium">{formatVnd(cart.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">{t("marketplaceBuyer.checkout.shipping")}</span>
+                  <span className="font-medium">{formatVnd(shippingFee)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                  <span className="font-bold text-gray-900">{t("marketplaceBuyer.checkout.total")}</span>
+                  <span className="text-xl font-bold text-emerald-600">{formatVnd(total)}</span>
+                </div>
               </div>
-            ) : null}
 
-            {submitErrorMessage ? (
-              <p className="text-sm text-red-600">{submitErrorMessage}</p>
-            ) : null}
+              {effectiveRecipientName && effectivePhone && effectiveShippingAddressLine ? (
+                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+                  <p className="font-medium text-gray-900">{t("marketplaceBuyer.checkout.deliverTo")}</p>
+                  <p>{effectiveRecipientName}</p>
+                  <p>{effectivePhone}</p>
+                  <p>{effectiveShippingAddressLine}</p>
+                </div>
+              ) : null}
 
-            <Button
-              className="w-full"
-              disabled={
-                createOrderMutation.isPending ||
-                !effectiveRecipientName ||
-                !effectivePhone ||
-                !effectiveShippingAddressLine
-              }
-              onClick={async () => {
-                const result = await createOrderMutation.mutateAsync({
-                  paymentMethod,
-                  addressId: addressMode === "saved" ? selectedAddress?.id : undefined,
-                  shippingRecipientName: effectiveRecipientName,
-                  shippingPhone: effectivePhone,
-                  shippingAddressLine: effectiveShippingAddressLine,
-                  note: note.trim() || undefined,
-                  idempotencyKey: checkoutIdempotencyKey,
-                });
+              {submitErrorMessage ? (
+                <p className="mb-3 text-sm text-red-600">{submitErrorMessage}</p>
+              ) : null}
 
-                const firstOrderId = result.orders[0]?.id;
-                if (firstOrderId) {
-                  navigate(`/marketplace/orders/${firstOrderId}`);
-                  return;
+              <Button
+                type="button"
+                className="w-full"
+                size="lg"
+                disabled={
+                  createOrderMutation.isPending ||
+                  !effectiveRecipientName ||
+                  !effectivePhone ||
+                  !effectiveShippingAddressLine
                 }
-                navigate("/marketplace/orders");
-              }}
-            >
-              {createOrderMutation.isPending
-                ? t("marketplaceBuyer.checkout.placingOrder")
-                : t("marketplaceBuyer.checkout.placeOrder")}
-            </Button>
-          </CardContent>
-        </Card>
-      </aside>
+                onClick={async () => {
+                  const result = await createOrderMutation.mutateAsync({
+                    paymentMethod,
+                    addressId: addressMode === "saved" ? selectedAddress?.id : undefined,
+                    shippingRecipientName: effectiveRecipientName,
+                    shippingPhone: effectivePhone,
+                    shippingAddressLine: effectiveShippingAddressLine,
+                    note: note.trim() || undefined,
+                    idempotencyKey: checkoutIdempotencyKey,
+                  });
+
+                  const firstOrderId = result.orders[0]?.id;
+                  if (firstOrderId) {
+                    navigate(`/marketplace/orders/${firstOrderId}`);
+                    return;
+                  }
+                  navigate("/marketplace/orders");
+                }}
+              >
+                {createOrderMutation.isPending
+                  ? t("marketplaceBuyer.checkout.placingOrder")
+                  : t("marketplaceBuyer.checkout.placeOrder")}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

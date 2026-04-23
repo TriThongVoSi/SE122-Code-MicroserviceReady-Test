@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, Minus, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Minus, Plus, ShieldCheck, Star } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { Badge, Button, Card, CardContent } from "@/shared/ui";
@@ -15,8 +15,8 @@ function StarRating({ rating }: { rating?: number }) {
   const score = Math.min(Math.max(Math.round(rating ?? 5), 1), 5);
   return (
     <div className="flex items-center gap-0.5 text-base">
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < score ? "text-amber-400" : "text-slate-200"}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <span key={index} className={index < score ? "text-amber-400" : "text-slate-200"}>
           ★
         </span>
       ))}
@@ -38,7 +38,9 @@ export function ProductDetailPage() {
   const traceabilityQuery = useMarketplaceTraceability(product?.traceable ? product.id : null);
 
   const canIncrease = useMemo(() => {
-    if (!product) return false;
+    if (!product) {
+      return false;
+    }
     return quantity < product.availableQuantity;
   }, [product, quantity]);
 
@@ -48,272 +50,254 @@ export function ProductDetailPage() {
 
   if (productQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        Loading product detail...
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+          Đang tải chi tiết sản phẩm...
+        </div>
       </div>
     );
   }
 
   if (productQuery.isError || !product) {
     return (
-      <div className="space-y-3 rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        <p>Product does not exist or is not published.</p>
-        <Link to="/marketplace/products" className="text-emerald-700 hover:underline">
-          Back to products
-        </Link>
+      <div className="container mx-auto px-4 py-12">
+        <div className="space-y-3 rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
+          <p>Sản phẩm không tồn tại hoặc chưa được công khai.</p>
+          <Link to="/marketplace/products" className="text-emerald-700 hover:underline">
+            Quay lại danh sách sản phẩm
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto px-4 py-8">
       <Link
         to="/marketplace/products"
-        className="inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
       >
-        <ArrowLeft size={15} /> Back to products
+        <ArrowLeft size={15} /> Quay lại danh sách sản phẩm
       </Link>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <Card className="overflow-hidden">
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="h-full min-h-72 w-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        </Card>
+      <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-2">
+        <div className="space-y-4">
+          <div className="aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+            <img
+              src={product.imageUrls[0] ?? product.imageUrl}
+              alt={product.name}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="space-y-4 p-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{product.category}</Badge>
-              {product.traceable ? <Badge variant="info">Traceable</Badge> : null}
-            </div>
+        <div className="flex flex-col">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-sm uppercase tracking-wider text-gray-500">{product.category}</span>
+            {product.traceable ? <Badge className="bg-emerald-500 text-white">Có truy xuất</Badge> : null}
+          </div>
 
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{product.name}</h1>
+          <h1 className="mb-4 text-3xl font-bold text-gray-900">{product.name}</h1>
 
-            <p className="text-sm text-slate-600">{product.shortDescription}</p>
-
-            <div className="flex items-center gap-4">
-              <p className="text-2xl font-bold text-emerald-700">{formatVnd(product.price)}</p>
-              <span className="text-sm text-slate-500">/{product.unit}</span>
-            </div>
-
-            <p className="text-sm text-slate-500">
-              Stock:{" "}
-              <span className={product.availableQuantity <= 10 ? "font-semibold text-red-600" : "text-slate-700"}>
-                {product.availableQuantity}
+          <div className="mb-6 flex items-center gap-4">
+            <div className="flex items-center text-yellow-500">
+              <Star className="fill-current" size={20} />
+              <span className="ml-1 font-medium text-gray-900">
+                {product.ratingAverage ? product.ratingAverage.toFixed(1) : "5.0"}
               </span>
-            </p>
+            </div>
+            <span className="text-gray-400">|</span>
+            <span className="text-gray-600">{product.ratingCount} đánh giá</span>
+            <span className="text-gray-400">|</span>
+            <span className="text-gray-600">{product.availableQuantity} sản phẩm có sẵn</span>
+          </div>
 
+          <div className="mb-6 text-3xl font-bold text-emerald-600">
+            {formatVnd(product.price)} <span className="text-lg font-normal text-gray-500">/ {product.unit}</span>
+          </div>
+
+          <p className="mb-8 leading-relaxed text-gray-700">{product.shortDescription}</p>
+
+          <div className="mb-8">
+            <div className="mb-3 text-sm font-medium text-gray-900">Số lượng</div>
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">Quantity</span>
-                <div className="flex items-center rounded-md border border-slate-300">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center rounded-md border border-gray-200">
                   <button
-                    type="button"
-                    className="p-2 text-slate-600 hover:bg-slate-50"
+                    className="p-2 text-gray-600 hover:bg-gray-50"
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-10 text-center text-sm font-semibold">{quantityValue}</span>
-                  <button
                     type="button"
-                    className="p-2 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={!canIncrease}
-                    onClick={() => setQuantity((prev) => prev + 1)}
                   >
-                    <Plus size={14} />
+                    <Minus size={20} />
+                  </button>
+                  <span className="w-12 text-center font-medium">{quantityValue}</span>
+                  <button
+                    className="p-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setQuantity((prev) => prev + 1)}
+                    disabled={!canIncrease}
+                    type="button"
+                  >
+                    <Plus size={20} />
                   </button>
                 </div>
+                <span className="text-sm text-gray-500">{product.availableQuantity} sản phẩm có sẵn</span>
               </div>
             ) : (
-              <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Guest mode: you can only view product information.
+              <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Hãy đăng nhập để thêm sản phẩm vào giỏ hàng hoặc đặt mua ngay.
               </p>
             )}
+          </div>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              {isAuthenticated ? (
-                <>
-                  <Button
-                    disabled={isAdding || product.availableQuantity <= 0}
-                    onClick={async () => {
-                      await addToCart(product.id, quantity);
-                    }}
-                  >
-                    Add to cart
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      const mode = await addToCart(product.id, quantity);
-                      if (mode === "server") {
-                        navigate("/marketplace/cart");
-                      }
-                    }}
-                  >
-                    Buy now
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild>
-                    <Link to="/sign-up">Create account to buy</Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link to="/sign-in">I already have an account</Link>
-                  </Button>
-                </>
-              )}
-              {product.traceable ? (
-                <Link to={`/marketplace/traceability/${product.id}`}>
-                  <Button variant="ghost" className="gap-2">
-                    <ShieldCheck size={16} /> Traceability
-                  </Button>
-                </Link>
-              ) : null}
+          <div className="mt-auto flex flex-wrap gap-4">
+            {isAuthenticated ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  disabled={isAdding || product.availableQuantity <= 0}
+                  onClick={async () => {
+                    await addToCart(product.id, quantity);
+                  }}
+                >
+                  Thêm vào giỏ
+                </Button>
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  disabled={isAdding || product.availableQuantity <= 0}
+                  onClick={async () => {
+                    const mode = await addToCart(product.id, quantity);
+                    if (mode === "server") {
+                      navigate("/marketplace/cart");
+                    }
+                  }}
+                >
+                  Mua ngay
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg" className="flex-1">
+                  <Link to="/sign-up">Tạo tài khoản để mua</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="flex-1">
+                  <Link to="/sign-in">Tôi đã có tài khoản</Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {product.traceable ? (
+        <div className="mb-12">
+          <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <ShieldCheck className="text-emerald-600" /> Thông tin truy xuất nguồn gốc
+          </h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="mb-4 text-lg font-semibold text-emerald-800">Thông tin nông trại</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Tên nông trại:</span>
+                    <span className="font-medium">{traceabilityQuery.data?.farm?.name ?? product.farmName ?? product.farmerDisplayName}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Khu vực:</span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <MapPin size={14} /> {traceabilityQuery.data?.farm?.region ?? product.region ?? "Đang cập nhật"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Địa chỉ:</span>
+                    <span className="max-w-[220px] text-right font-medium">
+                      {traceabilityQuery.data?.farm?.address ?? "Đang cập nhật"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="mb-4 text-lg font-semibold text-emerald-800">Thông tin mùa vụ và lô hàng</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Mùa vụ:</span>
+                    <span className="font-medium">{traceabilityQuery.data?.season?.name ?? product.seasonName ?? "Đang cập nhật"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Mã lô:</span>
+                    <span className="font-medium">{traceabilityQuery.data?.lot?.lotCode ?? product.traceabilityCode ?? "Đang cập nhật"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-gray-200 pb-2">
+                    <span className="text-gray-500">Ngày thu hoạch:</span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <Calendar size={14} /> {traceabilityQuery.data?.lot?.harvestedAt ?? "Đang cập nhật"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mb-12">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">Mô tả sản phẩm</h2>
+        <div className="prose max-w-none text-gray-700">
+          <p>{product.description}</p>
+          <p className="mt-4 text-sm text-gray-500">Cập nhật lần cuối: {formatDateTime(product.updatedAt)}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Thông tin nhanh</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-xs text-gray-500">Người bán</p>
+                <p className="text-sm font-medium text-gray-900">{product.farmerDisplayName}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-4">
+                <p className="text-xs text-gray-500">Tồn kho</p>
+                <p className="text-sm font-medium text-gray-900">{product.availableQuantity} {product.unit}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardContent className="space-y-3 p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Description</h2>
-            <p className="text-sm leading-6 text-slate-600">{product.description}</p>
-            <p className="text-xs text-slate-500">Updated: {formatDateTime(product.updatedAt)}</p>
-          </CardContent>
-        </Card>
 
         <Card>
-          <CardContent className="space-y-3 p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Product information</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-md border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">Farm</p>
-                <p className="text-sm font-medium text-slate-900">
-                  {product.farmName ?? product.farmerDisplayName}
-                </p>
-              </div>
-              <div className="rounded-md border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">Region</p>
-                <p className="text-sm font-medium text-slate-900">{product.region ?? "Updating"}</p>
-              </div>
-              <div className="rounded-md border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">Season</p>
-                <p className="text-sm font-medium text-slate-900">{product.seasonName ?? "Not linked"}</p>
-              </div>
-              <div className="rounded-md border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">Lot</p>
-                <p className="text-sm font-medium text-slate-900">
-                  {product.lotId ? `#${product.lotId}` : "Not linked"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="space-y-3 p-6">
-            <h2 className="text-lg font-semibold text-slate-900">Recent reviews</h2>
-
+          <CardContent className="p-6">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Đánh giá gần đây</h2>
             {reviewsQuery.isLoading ? (
-              <p className="text-sm text-slate-500">Loading reviews...</p>
+              <p className="text-sm text-gray-500">Đang tải đánh giá...</p>
             ) : reviewsQuery.isError ? (
-              <p className="text-sm text-red-600">Failed to load reviews.</p>
+              <p className="text-sm text-red-600">Không thể tải đánh giá.</p>
             ) : reviewsQuery.data && reviewsQuery.data.items.length > 0 ? (
               <div className="space-y-3">
                 {reviewsQuery.data.items.map((review) => (
-                  <div key={review.id} className="rounded-md border border-slate-200 p-3">
+                  <div key={review.id} className="rounded-lg border border-gray-200 p-4">
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-slate-900">{review.buyerDisplayName}</p>
+                      <p className="text-sm font-medium text-gray-900">{review.buyerDisplayName}</p>
                       <StarRating rating={(review as { rating?: number }).rating} />
                     </div>
-                    <p className="text-xs text-slate-400">{formatDateTime(review.createdAt)}</p>
-                    <p className="mt-1.5 text-sm text-slate-600">{review.comment}</p>
+                    <p className="text-xs text-gray-400">{formatDateTime(review.createdAt)}</p>
+                    <p className="mt-2 text-sm text-gray-600">{review.comment}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No review yet.</p>
+              <p className="text-sm text-gray-500">Chưa có đánh giá nào cho sản phẩm này.</p>
             )}
           </CardContent>
         </Card>
-      </section>
-
-      {product.traceable ? (
-        <section>
-          <Card>
-            <CardContent className="space-y-4 p-6">
-              <h2 className="text-lg font-semibold text-slate-900">Traceability chain</h2>
-
-              {traceabilityQuery.isLoading ? (
-                <p className="text-sm text-slate-500">Loading traceability...</p>
-              ) : traceabilityQuery.isError ? (
-                <p className="text-sm text-red-600">Failed to validate traceability chain.</p>
-              ) : traceabilityQuery.data?.traceable ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                  {/* Farm step */}
-                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                        1
-                      </div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Farm</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.farm?.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">{traceabilityQuery.data.farm?.region}</p>
-                  </div>
-
-                  <div className="flex items-center justify-center text-slate-300">
-                    <ChevronRight size={24} className="hidden sm:block" />
-                    <div className="h-px w-full bg-slate-200 sm:hidden" />
-                  </div>
-
-                  {/* Season step */}
-                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                        2
-                      </div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Season</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.season?.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Harvest: {traceabilityQuery.data.season?.plannedHarvestDate ?? "N/A"}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-center text-slate-300">
-                    <ChevronRight size={24} className="hidden sm:block" />
-                    <div className="h-px w-full bg-slate-200 sm:hidden" />
-                  </div>
-
-                  {/* Lot step */}
-                  <div className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
-                        3
-                      </div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Lot</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">{traceabilityQuery.data.lot?.lotCode}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Harvested: {traceabilityQuery.data.lot?.harvestedAt ?? "N/A"}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">Product is not traceable.</p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-      ) : null}
+      </div>
     </div>
   );
 }

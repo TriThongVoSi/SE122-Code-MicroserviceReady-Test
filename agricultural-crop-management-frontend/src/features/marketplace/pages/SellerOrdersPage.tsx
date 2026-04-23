@@ -1,60 +1,42 @@
 import { useState } from "react";
 import { Eye, Inbox } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import type { MarketplaceOrderStatus } from "@/shared/api";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/ui";
+import { Badge, Button } from "@/shared/ui";
 import { useMarketplaceFarmerOrders } from "../hooks";
 import { SellerMarketplaceTabs } from "../layout";
 import { formatDate, formatVnd } from "../lib/format";
 
-function statusPillClass(status: MarketplaceOrderStatus): string {
+const STATUS_OPTIONS: Array<{ value: "ALL" | MarketplaceOrderStatus; label: string }> = [
+  { value: "ALL", label: "All" },
+  { value: "PENDING", label: "Pending" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "PREPARING", label: "Preparing" },
+  { value: "DELIVERING", label: "Delivering" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+function statusBadge(status: MarketplaceOrderStatus) {
   switch (status) {
-    case "COMPLETED":
-      return "bg-[#dbeafe] text-[#1447e6]";
-    case "DELIVERING":
-      return "bg-[#dcfce7] text-[#008236]";
     case "PENDING":
-      return "bg-amber-100 text-amber-700";
+      return <Badge variant="warning">Pending</Badge>;
+    case "CONFIRMED":
+      return <Badge variant="secondary">Confirmed</Badge>;
+    case "PREPARING":
+      return <Badge variant="secondary">Preparing</Badge>;
+    case "DELIVERING":
+      return <Badge variant="default">Delivering</Badge>;
+    case "COMPLETED":
+      return <Badge variant="success">Completed</Badge>;
     case "CANCELLED":
-      return "bg-red-50 text-red-600";
+      return <Badge variant="destructive">Cancelled</Badge>;
     default:
-      return "bg-slate-100 text-slate-600";
+      return <Badge variant="secondary">{status}</Badge>;
   }
 }
 
-function TableRowSkeleton() {
-  return (
-    <TableRow>
-      <TableCell><div className="h-4 w-28 animate-pulse rounded bg-slate-200" /></TableCell>
-      <TableCell><div className="h-4 w-20 animate-pulse rounded bg-slate-200" /></TableCell>
-      <TableCell><div className="h-4 w-24 animate-pulse rounded bg-slate-200" /></TableCell>
-      <TableCell><div className="h-4 w-20 animate-pulse rounded bg-slate-200" /></TableCell>
-      <TableCell><div className="h-6 w-20 animate-pulse rounded-full bg-slate-200" /></TableCell>
-      <TableCell><div className="h-4 w-12 animate-pulse rounded bg-slate-200" /></TableCell>
-    </TableRow>
-  );
-}
-
-const STATUS_OPTIONS: Array<{ value: "ALL" | MarketplaceOrderStatus; labelKey: string }> = [
-  { value: "ALL",        labelKey: "marketplaceSeller.products.statusFilter.all" },
-  { value: "PENDING",    labelKey: "marketplaceSeller.status.order.PENDING" },
-  { value: "CONFIRMED",  labelKey: "marketplaceSeller.status.order.CONFIRMED" },
-  { value: "PREPARING",  labelKey: "marketplaceSeller.status.order.PREPARING" },
-  { value: "DELIVERING", labelKey: "marketplaceSeller.status.order.DELIVERING" },
-  { value: "COMPLETED",  labelKey: "marketplaceSeller.status.order.COMPLETED" },
-  { value: "CANCELLED",  labelKey: "marketplaceSeller.status.order.CANCELLED" },
-];
-
 export function SellerOrdersPage() {
-  const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<"ALL" | MarketplaceOrderStatus>("ALL");
   const ordersQuery = useMarketplaceFarmerOrders({
     page: 0,
@@ -62,91 +44,90 @@ export function SellerOrdersPage() {
     status: status === "ALL" ? undefined : status,
   });
   const orders = ordersQuery.data?.items ?? [];
-  const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
 
   return (
-    <div className="min-h-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <SellerMarketplaceTabs />
 
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:mt-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("marketplaceSeller.orders.title")}</h1>
-          <p className="mt-1.5 text-sm text-slate-500">{t("marketplaceSeller.orders.subtitle")}</p>
+          <p className="text-sm font-medium text-emerald-600">FarmTrace Seller Portal</p>
+          <h1 className="mt-1 text-3xl font-bold text-gray-900">Manage orders</h1>
+          <p className="mt-2 max-w-2xl text-sm text-gray-500">
+            Restore the simpler seller order table while preserving the current live order data and routing.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {STATUS_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.value}
               type="button"
+              variant={status === option.value ? "default" : "outline"}
+              size="sm"
               onClick={() => setStatus(option.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                status === option.value
-                  ? "bg-emerald-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
+              className="rounded-full"
             >
-              {t(option.labelKey)}
-            </button>
+              {option.label}
+            </Button>
           ))}
         </div>
       </div>
 
-      {/* Orders table */}
-      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-        {ordersQuery.isError && (
-          <div className="p-8 text-center text-sm text-red-600">{t("marketplaceSeller.orders.error")}</div>
-        )}
-        {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 && (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        {ordersQuery.isError ? (
+          <div className="p-8 text-center text-sm text-red-600">Failed to load seller orders.</div>
+        ) : null}
+        {!ordersQuery.isLoading && !ordersQuery.isError && orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
-            <Inbox className="mb-3 text-slate-300" size={44} />
-            <p className="text-sm text-slate-500">{t("marketplaceSeller.orders.empty")}</p>
+            <Inbox className="mb-3 text-gray-300" size={44} />
+            <p className="text-sm text-gray-500">No orders matched the current filter.</p>
           </div>
-        )}
+        ) : null}
 
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.orderCode")}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.orderDate")}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.customer")}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.totalAmount")}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.status")}</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">{t("marketplaceSeller.orders.table.actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ordersQuery.isLoading
-              ? Array.from({ length: 5 }, (_, i) => <TableRowSkeleton key={i} />)
-              : orders.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-slate-50/50">
-                    <TableCell className="text-sm font-semibold text-slate-900">{order.orderCode}</TableCell>
-                    <TableCell className="text-sm text-slate-600">{formatDate(order.createdAt, locale)}</TableCell>
-                    <TableCell className="text-sm text-slate-700">{order.shippingRecipientName || `#${order.buyerUserId}`}</TableCell>
-                    <TableCell className="text-sm font-semibold text-emerald-600">
-                      {formatVnd(order.totalAmount, locale)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${statusPillClass(order.status)}`}>
-                        {t(`marketplaceSeller.status.order.${order.status}`)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/farmer/marketplace-orders/${order.id}`}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#155dfc] hover:text-blue-700"
-                      >
-                        <Eye className="h-4 w-4" />
-                        {t("marketplaceSeller.orders.detail")}
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-sm text-gray-500">
+                <th className="p-4 font-medium">Order code</th>
+                <th className="p-4 font-medium">Order date</th>
+                <th className="p-4 font-medium">Customer</th>
+                <th className="p-4 font-medium">Total</th>
+                <th className="p-4 font-medium">Status</th>
+                <th className="p-4 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {ordersQuery.isLoading
+                ? Array.from({ length: 5 }, (_, index) => (
+                    <tr key={index}>
+                      <td className="p-4"><div className="h-4 w-28 animate-pulse rounded bg-gray-200" /></td>
+                      <td className="p-4"><div className="h-4 w-24 animate-pulse rounded bg-gray-200" /></td>
+                      <td className="p-4"><div className="h-4 w-24 animate-pulse rounded bg-gray-200" /></td>
+                      <td className="p-4"><div className="h-4 w-20 animate-pulse rounded bg-gray-200" /></td>
+                      <td className="p-4"><div className="h-6 w-24 animate-pulse rounded-full bg-gray-200" /></td>
+                      <td className="p-4"><div className="ml-auto h-4 w-16 animate-pulse rounded bg-gray-200" /></td>
+                    </tr>
+                  ))
+                : orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="p-4 font-medium text-gray-900">{order.orderCode}</td>
+                      <td className="p-4 text-gray-600">{formatDate(order.createdAt)}</td>
+                      <td className="p-4 text-gray-600">{order.shippingRecipientName || `Buyer #${order.buyerUserId}`}</td>
+                      <td className="p-4 font-medium text-emerald-600">{formatVnd(order.totalAmount)}</td>
+                      <td className="p-4">{statusBadge(order.status)}</td>
+                      <td className="p-4 text-right">
+                        <Link to={`/farmer/marketplace-orders/${order.id}`}>
+                          <Button variant="ghost" size="sm" className="text-blue-600 hover:bg-blue-50 hover:text-blue-800">
+                            <Eye size={16} className="mr-1" /> Detail
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {/* Bottom breathing room */}
-      <div className="pb-8" />
     </div>
   );
 }

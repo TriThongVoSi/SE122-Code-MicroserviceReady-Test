@@ -23,6 +23,8 @@ import {
   useMarketplaceUpdateFarmerProductMutation,
   useMarketplaceUpdateFarmerProductStatusMutation,
 } from "../hooks";
+import { SellerMarketplaceTabs } from "../layout";
+import { formatDate, formatVnd } from "../lib/format";
 import {
   getNextSellerProductStatusAction,
   getNextSellerProductStatusLabel,
@@ -257,15 +259,12 @@ export function SellerProductFormPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
-          </h1>
-          <p className="text-sm text-slate-500">Loading your farms, seasons, and harvested lots.</p>
-        </div>
-        <Card>
-          <CardContent className="p-8 text-sm text-slate-500">Loading seller workflow...</CardContent>
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <SellerMarketplaceTabs />
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-sm text-gray-500">
+            Loading harvest-based seller workflow...
+          </CardContent>
         </Card>
       </div>
     );
@@ -273,26 +272,25 @@ export function SellerProductFormPage() {
 
   if (isError) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
-          </h1>
-          <p className="text-sm text-slate-500">This workflow needs live marketplace data.</p>
-        </div>
-        <Card>
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <SellerMarketplaceTabs />
+        <Card className="border-red-200">
           <CardContent className="space-y-4 p-8">
             <p className="text-sm text-red-600">
               {isEdit
                 ? "Failed to load the product detail or harvest options."
                 : "Failed to load your harvest-based selling options."}
             </p>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={() => void Promise.all([formOptionsQuery.refetch(), productQuery.refetch()])}>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void Promise.all([formOptionsQuery.refetch(), productQuery.refetch()])}
+              >
                 Try again
               </Button>
-              <Button asChild>
-                <Link to="/farmer/marketplace-products">Back to products</Link>
+              <Button type="button" variant="outline" onClick={() => navigate("/farmer/marketplace-products")}>
+                Back to products
               </Button>
             </div>
           </CardContent>
@@ -303,13 +301,13 @@ export function SellerProductFormPage() {
 
   if (isEdit && !product) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Edit marketplace listing</h1>
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <SellerMarketplaceTabs />
         <Card>
           <CardContent className="space-y-4 p-8">
-            <p className="text-sm text-slate-600">This product could not be found for your account.</p>
-            <Button asChild>
-              <Link to="/farmer/marketplace-products">Back to products</Link>
+            <p className="text-sm text-gray-600">This product could not be found for your account.</p>
+            <Button type="button" variant="outline" onClick={() => navigate("/farmer/marketplace-products")}>
+              Back to products
             </Button>
           </CardContent>
         </Card>
@@ -319,18 +317,18 @@ export function SellerProductFormPage() {
 
   if (!isEdit && hasNoLots) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Create marketplace product from harvest</h1>
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <SellerMarketplaceTabs />
         <Card>
           <CardContent className="space-y-4 p-8">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-gray-700">
               You do not have any harvested lots with remaining quantity ready to sell yet.
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gray-500">
               Finish harvest intake first, then come back here to turn a harvested lot into a marketplace listing.
             </p>
-            <Button asChild>
-              <Link to="/farmer/marketplace-products">Back to products</Link>
+            <Button type="button" variant="outline" onClick={() => navigate("/farmer/marketplace-products")}>
+              Back to products
             </Button>
           </CardContent>
         </Card>
@@ -339,255 +337,321 @@ export function SellerProductFormPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <SellerMarketplaceTabs />
+
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {isEdit ? "Edit marketplace listing" : "Create marketplace product from harvest"}
+          <p className="text-sm font-medium text-emerald-600">FarmTrace Seller Portal</p>
+          <h1 className="mt-1 text-3xl font-bold text-gray-900">
+            {isEdit ? "Edit marketplace listing" : "Create marketplace listing"}
           </h1>
-          <p className="text-sm text-slate-500">
-            Choose a harvested lot first. Farm, season, traceability, unit, and max sale quantity are filled in automatically.
+          <p className="mt-2 max-w-2xl text-sm text-gray-500">
+            Keep the current harvest-backed workflow, but present it with the simpler legacy seller form layout.
           </p>
         </div>
-        <Link to="/farmer/marketplace-products" className="text-sm text-emerald-700 hover:underline">
+        <Link
+          to="/farmer/marketplace-products"
+          className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
           Back to products
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? "Edit listing" : "Harvest selection"}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label>Farm</Label>
-            <Select value={form.selectedFarmId} onValueChange={handleFarmChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose your farm" />
-              </SelectTrigger>
-              <SelectContent>
-                {formOptionsQuery.data?.farms.map((farm) => (
-                  <SelectItem key={farm.id} value={String(farm.id)}>
-                    {farm.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <form
+        className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_360px]"
+        onSubmit={onSubmit}
+      >
+        <div className="space-y-6">
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle>Basic information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="product-name">Listing name *</Label>
+                <Input
+                  id="product-name"
+                  value={form.name}
+                  onChange={(event) => updateForm({ name: event.target.value })}
+                  placeholder="Example: Premium jasmine rice from harvest lot 2026"
+                  required
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Season</Label>
-            <Select value={form.selectedSeasonId} onValueChange={handleSeasonChange} disabled={!form.selectedFarmId}>
-              <SelectTrigger>
-                <SelectValue placeholder={form.selectedFarmId ? "Choose a season" : "Pick a farm first"} />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredSeasons.map((season) => (
-                  <SelectItem key={season.id} value={String(season.id)}>
-                    {season.seasonName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-category">Category</Label>
+                <Input
+                  id="product-category"
+                  value={form.category}
+                  onChange={(event) => updateForm({ category: event.target.value })}
+                  placeholder="Grain, vegetable, fruit..."
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Harvested lot</Label>
-            <Select value={form.selectedLotId} onValueChange={handleLotChange} disabled={!form.selectedFarmId}>
-              <SelectTrigger>
-                <SelectValue placeholder={form.selectedFarmId ? "Choose a harvested lot" : "Pick a farm first"} />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredLots.map((lot) => (
-                  <SelectItem key={lot.id} value={String(lot.id)}>
-                    {lot.lotCode} - {lot.productName ?? "Harvested lot"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="product-price">Price *</Label>
+                <Input
+                  id="product-price"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={form.price}
+                  onChange={(event) => updateForm({ price: event.target.value })}
+                  required
+                />
+              </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-3">
-            {selectedLot ? (
-              <div className="grid gap-3 md:grid-cols-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Farm</p>
-                  <p className="text-sm font-medium text-slate-900">{selectedLot.farmName ?? "Unknown farm"}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Season</p>
-                  <p className="text-sm font-medium text-slate-900">{selectedLot.seasonName ?? "No season"}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Available quantity</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
+              <div className="space-y-2">
+                <Label htmlFor="product-stock">
+                  Quantity to sell *{selectedLot?.unit ? ` (${selectedLot.unit})` : ""}
+                </Label>
+                <Input
+                  id="product-stock"
+                  type="number"
+                  min="0"
+                  max={selectedLot?.availableQuantity}
+                  step="0.001"
+                  value={form.stockQuantity}
+                  onChange={(event) => updateForm({ stockQuantity: event.target.value })}
+                  required
+                />
+                {selectedLot ? (
+                  <p className="text-xs text-gray-500">
+                    Max allowed: {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
                   </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">Traceability</p>
-                  <p className="text-sm font-medium text-emerald-700">Enabled from harvest lot</p>
-                </div>
+                ) : null}
               </div>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-700">Select a harvested lot to continue.</p>
-                <p className="text-sm text-slate-500">
-                  The listing will stay tied to that lot, and quantity to sell cannot exceed the lot availability.
-                </p>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="product-image-url">Main image URL</Label>
+                <Input
+                  id="product-image-url"
+                  value={form.imageUrl}
+                  onChange={(event) => updateForm({ imageUrl: event.target.value })}
+                  placeholder="https://..."
+                />
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
 
-          {lotsAlreadyLinkedCount > 0 && (
-            <p className="text-sm text-slate-500 md:col-span-3">
-              {lotsAlreadyLinkedCount} harvested lot{lotsAlreadyLinkedCount > 1 ? "s are" : " is"} already linked to other marketplace listings and hidden from this picker.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? "Listing details" : "Create draft listing"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="product-name">Listing name *</Label>
-              <Input
-                id="product-name"
-                value={form.name}
-                onChange={(event) => updateForm({ name: event.target.value })}
-                placeholder="Ex: Premium jasmine rice from harvest lot 2026"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-category">Category</Label>
-              <Input
-                id="product-category"
-                value={form.category}
-                onChange={(event) => updateForm({ category: event.target.value })}
-                placeholder="Ex: Grain, Vegetable, Fruit"
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="product-short-desc">Short description</Label>
-              <Input
-                id="product-short-desc"
-                value={form.shortDescription}
-                onChange={(event) => updateForm({ shortDescription: event.target.value })}
-                placeholder="A quick summary farmers and buyers can scan fast"
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="product-description">Description</Label>
-              <Textarea
-                id="product-description"
-                value={form.description}
-                onChange={(event) => updateForm({ description: event.target.value })}
-                placeholder="Add quality notes, harvest details, packaging, or delivery notes"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-price">Price *</Label>
-              <Input
-                id="product-price"
-                type="number"
-                min="0"
-                step="1000"
-                value={form.price}
-                onChange={(event) => updateForm({ price: event.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-stock">
-                Quantity to sell *{selectedLot?.unit ? ` (${selectedLot.unit})` : ""}
-              </Label>
-              <Input
-                id="product-stock"
-                type="number"
-                min="0"
-                max={selectedLot?.availableQuantity}
-                step="0.001"
-                value={form.stockQuantity}
-                onChange={(event) => updateForm({ stockQuantity: event.target.value })}
-                required
-              />
-              {selectedLot && (
-                <p className="text-xs text-slate-500">
-                  Max allowed: {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="product-image-url">Main image URL</Label>
-              <Input
-                id="product-image-url"
-                value={form.imageUrl}
-                onChange={(event) => updateForm({ imageUrl: event.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-
-            {selectedLot && (
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 md:col-span-2">
-                <div className="grid gap-3 md:grid-cols-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Lot code</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedLot.lotCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Default unit</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedLot.unit ?? "N/A"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Harvested at</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedLot.harvestedAt ?? "N/A"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Traceable listing</p>
-                    <p className="text-sm font-medium text-emerald-700">Yes</p>
-                  </div>
-                </div>
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle>Descriptions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="product-short-desc">Short description</Label>
+                <Input
+                  id="product-short-desc"
+                  value={form.shortDescription}
+                  onChange={(event) => updateForm({ shortDescription: event.target.value })}
+                  placeholder="A short summary buyers can scan quickly"
+                />
               </div>
-            )}
 
-            {errorMessage && <p className="text-sm text-red-600 md:col-span-2">{errorMessage}</p>}
+              <div className="space-y-2">
+                <Label htmlFor="product-description">Full description</Label>
+                <Textarea
+                  id="product-description"
+                  value={form.description}
+                  onChange={(event) => updateForm({ description: event.target.value })}
+                  placeholder="Add packaging notes, harvest quality, shipping notes, or handling instructions"
+                  className="min-h-36"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-              <Button type="submit" disabled={!canSubmit || createMutation.isPending || updateMutation.isPending}>
-                {createMutation.isPending || updateMutation.isPending
-                  ? "Saving..."
-                  : isEdit
-                    ? "Save draft changes"
-                    : "Create draft"}
-              </Button>
+        <div className="space-y-6">
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle>Harvest source</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Farm</Label>
+                <Select value={form.selectedFarmId} onValueChange={handleFarmChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose your farm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formOptionsQuery.data?.farms.map((farm) => (
+                      <SelectItem key={farm.id} value={String(farm.id)}>
+                        {farm.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {isEdit && product && getNextSellerProductStatusAction(product.status) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleStatusTransition}
-                  disabled={statusMutation.isPending}
+              <div className="space-y-2">
+                <Label>Season</Label>
+                <Select
+                  value={form.selectedSeasonId}
+                  onValueChange={handleSeasonChange}
+                  disabled={!form.selectedFarmId}
                 >
-                  {statusMutation.isPending
-                    ? "Updating..."
-                    : getNextSellerProductStatusLabel(product.status)}
+                  <SelectTrigger>
+                    <SelectValue placeholder={form.selectedFarmId ? "Choose a season" : "Pick a farm first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredSeasons.map((season) => (
+                      <SelectItem key={season.id} value={String(season.id)}>
+                        {season.seasonName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Harvested lot</Label>
+                <Select
+                  value={form.selectedLotId}
+                  onValueChange={handleLotChange}
+                  disabled={!form.selectedFarmId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={form.selectedFarmId ? "Choose a harvested lot" : "Pick a farm first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredLots.map((lot) => (
+                      <SelectItem key={lot.id} value={String(lot.id)}>
+                        {lot.lotCode} - {lot.productName ?? "Harvested lot"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm">
+                {selectedLot ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Lot code</span>
+                      <span className="font-medium text-gray-900">{selectedLot.lotCode}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Farm</span>
+                      <span className="font-medium text-gray-900">{selectedLot.farmName ?? "Unknown"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Season</span>
+                      <span className="font-medium text-gray-900">{selectedLot.seasonName ?? "Unknown"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Available quantity</span>
+                      <span className="font-medium text-gray-900">
+                        {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Harvested</span>
+                      <span className="font-medium text-gray-900">
+                        {selectedLot.harvestedAt ? formatDate(selectedLot.harvestedAt) : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="font-medium text-gray-900">Select a harvested lot first.</p>
+                    <p className="text-gray-500">
+                      Farm, season, traceability, and quantity limits are driven by that lot.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {lotsAlreadyLinkedCount > 0 ? (
+                <p className="text-xs text-gray-500">
+                  {lotsAlreadyLinkedCount} harvested lot{lotsAlreadyLinkedCount > 1 ? "s are" : " is"} already linked to other marketplace listings and excluded here.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle>Listing preview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                {form.imageUrl ? (
+                  <img
+                    src={form.imageUrl}
+                    alt={form.name || "Listing preview"}
+                    className="h-48 w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center text-sm text-gray-400">
+                    Product image preview
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-lg font-semibold text-gray-900">{form.name || "Untitled listing"}</p>
+                <p className="mt-1 text-sm text-gray-500">{form.shortDescription || "Short description preview"}</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Price</span>
+                  <span className="font-semibold text-emerald-600">
+                    {Number(form.price) > 0 ? formatVnd(Number(form.price)) : "--"}
+                    {selectedLot?.unit ? ` / ${selectedLot.unit}` : ""}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Quantity to sell</span>
+                  <span className="font-medium text-gray-900">
+                    {form.stockQuantity || "--"} {selectedLot?.unit ?? ""}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Traceability</span>
+                  <span className="font-medium text-emerald-700">
+                    {selectedLot ? "Enabled from harvest lot" : "Waiting for lot"}
+                  </span>
+                </div>
+              </div>
+
+              {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+
+              <div className="flex flex-col gap-3">
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || createMutation.isPending || updateMutation.isPending}
+                  className="w-full"
+                >
+                  {createMutation.isPending || updateMutation.isPending
+                    ? "Saving..."
+                    : isEdit
+                      ? "Save changes"
+                      : "Create draft"}
                 </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+
+                {isEdit && product && getNextSellerProductStatusAction(product.status) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleStatusTransition}
+                    disabled={statusMutation.isPending}
+                    className="w-full"
+                  >
+                    {statusMutation.isPending
+                      ? "Updating..."
+                      : getNextSellerProductStatusLabel(product.status)}
+                  </Button>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </form>
     </div>
   );
 }

@@ -1,274 +1,235 @@
-import { Inbox, Package, ShoppingBag, ShoppingCart, TrendingUp, Wallet } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
-  Card,
-  CardContent,
-} from "@/shared/ui";
+  AlertCircle,
+  DollarSign,
+  Package,
+  ShoppingBag,
+  Store,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 import { useMarketplaceFarmerDashboard, useMarketplaceFarmerProducts } from "../hooks";
 import { SellerMarketplaceTabs } from "../layout";
-import { formatVnd } from "../lib/format";
+import { formatDateTime, formatVnd } from "../lib/format";
 
 const LOW_STOCK_THRESHOLD = 20;
 
-function KpiCardSkeleton() {
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: typeof DollarSign;
+  label: string;
+  value: string | number;
+  tone: string;
+}) {
   return (
-    <Card className="rounded-2xl border-slate-200/80 shadow-sm">
-      <CardContent className="flex items-center gap-4 p-5 sm:p-6">
-        <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-xl bg-slate-200" />
-        <div className="space-y-2">
-          <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
-          <div className="h-6 w-24 animate-pulse rounded bg-slate-200" />
+    <Card className="border-gray-200 shadow-sm">
+      <CardContent className="flex items-center gap-4 p-6">
+        <div className={`rounded-xl p-3 ${tone}`}>
+          <Icon size={22} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function OrderRowSkeleton() {
-  return (
-    <div className="flex items-center justify-between py-3.5">
-      <div className="space-y-1.5">
-        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
-      </div>
-      <div className="space-y-1.5 text-right">
-        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
-      </div>
-    </div>
-  );
+function orderStatusLabel(status: string) {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "CONFIRMED":
+      return "Confirmed";
+    case "PREPARING":
+      return "Preparing";
+    case "DELIVERING":
+      return "Delivering";
+    case "COMPLETED":
+      return "Completed";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status;
+  }
 }
 
 export function SellerDashboardPage() {
-  const { t, i18n } = useTranslation();
   const dashboardQuery = useMarketplaceFarmerDashboard();
-  const lowStockProductsQuery = useMarketplaceFarmerProducts({
-    page: 0,
-    size: 20,
-    status: "PUBLISHED",
-  });
+  const productsQuery = useMarketplaceFarmerProducts({ page: 0, size: 20, status: "PUBLISHED" });
 
   if (dashboardQuery.isLoading) {
     return (
-      <div className="min-h-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <SellerMarketplaceTabs />
-        <div className="mt-6 lg:mt-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("marketplaceSeller.dashboard.title")}</h1>
-          <p className="mt-1.5 text-sm text-slate-500">{t("marketplaceSeller.dashboard.subtitle")}</p>
-        </div>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }, (_, i) => <KpiCardSkeleton key={i} />)}
-        </div>
-        <div className="mt-8 grid gap-6 xl:grid-cols-5">
-          <Card className="rounded-2xl border-slate-200/80 shadow-sm xl:col-span-3">
-            <CardContent className="p-5 sm:p-6">
-              <div className="mb-5 h-4 w-32 animate-pulse rounded bg-slate-200" />
-              <div className="divide-y divide-slate-100">
-                {Array.from({ length: 3 }, (_, i) => <OrderRowSkeleton key={i} />)}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl border-slate-200/80 shadow-sm xl:col-span-2">
-            <CardContent className="p-5 sm:p-6">
-              <div className="mb-5 h-4 w-28 animate-pulse rounded bg-slate-200" />
-              <div className="space-y-4">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-11 w-11 flex-shrink-0 animate-pulse rounded-lg bg-slate-200" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-sm text-gray-500">
+            Loading marketplace dashboard...
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (dashboardQuery.isError || !dashboardQuery.data) {
-    return <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-sm text-red-600">{t("marketplaceSeller.dashboard.error")}</div>;
+    return (
+      <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <SellerMarketplaceTabs />
+        <Card className="border-red-200">
+          <CardContent className="flex items-center gap-3 p-8 text-sm text-red-600">
+            <AlertCircle size={18} />
+            Failed to load the marketplace dashboard.
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const dashboard = dashboardQuery.data;
-  const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
-  const lowStockProducts = (lowStockProductsQuery.data?.items ?? [])
+  const lowStockProducts = (productsQuery.data?.items ?? [])
     .filter((product) => product.availableQuantity <= LOW_STOCK_THRESHOLD)
     .sort((left, right) => left.availableQuantity - right.availableQuantity)
-    .slice(0, 4);
-
-  const cards = [
-    {
-      key: "revenue",
-      label: t("marketplaceSeller.dashboard.metrics.revenue"),
-      value: formatVnd(dashboard.totalRevenue, locale),
-      icon: Wallet,
-      iconClassName: "bg-emerald-100 text-emerald-600",
-    },
-    {
-      key: "new-orders",
-      label: t("marketplaceSeller.dashboard.metrics.newOrders"),
-      value: dashboard.pendingOrders,
-      icon: ShoppingCart,
-      iconClassName: "bg-blue-100 text-blue-600",
-    },
-    {
-      key: "products",
-      label: t("marketplaceSeller.dashboard.metrics.products"),
-      value: dashboard.totalProducts,
-      icon: Package,
-      iconClassName: "bg-orange-100 text-orange-600",
-    },
-    {
-      key: "views",
-      label: t("marketplaceSeller.dashboard.metrics.views"),
-      value: "—",
-      icon: TrendingUp,
-      iconClassName: "bg-red-50 text-red-500",
-    },
-  ];
+    .slice(0, 5);
 
   return (
-    <div className="min-h-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-full space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <SellerMarketplaceTabs />
 
-      {/* Page header — extra top margin to separate from tabs */}
-      <div className="mt-6 lg:mt-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("marketplaceSeller.dashboard.title")}</h1>
-        <p className="mt-1.5 text-sm text-slate-500">{t("marketplaceSeller.dashboard.subtitle")}</p>
-      </div>
-
-      {/* ── KPI Metric Cards ── */}
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <Card
-            key={card.key}
-            className="rounded-2xl border-slate-200/80 shadow-sm transition-shadow duration-200 hover:shadow-md"
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-emerald-600">FarmTrace Seller Portal</p>
+          <h1 className="mt-1 text-3xl font-bold text-gray-900">Store overview</h1>
+          <p className="mt-2 max-w-2xl text-sm text-gray-500">
+            A legacy-style summary of your live marketplace performance, with recent orders
+            and low-stock listings kept on the current backend data.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link
+            to="/farmer/marketplace-products/new"
+            className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
           >
-            <CardContent className="flex items-center gap-4 p-5 sm:p-6">
-              <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${card.iconClassName}`}>
-                <card.icon className="h-5 w-5" strokeWidth={2} />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-slate-500">{card.label}</p>
-                <p className="mt-0.5 text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{card.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+            Create product
+          </Link>
+          <Link
+            to="/farmer/marketplace-orders"
+            className="rounded-full border border-gray-200 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            View orders
+          </Link>
+        </div>
       </div>
 
-      {/* ── Recent Orders + Low Stock ── */}
-      <div className="mt-8 grid gap-6 xl:grid-cols-5">
-        {/* Recent orders — takes 3/5 columns on xl */}
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm xl:col-span-3">
-          <CardContent className="p-5 sm:p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-slate-900">{t("marketplaceSeller.dashboard.recentOrdersTitle")}</h2>
-              <Link to="/farmer/marketplace-orders" className="text-xs font-medium text-[#155dfc] transition-colors hover:text-[#0f4ad4] hover:underline">
-                {t("marketplaceSeller.dashboard.viewAll")} →
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          icon={DollarSign}
+          label="Revenue"
+          value={formatVnd(dashboard.totalRevenue)}
+          tone="bg-emerald-100 text-emerald-600"
+        />
+        <MetricCard
+          icon={ShoppingBag}
+          label="Pending orders"
+          value={dashboard.pendingOrders}
+          tone="bg-blue-100 text-blue-600"
+        />
+        <MetricCard
+          icon={Package}
+          label="Published products"
+          value={dashboard.publishedProducts}
+          tone="bg-purple-100 text-purple-600"
+        />
+        <MetricCard
+          icon={Store}
+          label="Pending review"
+          value={dashboard.pendingReviewProducts}
+          tone="bg-orange-100 text-orange-600"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card className="overflow-hidden border-gray-200 shadow-sm">
+          <CardHeader className="border-b border-gray-100">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Recent orders</CardTitle>
+              <Link to="/farmer/marketplace-orders" className="text-sm font-medium text-emerald-600 hover:underline">
+                See all
               </Link>
             </div>
-            {dashboard.recentOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <ShoppingBag className="mb-3 text-slate-300" size={40} />
-                <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.recentOrdersEmpty")}</p>
-              </div>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            {dashboard.recentOrders.length > 0 ? (
+              dashboard.recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  to={`/farmer/marketplace-orders/${order.id}`}
+                  className="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition-colors hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-900">{order.orderCode}</p>
+                    <p className="text-sm text-gray-500">
+                      {order.items.length} items • {formatDateTime(order.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-emerald-600">{formatVnd(order.totalAmount)}</p>
+                    <p className="text-sm text-gray-500">{orderStatusLabel(order.status)}</p>
+                  </div>
+                </Link>
+              ))
             ) : (
-              <div className="divide-y divide-slate-100">
-                {dashboard.recentOrders.map((order) => (
-                  <Link
-                    key={order.id}
-                    to={`/farmer/marketplace-orders/${order.id}`}
-                    className="-mx-2 flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-slate-50"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {order.items?.length ?? "?"} {t("marketplaceSeller.dashboard.itemsLabel")}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-[#00a63e]">{formatVnd(order.totalAmount, locale)}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{t(`marketplaceSeller.status.order.${order.status}`)}</p>
-                    </div>
-                  </Link>
-                ))}
+              <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
+                No buyer orders yet.
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Low stock products — takes 2/5 columns on xl */}
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm xl:col-span-2">
-          <CardContent className="p-5 sm:p-6">
-            <div className="mb-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[15px] font-semibold text-slate-900">{t("marketplaceSeller.dashboard.lowStockTitle")}</h2>
-                <Link to="/farmer/marketplace-products" className="text-xs font-medium text-[#155dfc] transition-colors hover:text-[#0f4ad4] hover:underline">
-                  {t("marketplaceSeller.dashboard.manageProducts")}
-                </Link>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{t("marketplaceSeller.dashboard.lowStockHint")}</p>
+        <Card className="overflow-hidden border-gray-200 shadow-sm">
+          <CardHeader className="border-b border-gray-100">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Low stock products</CardTitle>
+              <Link to="/farmer/marketplace-products" className="text-sm font-medium text-emerald-600 hover:underline">
+                Manage products
+              </Link>
             </div>
-            {lowStockProductsQuery.isLoading && (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-lg bg-slate-200" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {lowStockProductsQuery.isError && (
-              <p className="text-sm text-red-600">{t("marketplaceSeller.products.error")}</p>
-            )}
-            {!lowStockProductsQuery.isLoading && !lowStockProductsQuery.isError && lowStockProducts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Inbox className="mb-3 text-slate-300" size={40} />
-                <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.lowStockEmpty")}</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {lowStockProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-slate-50">
-                  <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-sm font-medium text-slate-400">
-                        {product.name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            {lowStockProducts.length > 0 ? (
+              lowStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center gap-4 rounded-xl border border-gray-200 p-4">
+                  <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900">{product.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {t("marketplaceSeller.dashboard.stock")}: <span className="font-semibold text-red-600">{product.availableQuantity} {product.unit}</span>
+                    <p className="truncate font-medium text-gray-900">{product.name}</p>
+                    <p className="text-sm text-gray-500">{formatVnd(product.price)} / {product.unit}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs uppercase tracking-wide text-gray-400">Available</p>
+                    <p className="font-semibold text-red-500">
+                      {product.availableQuantity} {product.unit}
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
+                No low-stock warnings right now.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Bottom breathing room */}
-      <div className="pb-8" />
     </div>
   );
 }

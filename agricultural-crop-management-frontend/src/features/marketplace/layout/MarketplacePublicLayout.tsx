@@ -1,12 +1,21 @@
 import { useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Facebook, Instagram, Menu, Search, ShoppingCart, Store, Twitter, Wheat, X } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  LogOut,
+  Menu,
+  Package,
+  Search,
+  ShoppingCart,
+  Store,
+  Twitter,
+  User,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
-import {
-  useMarketplaceCart,
-  useMarketplaceCartMergeBridge,
-} from "../hooks";
+import { useMarketplaceCart, useMarketplaceCartMergeBridge } from "../hooks";
 
 function resolvePortalRoute(role: string | undefined): string {
   switch (role) {
@@ -17,28 +26,34 @@ function resolvePortalRoute(role: string | undefined): string {
     case "buyer":
       return "/marketplace/orders";
     default:
-      return "/farmer/dashboard";
+      return "/farmer/marketplace-dashboard";
   }
 }
 
 const NAV_LINKS = [
-  { to: "/marketplace", label: "Home" },
-  { to: "/marketplace/products", label: "Products" },
-  { to: "/marketplace/farms", label: "Farms" },
-  { to: "/marketplace/traceability", label: "Traceability" },
+  { to: "/marketplace/products", label: "Sản phẩm" },
+  { to: "/marketplace/farms", label: "Nông trại" },
+  { to: "/marketplace/traceability", label: "Truy xuất" },
 ];
 
-function MarketplaceNavLink({ to, label, onClick }: { to: string; label: string; onClick?: () => void }) {
+function MarketplaceNavLink({
+  to,
+  label,
+  onClick,
+}: {
+  to: string;
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
         isActive
-          ? "font-semibold text-emerald-700"
-          : "text-slate-600 hover:text-emerald-700"
+          ? "text-sm font-medium text-emerald-600"
+          : "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-600"
       }
-      end={to === "/marketplace"}
     >
       {label}
     </NavLink>
@@ -49,25 +64,92 @@ function MarketplaceSearchBar({ className = "" }: { className?: string }) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const trimmed = query.trim();
-    if (trimmed) {
-      navigate(`/marketplace/products?q=${encodeURIComponent(trimmed)}`);
+    if (!trimmed) {
+      return;
     }
-  };
+
+    navigate(`/marketplace/products?q=${encodeURIComponent(trimmed)}`);
+  }
 
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
       <input
         type="search"
+        placeholder="Tìm kiếm nông sản, nông trại..."
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search products, farms..."
-        className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+        onChange={(event) => setQuery(event.target.value)}
+        className="w-full rounded-full bg-gray-100 py-2 pl-9 pr-4 text-sm text-gray-700 outline-none transition focus:ring-2 focus:ring-emerald-500"
       />
     </form>
+  );
+}
+
+function MarketplaceFooter() {
+  return (
+    <footer className="bg-gray-900 py-12 text-gray-300">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+          <div>
+            <Link to="/marketplace" className="mb-4 flex items-center gap-2">
+              <div className="rounded-md bg-emerald-600 p-1.5 text-white">
+                <Package size={24} />
+              </div>
+              <span className="text-xl font-bold text-white">FarmTrace</span>
+            </Link>
+            <p className="mb-4 text-sm text-gray-400">
+              Nền tảng giao dịch nông sản minh bạch, kết nối trực tiếp từ nông trại đến bàn ăn của bạn.
+            </p>
+            <div className="flex gap-4">
+              <a href="#" className="transition-colors hover:text-white" aria-label="Facebook">
+                <Facebook size={20} />
+              </a>
+              <a href="#" className="transition-colors hover:text-white" aria-label="Twitter">
+                <Twitter size={20} />
+              </a>
+              <a href="#" className="transition-colors hover:text-white" aria-label="Instagram">
+                <Instagram size={20} />
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-semibold text-white">Khám phá</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link to="/marketplace/products" className="hover:text-emerald-400">Tất cả sản phẩm</Link></li>
+              <li><Link to="/marketplace/farms" className="hover:text-emerald-400">Nông trại tiêu biểu</Link></li>
+              <li><Link to="/marketplace/traceability" className="hover:text-emerald-400">Truy xuất nguồn gốc</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-semibold text-white">Hỗ trợ</h3>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li>Câu hỏi thường gặp</li>
+              <li>Chính sách vận chuyển</li>
+              <li>Đổi trả và hoàn tiền</li>
+              <li>Liên hệ</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-semibold text-white">Dành cho người bán</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link to="/sign-up" className="hover:text-emerald-400">Đăng ký bán hàng</Link></li>
+              <li className="text-gray-400">Hướng dẫn bán hàng</li>
+              <li className="text-gray-400">Tiêu chuẩn chất lượng</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
+          <p>&copy; {new Date().getFullYear()} FarmTrace. Đồ án sinh viên.</p>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -75,54 +157,60 @@ function MobileMenu({
   isOpen,
   onClose,
   isAuthenticated,
-  user,
+  userName,
+  userRole,
   cartCount,
 }: {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
-  user: { role?: string } | null;
+  userName?: string;
+  userRole?: string;
   cartCount: number;
 }) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <div className="border-t border-slate-200 bg-white md:hidden">
+    <div className="border-t border-gray-200 bg-white md:hidden">
       <div className="space-y-4 px-4 py-4">
         <MarketplaceSearchBar className="w-full" />
-        <nav className="flex flex-col gap-3 text-sm">
+        <nav className="flex flex-col gap-3">
+          <Link to="/marketplace" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
+            Trang chủ
+          </Link>
           {NAV_LINKS.map((link) => (
             <MarketplaceNavLink key={link.to} to={link.to} label={link.label} onClick={onClose} />
           ))}
         </nav>
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+
+        <div className="border-t border-gray-100 pt-3">
           {isAuthenticated ? (
-            <>
-              <Link to="/marketplace/cart" onClick={onClose}>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-2">
-                  <ShoppingCart size={16} />
-                  Cart {cartCount > 0 ? `(${cartCount})` : ""}
-                </Button>
+            <div className="space-y-2">
+              <div className="rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-sm font-medium text-gray-900">{userName ?? "Tài khoản của bạn"}</p>
+                <p className="text-xs capitalize text-gray-500">{userRole ?? "buyer"}</p>
+              </div>
+              <Link to="/marketplace/cart" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
+                <ShoppingCart size={16} /> Giỏ hàng ({cartCount})
               </Link>
-              <Link to="/marketplace/orders" onClick={onClose}>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  Orders
-                </Button>
+              <Link to="/marketplace/orders" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
+                <Package size={16} /> Đơn hàng của tôi
               </Link>
-              <Link to={resolvePortalRoute(user?.role)} onClick={onClose}>
-                <Button size="sm" className="w-full justify-start gap-2">
-                  <Store size={14} /> Internal portal
-                </Button>
+              <Link to={resolvePortalRoute(userRole)} onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
+                <Store size={16} /> Vào trang quản lý
               </Link>
-            </>
+            </div>
           ) : (
-            <>
-              <Link to="/sign-up" onClick={onClose}>
-                <Button size="sm" className="w-full">Create account</Button>
-              </Link>
+            <div className="flex flex-col gap-2">
               <Link to="/sign-in" onClick={onClose}>
-                <Button variant="outline" size="sm" className="w-full">Sign in</Button>
+                <Button variant="ghost" className="w-full justify-start">Đăng nhập</Button>
               </Link>
-            </>
+              <Link to="/sign-up" onClick={onClose}>
+                <Button className="w-full justify-start">Đăng ký</Button>
+              </Link>
+            </div>
           )}
         </div>
       </div>
@@ -130,93 +218,8 @@ function MobileMenu({
   );
 }
 
-function MarketplaceFooter() {
-  return (
-    <footer className="border-t border-slate-200 bg-slate-900 text-slate-300">
-      <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-          {/* Brand */}
-          <div>
-            <Link to="/marketplace" className="mb-4 flex items-center gap-2">
-              <div className="rounded-md bg-emerald-600 p-1.5 text-white">
-                <Wheat size={20} />
-              </div>
-              <span className="text-lg font-bold text-white">ACM Marketplace</span>
-            </Link>
-            <p className="mb-4 text-sm text-slate-400">
-              Transparent agricultural trading platform, connecting directly from farm to your table.
-            </p>
-            <div className="flex gap-4">
-              <a href="#" className="text-slate-400 transition-colors hover:text-white" aria-label="Facebook">
-                <Facebook size={18} />
-              </a>
-              <a href="#" className="text-slate-400 transition-colors hover:text-white" aria-label="Twitter">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="text-slate-400 transition-colors hover:text-white" aria-label="Instagram">
-                <Instagram size={18} />
-              </a>
-            </div>
-          </div>
-
-          {/* Discover */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-white">Discover</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/marketplace/products" className="transition-colors hover:text-emerald-400">
-                  All Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace/farms" className="transition-colors hover:text-emerald-400">
-                  Featured Farms
-                </Link>
-              </li>
-              <li>
-                <Link to="/marketplace/traceability" className="transition-colors hover:text-emerald-400">
-                  Traceability
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-white">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li><span className="cursor-default text-slate-400">FAQ</span></li>
-              <li><span className="cursor-default text-slate-400">Shipping Policy</span></li>
-              <li><span className="cursor-default text-slate-400">Returns &amp; Refunds</span></li>
-              <li><span className="cursor-default text-slate-400">Contact Us</span></li>
-            </ul>
-          </div>
-
-          {/* For Sellers */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-white">For Sellers</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/sign-up" className="transition-colors hover:text-emerald-400">
-                  Register to Sell
-                </Link>
-              </li>
-              <li><span className="cursor-default text-slate-400">Seller Guide</span></li>
-              <li><span className="cursor-default text-slate-400">Quality Standards</span></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-8 border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} ACM Marketplace. Student Project — SE122.</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 export function MarketplacePublicLayout() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useMarketplaceCartMergeBridge();
@@ -224,71 +227,87 @@ export function MarketplacePublicLayout() {
   const serverCartCount = serverCartQuery.data?.itemCount ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#f6f8f4] text-slate-800">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link to="/marketplace" className="flex shrink-0 items-center gap-2">
-            <div className="rounded-md bg-emerald-600 p-1.5 text-white">
-              <Wheat size={20} />
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-6">
+            <Link to="/marketplace" className="flex items-center gap-2">
+              <div className="rounded-md bg-emerald-600 p-1.5 text-white">
+                <Package size={24} />
+              </div>
+              <span className="hidden text-xl font-bold text-emerald-800 sm:inline-block">FarmTrace</span>
+            </Link>
+
+            <div className="hidden items-center gap-4 md:flex">
+              <NavLink
+                to="/marketplace"
+                end
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-sm font-medium text-emerald-600"
+                    : "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-600"
+                }
+              >
+                Trang chủ
+              </NavLink>
+              {NAV_LINKS.map((link) => (
+                <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
+              ))}
             </div>
-            <span className="font-semibold tracking-tight text-slate-900">
-              ACM Marketplace
-            </span>
-          </Link>
+          </div>
 
-          <nav className="hidden items-center gap-5 text-sm md:flex">
-            {NAV_LINKS.map((link) => (
-              <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
-            ))}
-          </nav>
+          <div className="mx-4 hidden max-w-md flex-1 lg:block">
+            <MarketplaceSearchBar />
+          </div>
 
-          <MarketplaceSearchBar className="hidden lg:block lg:w-64 xl:w-80" />
+          <div className="flex items-center gap-3">
+            <Link to="/marketplace/cart" className="relative p-2 text-gray-600 transition-colors hover:text-emerald-600">
+              <ShoppingCart size={24} />
+              {serverCartCount > 0 ? (
+                <span className="absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
+                  {serverCartCount}
+                </span>
+              ) : null}
+            </Link>
 
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Desktop auth buttons */}
             <div className="hidden items-center gap-2 md:flex">
               {isAuthenticated ? (
                 <>
-                  <Link to="/marketplace/cart" className="relative inline-flex">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ShoppingCart size={16} /> Cart
-                    </Button>
-                    {serverCartCount > 0 ? (
-                      <span className="absolute -right-2 -top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white">
-                        {serverCartCount}
-                      </span>
-                    ) : null}
-                  </Link>
-                  <Link to="/marketplace/orders">
-                    <Button variant="outline" size="sm">Orders</Button>
-                  </Link>
-                  <Link to={resolvePortalRoute(user?.role)}>
-                    <Button size="sm" className="gap-2">
-                      <Store size={14} /> Internal portal
-                    </Button>
-                  </Link>
+                  <div className="hidden flex-col items-end sm:flex">
+                    <span className="text-sm font-medium text-gray-900">{user?.name ?? "Người dùng"}</span>
+                    <span className="text-xs capitalize text-gray-500">{user?.role ?? "buyer"}</span>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/marketplace/orders">Đơn hàng</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={resolvePortalRoute(user?.role)}>
+                      <Store size={14} /> Dashboard
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={logout} title="Đăng xuất">
+                    <LogOut size={18} />
+                  </Button>
                 </>
               ) : (
                 <>
-                  <span className="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 sm:inline-flex">
-                    Guest mode
-                  </span>
-                  <Link to="/sign-up">
-                    <Button size="sm">Create account</Button>
-                  </Link>
-                  <Link to="/sign-in">
-                    <Button variant="outline" size="sm">Sign in</Button>
-                  </Link>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/sign-in">
+                      <User size={14} /> Đăng nhập
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link to="/sign-up">Đăng ký</Link>
+                  </Button>
                 </>
               )}
             </div>
 
-            {/* Mobile hamburger */}
             <button
               type="button"
-              className="rounded-md p-2 text-slate-600 hover:bg-slate-100 md:hidden"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 md:hidden"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -299,12 +318,13 @@ export function MarketplacePublicLayout() {
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           isAuthenticated={isAuthenticated}
-          user={user}
+          userName={user?.name}
+          userRole={user?.role}
           cartCount={serverCartCount}
         />
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="flex-1">
         <Outlet />
       </main>
 

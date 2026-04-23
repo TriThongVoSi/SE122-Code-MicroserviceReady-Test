@@ -22,10 +22,25 @@ const statusFilters: Array<{ value: "ALL" | MarketplaceOrderStatus; label: strin
 ];
 
 function statusVariant(status: MarketplaceOrderStatus) {
-  if (status === "COMPLETED") return "success";
-  if (status === "CANCELLED") return "destructive";
-  if (status === "PENDING") return "warning";
-  return "secondary";
+  if (status === "COMPLETED") return "success" as const;
+  if (status === "CANCELLED") return "destructive" as const;
+  if (status === "PENDING") return "warning" as const;
+  return "secondary" as const;
+}
+
+function paymentStatusLabel(status: string) {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "SUBMITTED":
+      return "Submitted";
+    case "VERIFIED":
+      return "Verified";
+    case "REJECTED":
+      return "Rejected";
+    default:
+      return status;
+  }
 }
 
 export function AdminMarketplaceOrdersPage() {
@@ -47,167 +62,208 @@ export function AdminMarketplaceOrdersPage() {
   const cancelMutation = useMarketplaceUpdateAdminOrderStatusMutation(selectedOrderId || 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Marketplace orders overview</h1>
-        <p className="text-sm text-slate-500">Inspect payment verification and moderation actions across all farmers.</p>
+        <p className="text-sm font-medium text-emerald-600">FarmTrace Admin</p>
+        <h1 className="mt-1 text-3xl font-bold text-gray-900">Manage marketplace orders</h1>
+        <p className="mt-2 max-w-2xl text-sm text-gray-500">
+          Keep the live order verification controls, but return the screen to a simpler card-and-list structure.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Status filter</CardTitle>
-          <div className="flex flex-wrap gap-2">
-            {statusFilters.map((option) => (
+      <div className="flex flex-wrap gap-2">
+        {statusFilters.map((option) => (
+          <Button
+            key={option.value}
+            type="button"
+            variant={status === option.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatus(option.value)}
+            className="rounded-full"
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="border-b border-gray-100">
+            <CardTitle>Order list</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 p-4">
+            {(ordersQuery.data?.items ?? []).map((order) => (
               <button
-                key={option.value}
+                key={order.id}
                 type="button"
-                onClick={() => setStatus(option.value)}
-                className={`rounded-md border px-3 py-1.5 text-sm ${
-                  status === option.value
-                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}
+                onClick={() => setSearchParams({ orderId: String(order.id) })}
+                className="w-full rounded-xl border border-gray-200 p-4 text-left transition-colors hover:bg-gray-50"
               >
-                {option.label}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900">{order.orderCode}</p>
+                    <p className="text-xs text-gray-500">Buyer #{order.buyerUserId} • Farmer #{order.farmerUserId}</p>
+                    <p className="text-xs text-gray-500">
+                      {order.payment.method} • {paymentStatusLabel(order.payment.verificationStatus)}
+                    </p>
+                    <p className="text-xs text-gray-400">{formatDateTime(order.createdAt)}</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
+                    <p className="mt-2 font-semibold text-emerald-600">{formatVnd(order.totalAmount)}</p>
+                  </div>
+                </div>
               </button>
             ))}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {ordersQuery.isLoading && <p className="text-sm text-slate-500">Loading orders...</p>}
-          {ordersQuery.isError && <p className="text-sm text-red-600">Failed to load orders.</p>}
-          {!ordersQuery.isLoading && !ordersQuery.isError && (ordersQuery.data?.items ?? []).length === 0 && (
-            <p className="text-sm text-slate-500">No order found.</p>
-          )}
-          {(ordersQuery.data?.items ?? []).map((order) => (
-            <button
-              key={order.id}
-              type="button"
-              onClick={() => setSearchParams({ orderId: String(order.id) })}
-              className="w-full rounded-lg border p-3 text-left hover:border-emerald-300"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-slate-900">{order.orderCode}</p>
-                  <p className="text-xs text-slate-500">
-                    Buyer #{order.buyerUserId} · Farmer #{order.farmerUserId}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {order.payment.method} · {order.payment.verificationStatus}
-                  </p>
-                  <p className="text-xs text-slate-500">{formatDateTime(order.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant={statusVariant(order.status)}>{order.status}</Badge>
-                  <p className="text-sm font-semibold text-emerald-700">{formatVnd(order.totalAmount)}</p>
-                </div>
-              </div>
-            </button>
-          ))}
-        </CardContent>
-      </Card>
-
-      {selectedOrder && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Order detail · {selectedOrder.orderCode}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-slate-600">
-            <p>Status: <span className="font-medium text-slate-900">{selectedOrder.status}</span></p>
-            <p>Recipient: {selectedOrder.shippingRecipientName} · {selectedOrder.shippingPhone}</p>
-            <p>Address: {selectedOrder.shippingAddressLine}</p>
-            <p>
-              Payment: <span className="font-medium text-slate-900">{selectedOrder.payment.method}</span> ·{" "}
-              <span className="font-medium text-slate-900">{selectedOrder.payment.verificationStatus}</span>
-            </p>
-            <p>Total: <span className="font-semibold text-emerald-700">{formatVnd(selectedOrder.totalAmount)}</span></p>
-
-            {selectedOrder.payment.proofFileName ? (
-              <div className="rounded border border-slate-200 bg-slate-50 p-3">
-                <p>Proof file: {selectedOrder.payment.proofFileName}</p>
-                {selectedOrder.payment.proofUploadedAt ? (
-                  <p>Uploaded at: {formatDateTime(selectedOrder.payment.proofUploadedAt)}</p>
-                ) : null}
-                {selectedOrder.payment.proofStoragePath ? (
-                  <p className="break-all text-xs text-slate-500">{selectedOrder.payment.proofStoragePath}</p>
-                ) : null}
-              </div>
+            {ordersQuery.isLoading ? <p className="p-4 text-sm text-gray-500">Loading orders...</p> : null}
+            {ordersQuery.isError ? <p className="p-4 text-sm text-red-600">Failed to load admin orders.</p> : null}
+            {!ordersQuery.isLoading && !ordersQuery.isError && (ordersQuery.data?.items ?? []).length === 0 ? (
+              <p className="p-4 text-sm text-gray-500">No orders matched the current status filter.</p>
             ) : null}
-
-            <div className="space-y-3 rounded border border-slate-200 p-3">
-              <p className="font-medium text-slate-900">Verification note</p>
-              <Input
-                value={verificationNote}
-                onChange={(event) => setVerificationNote(event.target.value)}
-                placeholder="Optional note for buyer"
-              />
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={verifyMutation.isPending}
-                  onClick={async () => {
-                    await verifyMutation.mutateAsync({
-                      verificationStatus: "VERIFIED",
-                      verificationNote,
-                    });
-                    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-                  }}
-                >
-                  Mark verified
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={verifyMutation.isPending}
-                  onClick={async () => {
-                    await verifyMutation.mutateAsync({
-                      verificationStatus: "REJECTED",
-                      verificationNote,
-                    });
-                    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-                  }}
-                >
-                  Reject proof
-                </Button>
-                {selectedOrder.status !== "CANCELLED" ? (
-                  <Button
-                    variant="destructive"
-                    disabled={cancelMutation.isPending}
-                    onClick={async () => {
-                      await cancelMutation.mutateAsync({ status: "CANCELLED" });
-                      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-                    }}
-                  >
-                    Force cancel
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              {selectedOrder.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded border p-2">
-                  <p>{item.productName} x{item.quantity}</p>
-                  <p className="font-medium text-slate-900">{formatVnd(item.lineTotal)}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 rounded border border-slate-200 p-3">
-              <p className="font-medium text-slate-900">Audit trail</p>
-              {auditLogsQuery.isLoading ? <p>Loading audit logs...</p> : null}
-              {auditLogsQuery.isError ? <p className="text-red-600">Failed to load audit logs.</p> : null}
-              {(auditLogsQuery.data ?? []).map((log) => (
-                <div key={log.id} className="rounded border border-slate-200 p-2">
-                  <p className="font-medium text-slate-900">{log.operation}</p>
-                  <p className="text-xs text-slate-500">
-                    {log.performedBy} · {formatDateTime(log.performedAt)}
-                  </p>
-                  {log.reason ? <p className="text-xs text-slate-500">{log.reason}</p> : null}
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
-      )}
+
+        {selectedOrder ? (
+          <div className="space-y-6">
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader className="border-b border-gray-100">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>Order detail</CardTitle>
+                    <p className="mt-2 text-sm text-gray-500">{selectedOrder.orderCode}</p>
+                  </div>
+                  <Badge variant={statusVariant(selectedOrder.status)}>{selectedOrder.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6 p-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border border-gray-200 p-4 text-sm text-gray-600">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-400">Shipping</p>
+                    <p className="mt-3 font-medium text-gray-900">{selectedOrder.shippingRecipientName}</p>
+                    <p>{selectedOrder.shippingPhone}</p>
+                    <p>{selectedOrder.shippingAddressLine}</p>
+                    {selectedOrder.note ? <p className="mt-3 text-gray-500">Note: {selectedOrder.note}</p> : null}
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 p-4 text-sm text-gray-600">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gray-400">Payment</p>
+                    <p className="mt-3 font-medium text-gray-900">{selectedOrder.payment.method}</p>
+                    <p>{paymentStatusLabel(selectedOrder.payment.verificationStatus)}</p>
+                    <p className="mt-3 text-lg font-semibold text-emerald-600">{formatVnd(selectedOrder.totalAmount)}</p>
+                  </div>
+                </div>
+
+                {selectedOrder.payment.proofFileName ? (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    <p className="font-medium text-gray-900">Payment proof</p>
+                    <p className="mt-2">{selectedOrder.payment.proofFileName}</p>
+                    {selectedOrder.payment.proofUploadedAt ? (
+                      <p className="mt-1 text-xs text-gray-400">
+                        Uploaded {formatDateTime(selectedOrder.payment.proofUploadedAt)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="rounded-xl border border-gray-200 p-4">
+                  <p className="mb-3 text-sm font-medium text-gray-900">Verification note</p>
+                  <Input
+                    value={verificationNote}
+                    onChange={(event) => setVerificationNote(event.target.value)}
+                    placeholder="Add a note for the buyer"
+                  />
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      disabled={verifyMutation.isPending}
+                      onClick={async () => {
+                        await verifyMutation.mutateAsync({
+                          verificationStatus: "VERIFIED",
+                          verificationNote,
+                        });
+                        await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                      }}
+                    >
+                      Mark verified
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={verifyMutation.isPending}
+                      onClick={async () => {
+                        await verifyMutation.mutateAsync({
+                          verificationStatus: "REJECTED",
+                          verificationNote,
+                        });
+                        await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                      }}
+                    >
+                      Reject proof
+                    </Button>
+                    {selectedOrder.status !== "CANCELLED" ? (
+                      <Button
+                        variant="destructive"
+                        disabled={cancelMutation.isPending}
+                        onClick={async () => {
+                          await cancelMutation.mutateAsync({ status: "CANCELLED" });
+                          await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                        }}
+                      >
+                        Cancel order
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-gray-500">
+                    Order items
+                  </p>
+                  <div className="space-y-3">
+                    {selectedOrder.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between rounded-xl border border-gray-200 p-4">
+                        <div>
+                          <p className="font-medium text-gray-900">{item.productName}</p>
+                          <p className="text-sm text-gray-500">
+                            {item.quantity} x {formatVnd(item.unitPriceSnapshot)}
+                          </p>
+                        </div>
+                        <p className="font-semibold text-gray-900">{formatVnd(item.lineTotal)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader className="border-b border-gray-100">
+                <CardTitle>Audit log</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-6">
+                {auditLogsQuery.isLoading ? <p className="text-sm text-gray-500">Loading audit log...</p> : null}
+                {auditLogsQuery.isError ? <p className="text-sm text-red-600">Failed to load audit log.</p> : null}
+                {(auditLogsQuery.data ?? []).map((log) => (
+                  <div key={log.id} className="rounded-xl border border-gray-200 p-4">
+                    <p className="font-medium text-gray-900">{log.operation}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {log.performedBy} • {formatDateTime(log.performedAt)}
+                    </p>
+                    {log.reason ? <p className="mt-2 text-sm text-gray-600">{log.reason}</p> : null}
+                  </div>
+                ))}
+                {!auditLogsQuery.isLoading && !auditLogsQuery.isError && (auditLogsQuery.data ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-500">No audit log entries for this order yet.</p>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card className="border-gray-200 shadow-sm">
+            <CardContent className="p-8 text-sm text-gray-500">
+              Select an order from the list to review shipping, payment proof, and audit history.
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
