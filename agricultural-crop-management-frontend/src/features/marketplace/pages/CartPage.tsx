@@ -19,16 +19,20 @@ export function CartPage() {
 
   if (cartQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        Loading server cart...
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+          Đang tải giỏ hàng...
+        </div>
       </div>
     );
   }
 
   if (cartQuery.isError) {
     return (
-      <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        Failed to load cart from server.
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
+          Không thể tải giỏ hàng từ máy chủ.
+        </div>
       </div>
     );
   }
@@ -37,16 +41,13 @@ export function CartPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center">
-        <ShoppingCart className="mb-4 text-slate-300" size={56} />
-        <h1 className="text-xl font-semibold text-slate-900">Your cart is empty</h1>
-        <p className="mt-2 text-sm text-slate-500">Add products and continue checkout flow.</p>
-        <Link
-          to="/marketplace/products"
-          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline"
-        >
-          Continue shopping →
-        </Link>
+      <div className="container mx-auto px-4 py-20 text-center">
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100">
+          <ShoppingCart size={48} className="text-gray-400" />
+        </div>
+        <h2 className="mb-4 text-2xl font-bold text-gray-900">Giỏ hàng trống</h2>
+        <p className="mb-8 text-gray-500">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
+        <Button onClick={() => navigate("/marketplace/products")}>Tiếp tục mua sắm</Button>
       </div>
     );
   }
@@ -55,34 +56,37 @@ export function CartPage() {
   const total = (cart.subtotal ?? 0) + SHIPPING_FEE;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-      <section className="space-y-3">
-        <h1 className="text-2xl font-semibold text-slate-900">Cart</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="mb-8 text-2xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
 
-        {cart.items.map((item) => (
-          <Card key={item.productId}>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                {/* Product info */}
-                <div className="flex flex-1 items-center gap-3">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="h-20 w-20 rounded-md object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">{formatVnd(item.unitPrice)} each</p>
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex-1 space-y-4">
+          {cart.items.map((item) => (
+            <Card key={item.productId} className="overflow-hidden">
+              <CardContent className="flex items-center gap-4 p-4">
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="h-24 w-24 rounded-md bg-gray-100 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex-1">
+                  <Link
+                    to={`/marketplace/products/${item.slug}`}
+                    className="line-clamp-1 font-semibold text-gray-900 transition-colors hover:text-emerald-600"
+                  >
+                    {item.name}
+                  </Link>
+                  <div className="mt-1 font-bold text-emerald-600">
+                    {formatVnd(item.unitPrice)}
                   </div>
                 </div>
 
-                {/* Quantity + subtotal + remove */}
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center rounded-md border border-slate-300">
+                  <div className="flex items-center rounded-md border border-gray-200">
                     <button
                       type="button"
-                      className="p-2 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="p-1 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isMutating}
                       onClick={async () => {
                         const next = Math.max(1, item.quantity - 1);
@@ -92,12 +96,12 @@ export function CartPage() {
                         });
                       }}
                     >
-                      <Minus size={14} />
+                      <Minus size={16} />
                     </button>
-                    <span className="w-10 text-center text-sm font-semibold">{item.quantity}</span>
+                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                     <button
                       type="button"
-                      className="p-2 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="p-1 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isMutating}
                       onClick={async () => {
                         const next = Math.min(item.maxQuantity, item.quantity + 1);
@@ -107,63 +111,55 @@ export function CartPage() {
                         });
                       }}
                     >
-                      <Plus size={14} />
+                      <Plus size={16} />
                     </button>
                   </div>
 
-                  <p className="w-24 text-right text-sm font-semibold text-slate-900">
+                  <p className="w-24 text-right text-sm font-semibold text-gray-900">
                     {formatVnd(item.unitPrice * item.quantity)}
                   </p>
 
                   <button
                     type="button"
-                    className="rounded-md p-2 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="p-2 text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isMutating}
                     onClick={async () => {
                       await removeItemMutation.mutateAsync(item.productId);
                     }}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={20} />
                   </button>
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="w-full shrink-0 lg:w-80">
+          <Card className="sticky top-24">
+            <CardContent className="p-6">
+              <h3 className="mb-4 text-lg font-bold">Tổng đơn hàng</h3>
+              <div className="mb-6 space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tạm tính:</span>
+                  <span className="font-medium">{formatVnd(cart.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Phí giao hàng:</span>
+                  <span className="font-medium">{formatVnd(SHIPPING_FEE)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                  <span className="font-bold text-gray-900">Tổng cộng:</span>
+                  <span className="text-xl font-bold text-emerald-600">{formatVnd(total)}</span>
+                </div>
               </div>
+              <Button className="w-full" size="lg" onClick={() => navigate("/marketplace/checkout")}>
+                Tiến hành thanh toán
+              </Button>
             </CardContent>
           </Card>
-        ))}
-      </section>
-
-      <aside>
-        <Card className="sticky top-24">
-          <CardContent className="space-y-4 p-5">
-            <h2 className="text-lg font-semibold text-slate-900">Order summary</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-slate-600">
-                <span>Items ({cart.itemCount})</span>
-                <span>{formatVnd(cart.subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Shipping</span>
-                <span>{formatVnd(SHIPPING_FEE)}</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
-                <span>Total</span>
-                <span className="text-emerald-700">{formatVnd(total)}</span>
-              </div>
-            </div>
-
-            <Button className="w-full" onClick={() => navigate("/marketplace/checkout")}>
-              Proceed to checkout
-            </Button>
-
-            <Link
-              to="/marketplace/products"
-              className="block text-center text-xs text-slate-500 hover:text-emerald-700 hover:underline"
-            >
-              Continue shopping
-            </Link>
-          </CardContent>
-        </Card>
-      </aside>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,8 +1,7 @@
-import { ChevronRight, ShoppingBag } from "lucide-react";
+import { ChevronRight, Package } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Badge, Button, Card, CardContent } from "@/shared/ui";
-import { cn } from "@/shared/lib";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 import { type MarketplaceOrderStatus } from "@/shared/api";
 import { useMarketplaceOrders } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
@@ -36,24 +35,6 @@ function statusVariant(status: MarketplaceOrderStatus):
   }
 }
 
-function statusAccentClass(status: MarketplaceOrderStatus): string {
-  switch (status) {
-    case "PENDING":
-      return "border-l-amber-400";
-    case "CONFIRMED":
-    case "PREPARING":
-      return "border-l-blue-400";
-    case "DELIVERING":
-      return "border-l-emerald-400";
-    case "COMPLETED":
-      return "border-l-emerald-600";
-    case "CANCELLED":
-      return "border-l-red-400";
-    default:
-      return "border-l-slate-300";
-  }
-}
-
 function toPositiveInt(value: string | null, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
@@ -70,7 +51,7 @@ export function MyOrdersPage() {
 
   const ordersQuery = useMarketplaceOrders({ status: selectedStatus, page: page - 1, size: 10 });
 
-  const updateParams = (patch: Record<string, string | null>) => {
+  function updateParams(patch: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams);
     Object.entries(patch).forEach(([key, value]) => {
       if (!value) {
@@ -83,20 +64,24 @@ export function MyOrdersPage() {
       next.set("page", "1");
     }
     setSearchParams(next);
-  };
+  }
 
   if (ordersQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        {t("marketplaceBuyer.myOrders.loadingOrders")}
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+          {t("marketplaceBuyer.myOrders.loadingOrders")}
+        </div>
       </div>
     );
   }
 
   if (ordersQuery.isError) {
     return (
-      <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        {t("marketplaceBuyer.myOrders.errorOrders")}
+      <div className="container mx-auto px-4 py-12">
+        <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
+          {t("marketplaceBuyer.myOrders.errorOrders")}
+        </div>
       </div>
     );
   }
@@ -105,145 +90,124 @@ export function MyOrdersPage() {
   const orders = orderPage?.items ?? [];
   const totalPages = Math.max(orderPage?.totalPages ?? 1, 1);
 
-  const StatusChips = (
-    <div className="flex flex-wrap gap-1.5">
-      <button
-        type="button"
-        onClick={() => updateParams({ status: null })}
-        className={cn(
-          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-          !selectedStatus
-            ? "bg-emerald-600 text-white"
-            : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-        )}
-      >
-        {t("marketplaceBuyer.myOrders.filterAll")}
-      </button>
-      {ORDER_STATUSES.map((s) => (
-        <button
-          key={s.value}
-          type="button"
-          onClick={() => updateParams({ status: s.value === selectedStatus ? null : s.value })}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-            selectedStatus === s.value
-              ? "bg-emerald-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-          )}
-        >
-          {t(`marketplaceSeller.status.order.${s.value}`)}
-        </button>
-      ))}
-    </div>
-  );
-
-  if (orders.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.title")}</h1>
-          {StatusChips}
-        </div>
-
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center">
-          <ShoppingBag className="mb-4 text-slate-300" size={48} />
-          <h2 className="text-xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.emptyTitle")}</h2>
-          <p className="mt-2 text-sm text-slate-500">{t("marketplaceBuyer.myOrders.emptyDesc")}</p>
-          <Link
-            to="/marketplace/products"
-            className="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:underline"
-          >
-            {t("marketplaceBuyer.myOrders.startShopping")}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.myOrders.title")}</h1>
-          <p className="text-sm text-slate-500">
-            {t("marketplaceBuyer.myOrders.subtitle")}
-          </p>
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Đơn hàng của tôi</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant={!selectedStatus ? "default" : "outline"}
+            size="sm"
+            onClick={() => updateParams({ status: null })}
+          >
+            Tất cả
+          </Button>
+          {ORDER_STATUSES.map((status) => (
+            <Button
+              key={status.value}
+              type="button"
+              variant={selectedStatus === status.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => updateParams({ status: status.value === selectedStatus ? null : status.value })}
+            >
+              {t(`marketplaceSeller.status.order.${status.value}`)}
+            </Button>
+          ))}
         </div>
-        {StatusChips}
       </div>
 
-      {orders.map((order) => (
-        <Card key={order.id} className={cn("overflow-hidden border-l-4", statusAccentClass(order.status))}>
-          <CardContent className="space-y-3 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="space-y-6">
+        {orders.map((order) => (
+          <Card key={order.id} className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-200 bg-gray-50 py-4">
               <div>
-                <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
-                <p className="text-xs text-slate-500">
-                  {t("marketplaceBuyer.myOrders.group")}: {order.orderGroupCode} · {formatDateTime(order.createdAt)}
-                </p>
+                <CardTitle className="text-sm font-medium text-gray-500">
+                  Mã đơn: <span className="font-bold text-gray-900">#{order.orderCode}</span>
+                </CardTitle>
+                <div className="mt-1 text-xs text-gray-500">
+                  Đặt ngày: {formatDateTime(order.createdAt)}
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div>
                 <Badge variant={statusVariant(order.status)}>
                   {t(`marketplaceSeller.status.order.${order.status}`)}
                 </Badge>
-                <Badge variant="outline">
-                  {order.payment.method} · {order.payment.verificationStatus}
-                </Badge>
               </div>
-            </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-200">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 p-4">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.productName}
+                      className="h-16 w-16 rounded-md bg-gray-100 object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{item.productName}</h4>
+                      <div className="mt-1 text-sm text-gray-500">
+                        Số lượng: {item.quantity} x {formatVnd(item.unitPriceSnapshot)}
+                      </div>
+                    </div>
+                    <div className="font-medium text-gray-900">
+                      {formatVnd(item.lineTotal)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 p-4">
+                <div className="text-sm text-gray-500">
+                  Tổng tiền ({order.items.length} sản phẩm):
+                  <span className="ml-2 text-lg font-bold text-emerald-600">{formatVnd(order.totalAmount)}</span>
+                </div>
+                <Link to={`/marketplace/orders/${order.id}`}>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    Xem chi tiết <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
-            <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className="truncate">
-                  <span className="font-medium text-slate-700">{order.shippingRecipientName}</span>
-                  {" · "}{order.shippingPhone}
-                </p>
-                <p className="line-clamp-1 text-xs text-slate-500">{order.shippingAddressLine}</p>
-              </div>
-              <div className="text-xs text-slate-500 sm:text-right">
-                {order.canCancel
-                  ? t("marketplaceBuyer.myOrders.eligibleForCancellation")
-                  : t("marketplaceBuyer.myOrders.cannotCancel")}
-              </div>
-            </div>
+        {orders.length === 0 ? (
+          <div className="rounded-xl border border-gray-200 bg-white py-20 text-center">
+            <Package size={48} className="mx-auto mb-4 text-gray-300" />
+            <h3 className="mb-2 text-lg font-medium text-gray-900">Chưa có đơn hàng nào</h3>
+            <p className="mb-6 text-gray-500">Bạn chưa thực hiện giao dịch nào trên FarmTrace.</p>
+            <Link to="/marketplace/products">
+              <Button>Bắt đầu mua sắm</Button>
+            </Link>
+          </div>
+        ) : null}
 
-            <div className="flex items-center justify-between border-t border-slate-100 pt-2">
-              <Link
-                to={`/marketplace/orders/${order.id}`}
-                className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline"
+        {orders.length > 0 ? (
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <p className="text-sm text-gray-500">
+              Trang {page} / {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => updateParams({ page: String(page - 1) })}
               >
-                {t("marketplaceBuyer.myOrders.orderDetail")} <ChevronRight size={14} />
-              </Link>
-              <span className="text-sm font-semibold text-slate-900">
-                {formatVnd(order.totalAmount)}
-              </span>
+                Trước
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => updateParams({ page: String(page + 1) })}
+              >
+                Sau
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
-        <p className="text-sm text-slate-500">
-          {t("marketplaceBuyer.myOrders.page")} {page} / {totalPages}
-        </p>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => updateParams({ page: String(page - 1) })}
-          >
-            {t("marketplaceBuyer.myOrders.previous")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => updateParams({ page: String(page + 1) })}
-          >
-            {t("marketplaceBuyer.myOrders.next")}
-          </Button>
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
