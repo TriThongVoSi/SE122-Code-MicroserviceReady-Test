@@ -131,14 +131,14 @@ export function SellerProductsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <SellerMarketplaceTabs />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:mt-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.products.title")}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t("marketplaceSeller.products.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("marketplaceSeller.products.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-500">{t("marketplaceSeller.products.subtitle")}</p>
         </div>
         <Link
           to="/farmer/marketplace-products/new"
@@ -150,7 +150,7 @@ export function SellerProductsPage() {
       </div>
 
       {/* Search + Filter row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
@@ -179,7 +179,7 @@ export function SellerProductsPage() {
       </div>
 
       {/* Products table */}
-      <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         {productsQuery.isError && (
           <div className="p-8 text-center text-sm text-red-600">{t("marketplaceSeller.products.error")}</div>
         )}
@@ -205,7 +205,7 @@ export function SellerProductsPage() {
                   <TableRow key={product.id} className="hover:bg-slate-50/50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-[10px] bg-slate-100">
+                        <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
                           {product.imageUrl ? (
                             <img
                               src={product.imageUrl}
@@ -244,6 +244,9 @@ export function SellerProductsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Bottom breathing room */}
+      <div className="pb-8" />
     </div>
   );
 }

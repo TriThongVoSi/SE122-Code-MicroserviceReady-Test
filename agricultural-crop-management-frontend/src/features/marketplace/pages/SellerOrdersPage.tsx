@@ -65,13 +65,13 @@ export function SellerOrdersPage() {
   const locale = i18n.language.startsWith("vi") ? "vi-VN" : "en-US";
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <SellerMarketplaceTabs />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:mt-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.orders.title")}</h1>
-          <p className="mt-1 text-sm text-slate-500">{t("marketplaceSeller.orders.subtitle")}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("marketplaceSeller.orders.title")}</h1>
+          <p className="mt-1.5 text-sm text-slate-500">{t("marketplaceSeller.orders.subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map((option) => (
@@ -92,7 +92,7 @@ export function SellerOrdersPage() {
       </div>
 
       {/* Orders table */}
-      <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         {ordersQuery.isError && (
           <div className="p-8 text-center text-sm text-red-600">{t("marketplaceSeller.orders.error")}</div>
         )}
@@ -144,6 +144,9 @@ export function SellerOrdersPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Bottom breathing room */}
+      <div className="pb-8" />
     </div>
   );
 }
