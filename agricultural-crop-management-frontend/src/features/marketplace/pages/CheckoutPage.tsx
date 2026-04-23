@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Banknote, Building2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/shared/lib";
 import { Button, Card, CardContent, Input } from "@/shared/ui";
 import type {
   MarketplaceAddress,
@@ -106,6 +108,7 @@ function isAddressFormValid(form: AddressFormState): boolean {
 
 export function CheckoutPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const cartQuery = useMarketplaceCart();
   const addressesQuery = useMarketplaceAddresses();
@@ -189,7 +192,7 @@ export function CheckoutPage() {
   if (cartQuery.isLoading) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        Loading checkout...
+        {t("marketplaceBuyer.checkout.loadingCart")}
       </div>
     );
   }
@@ -197,7 +200,7 @@ export function CheckoutPage() {
   if (cartQuery.isError) {
     return (
       <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-        Failed to load checkout cart.
+        {t("marketplaceBuyer.checkout.errorCart")}
       </div>
     );
   }
@@ -205,12 +208,12 @@ export function CheckoutPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">Cart is empty</h1>
+        <h1 className="text-xl font-semibold text-slate-900">{t("marketplaceBuyer.checkout.emptyCartTitle")}</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Add products before creating marketplace order.
+          {t("marketplaceBuyer.checkout.emptyCartDesc")}
         </p>
         <Button className="mt-4" onClick={() => navigate("/marketplace/cart")}>
-          Back to cart
+          {t("marketplaceBuyer.checkout.backToCart")}
         </Button>
       </div>
     );
@@ -226,7 +229,7 @@ export function CheckoutPage() {
   const saveAddress = async () => {
     setAddressFormMessage(null);
     if (!isAddressFormValid(addressForm)) {
-      setAddressFormMessage("Please complete the required address fields.");
+      setAddressFormMessage(t("marketplaceBuyer.checkout.addressForm.validationError"));
       return;
     }
 
@@ -252,15 +255,16 @@ export function CheckoutPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <section className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Checkout</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceBuyer.checkout.title")}</h1>
 
+        {/* Shipping address */}
         <Card>
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-slate-900">Shipping address</h2>
+                <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.shippingAddressTitle")}</h2>
                 <p className="text-sm text-slate-500">
-                  Choose a saved address or create one for this order.
+                  {t("marketplaceBuyer.checkout.shippingAddressDesc")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -274,7 +278,7 @@ export function CheckoutPage() {
                     setAddressFormMessage(null);
                   }}
                 >
-                  Saved addresses
+                  {t("marketplaceBuyer.checkout.savedAddresses")}
                 </Button>
                 <Button
                   variant={addressMode === "new" ? "default" : "outline"}
@@ -287,7 +291,7 @@ export function CheckoutPage() {
                   }}
                 >
                   <Plus size={14} className="mr-1" />
-                  New address
+                  {t("marketplaceBuyer.checkout.newAddress")}
                 </Button>
               </div>
             </div>
@@ -320,7 +324,7 @@ export function CheckoutPage() {
                             <p>{formatAddressLabel(selectedAddress)}</p>
                             {selectedAddress.isDefault ? (
                               <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
-                                Default
+                                {t("marketplaceBuyer.checkout.defaultBadge")}
                               </span>
                             ) : null}
                           </div>
@@ -336,7 +340,7 @@ export function CheckoutPage() {
                               }}
                             >
                               <Pencil size={14} className="mr-1" />
-                              Edit
+                              {t("marketplaceBuyer.checkout.editAddress")}
                             </Button>
                             <Button
                               variant="destructive"
@@ -348,7 +352,7 @@ export function CheckoutPage() {
                               }}
                             >
                               <Trash2 size={14} className="mr-1" />
-                              Delete
+                              {t("marketplaceBuyer.checkout.deleteAddress")}
                             </Button>
                           </div>
                         </div>
@@ -360,7 +364,7 @@ export function CheckoutPage() {
                   </>
                 ) : (
                   <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                    No saved address found. Create one below to continue checkout.
+                    {t("marketplaceBuyer.checkout.noSavedAddress")}
                   </div>
                 )}
               </div>
@@ -368,42 +372,42 @@ export function CheckoutPage() {
               <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Input
-                    placeholder="Recipient name"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.recipientName")}
                     value={addressForm.fullName}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, fullName: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="Phone"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.phone")}
                     value={addressForm.phone}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, phone: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="Province"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.province")}
                     value={addressForm.province}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, province: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="District"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.district")}
                     value={addressForm.district}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, district: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="Ward"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.ward")}
                     value={addressForm.ward}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, ward: event.target.value }))
                     }
                   />
                   <Input
-                    placeholder="Street"
+                    placeholder={t("marketplaceBuyer.checkout.addressForm.street")}
                     value={addressForm.street}
                     onChange={(event) =>
                       setAddressForm((current) => ({ ...current, street: event.target.value }))
@@ -412,7 +416,7 @@ export function CheckoutPage() {
                 </div>
 
                 <Input
-                  placeholder="Apartment / landmark (optional)"
+                  placeholder={t("marketplaceBuyer.checkout.addressForm.detail")}
                   value={addressForm.detail ?? ""}
                   onChange={(event) =>
                     setAddressForm((current) => ({ ...current, detail: event.target.value }))
@@ -430,9 +434,9 @@ export function CheckoutPage() {
                     }
                     className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                   >
-                    <option value="home">Home</option>
-                    <option value="office">Office</option>
-                    <option value="other">Other</option>
+                    <option value="home">{t("marketplaceBuyer.checkout.addressForm.labelHome")}</option>
+                    <option value="office">{t("marketplaceBuyer.checkout.addressForm.labelOffice")}</option>
+                    <option value="other">{t("marketplaceBuyer.checkout.addressForm.labelOther")}</option>
                   </select>
                   <label className="flex items-center gap-2 text-sm text-slate-600">
                     <input
@@ -445,7 +449,7 @@ export function CheckoutPage() {
                         }))
                       }
                     />
-                    Set as default address
+                    {t("marketplaceBuyer.checkout.addressForm.setDefault")}
                   </label>
                 </div>
 
@@ -462,10 +466,10 @@ export function CheckoutPage() {
                     onClick={saveAddress}
                   >
                     {currentAddressMutation.isPending
-                      ? "Saving..."
+                      ? t("marketplaceBuyer.checkout.addressForm.saving")
                       : editingAddressId == null
-                        ? "Save address"
-                        : "Update address"}
+                        ? t("marketplaceBuyer.checkout.addressForm.saveAddress")
+                        : t("marketplaceBuyer.checkout.addressForm.updateAddress")}
                   </Button>
                   <Button
                     variant="outline"
@@ -476,73 +480,97 @@ export function CheckoutPage() {
                       setAddressFormMessage(null);
                     }}
                   >
-                    Cancel
+                    {t("marketplaceBuyer.checkout.addressForm.cancel")}
                   </Button>
                 </div>
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            {/* Optional overrides */}
+            <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{t("marketplaceBuyer.checkout.overrideSection")}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  placeholder={t("marketplaceBuyer.checkout.recipientOverride")}
+                  value={recipientName}
+                  onChange={(event) => setRecipientName(event.target.value)}
+                />
+                <Input
+                  placeholder={t("marketplaceBuyer.checkout.phoneOverride")}
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
+              </div>
               <Input
-                placeholder="Recipient name override"
-                value={recipientName}
-                onChange={(event) => setRecipientName(event.target.value)}
-              />
-              <Input
-                placeholder="Phone override"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                placeholder={t("marketplaceBuyer.checkout.addressOverride")}
+                value={addressLine}
+                onChange={(event) => setAddressLine(event.target.value)}
               />
             </div>
 
             <Input
-              placeholder="Shipping address override"
-              value={addressLine}
-              onChange={(event) => setAddressLine(event.target.value)}
-            />
-
-            <Input
-              placeholder="Order note"
+              placeholder={t("marketplaceBuyer.checkout.orderNote")}
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />
           </CardContent>
         </Card>
 
+        {/* Payment method */}
         <Card>
-          <CardContent className="space-y-2 p-5">
-            <h2 className="text-base font-semibold text-slate-900">Payment method</h2>
-            <label className="flex items-center gap-2 text-sm">
+          <CardContent className="space-y-3 p-5">
+            <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.paymentMethodTitle")}</h2>
+            <label
+              className={cn(
+                "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                paymentMethod === "COD"
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-slate-200 hover:border-slate-300",
+              )}
+            >
               <input
                 type="radio"
                 name="marketplace-payment"
+                className="accent-emerald-600"
                 checked={paymentMethod === "COD"}
                 onChange={() => setPaymentMethod("COD")}
               />
-              COD
+              <Banknote size={18} className="shrink-0 text-slate-500" />
+              <div>
+                <p className="text-sm font-medium text-slate-900">{t("marketplaceBuyer.checkout.codLabel")}</p>
+                <p className="text-xs text-slate-500">{t("marketplaceBuyer.checkout.codDesc")}</p>
+              </div>
             </label>
-            <label className="flex items-center gap-2 text-sm">
+
+            <label
+              className={cn(
+                "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                paymentMethod === "BANK_TRANSFER"
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-slate-200 hover:border-slate-300",
+              )}
+            >
               <input
                 type="radio"
                 name="marketplace-payment"
+                className="accent-emerald-600"
                 checked={paymentMethod === "BANK_TRANSFER"}
                 onChange={() => setPaymentMethod("BANK_TRANSFER")}
               />
-              Bank transfer
+              <Building2 size={18} className="shrink-0 text-slate-500" />
+              <div>
+                <p className="text-sm font-medium text-slate-900">{t("marketplaceBuyer.checkout.bankTransferLabel")}</p>
+                <p className="text-xs text-slate-500">{t("marketplaceBuyer.checkout.bankTransferDesc")}</p>
+              </div>
             </label>
-            {paymentMethod === "BANK_TRANSFER" ? (
-              <p className="text-xs text-slate-500">
-                You can upload transfer proof after the order is created.
-              </p>
-            ) : null}
           </CardContent>
         </Card>
       </section>
 
-      <aside>
+      <aside className="lg:sticky lg:top-24 lg:self-start">
         <Card>
           <CardContent className="space-y-4 p-5">
-            <h2 className="text-base font-semibold text-slate-900">Order summary</h2>
+            <h2 className="text-base font-semibold text-slate-900">{t("marketplaceBuyer.checkout.orderSummaryTitle")}</h2>
 
             <div className="space-y-2 text-sm">
               {cart.items.map((item) => (
@@ -559,22 +587,22 @@ export function CheckoutPage() {
 
             <div className="space-y-2 border-t border-slate-200 pt-3 text-sm">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal</span>
+                <span>{t("marketplaceBuyer.checkout.subtotal")}</span>
                 <span>{formatVnd(cart.subtotal)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Shipping</span>
+                <span>{t("marketplaceBuyer.checkout.shipping")}</span>
                 <span>{formatVnd(shippingFee)}</span>
               </div>
               <div className="flex justify-between font-semibold text-slate-900">
-                <span>Total</span>
-                <span>{formatVnd(total)}</span>
+                <span>{t("marketplaceBuyer.checkout.total")}</span>
+                <span className="text-emerald-700">{formatVnd(total)}</span>
               </div>
             </div>
 
             {effectiveRecipientName && effectivePhone && effectiveShippingAddressLine ? (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                <p className="font-medium text-slate-900">Deliver to</p>
+                <p className="font-medium text-slate-900">{t("marketplaceBuyer.checkout.deliverTo")}</p>
                 <p>{effectiveRecipientName}</p>
                 <p>{effectivePhone}</p>
                 <p>{effectiveShippingAddressLine}</p>
@@ -612,7 +640,9 @@ export function CheckoutPage() {
                 navigate("/marketplace/orders");
               }}
             >
-              {createOrderMutation.isPending ? "Creating order..." : "Place order"}
+              {createOrderMutation.isPending
+                ? t("marketplaceBuyer.checkout.placingOrder")
+                : t("marketplaceBuyer.checkout.placeOrder")}
             </Button>
           </CardContent>
         </Card>

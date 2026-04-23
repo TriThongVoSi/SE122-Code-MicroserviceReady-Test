@@ -1,14 +1,36 @@
 import { useMemo } from "react";
-import { Search } from "lucide-react";
+import { PackageOpen, Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { Badge, Button, Card, CardContent, Input } from "@/shared/ui";
+import { cn } from "@/shared/lib";
 import { useMarketplaceAddToCart, useMarketplaceProducts } from "../hooks";
 import { formatVnd } from "../lib/format";
 
 function toPositiveInt(value: string | null, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="h-44 w-full animate-pulse bg-slate-200" />
+      <div className="space-y-3 p-4">
+        <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
+        <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+          <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-8 flex-1 animate-pulse rounded-md bg-slate-200" />
+          <div className="h-8 flex-1 animate-pulse rounded-md bg-slate-200" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ProductListPage() {
@@ -54,6 +76,8 @@ export function ProductListPage() {
     setSearchParams(next);
   };
 
+  const hasActiveFilters = q || category || region;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
@@ -71,19 +95,6 @@ export function ProductListPage() {
           </div>
 
           <select
-            value={category}
-            onChange={(event) => updateParams({ category: event.target.value || null })}
-            className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-          >
-            <option value="">All categories</option>
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-
-          <select
             value={sort}
             onChange={(event) => updateParams({ sort: event.target.value || "newest" })}
             className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
@@ -97,14 +108,46 @@ export function ProductListPage() {
             value={region}
             onChange={(event) => updateParams({ region: event.target.value || null })}
             placeholder="Filter by region"
-            className="md:col-span-2"
           />
         </div>
+
+        {/* Category chips */}
+        {categories.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => updateParams({ category: null })}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                !category
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700",
+              )}
+            >
+              All
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => updateParams({ category: cat === category ? null : cat })}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  category === cat
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700",
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {productsQuery.isLoading ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading products...
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : productsQuery.isError ? (
         <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
@@ -114,13 +157,15 @@ export function ProductListPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden">
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="h-44 w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+              <Card key={product.id} className="group overflow-hidden transition-shadow hover:shadow-md">
+                <div className="overflow-hidden">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
 
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-center justify-between gap-2">
@@ -137,7 +182,7 @@ export function ProductListPage() {
 
                   <p className="text-xs text-slate-500">
                     {product.farmName ?? "Unknown farm"}
-                    {product.region ? ` - ${product.region}` : ""}
+                    {product.region ? ` — ${product.region}` : ""}
                   </p>
 
                   <div className="flex items-center justify-between">
@@ -199,8 +244,19 @@ export function ProductListPage() {
           </div>
         </>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          No matching product.
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center">
+          <PackageOpen className="mb-3 text-slate-300" size={48} />
+          <p className="text-base font-semibold text-slate-700">No matching products</p>
+          <p className="mt-1 text-sm text-slate-500">Try adjusting your filters or search term.</p>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={() => setSearchParams(new URLSearchParams())}
+              className="mt-4 text-sm text-emerald-700 hover:underline"
+            >
+              Clear all filters
+            </button>
+          ) : null}
         </div>
       )}
     </div>

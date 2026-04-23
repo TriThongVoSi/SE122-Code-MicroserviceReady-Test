@@ -1,4 +1,4 @@
-import { Package, ShoppingCart, TrendingUp, Wallet } from "lucide-react";
+import { Inbox, Package, ShoppingBag, ShoppingCart, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,6 +11,35 @@ import { formatVnd } from "../lib/format";
 
 const LOW_STOCK_THRESHOLD = 20;
 
+function KpiCardSkeleton() {
+  return (
+    <Card className="rounded-[14px] border-slate-200 shadow-sm">
+      <CardContent className="flex items-center gap-4 p-6">
+        <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-[10px] bg-slate-200" />
+        <div className="space-y-2">
+          <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+          <div className="h-6 w-24 animate-pulse rounded bg-slate-200" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OrderRowSkeleton() {
+  return (
+    <div className="flex items-center justify-between py-3.5">
+      <div className="space-y-1.5">
+        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+        <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+      </div>
+      <div className="space-y-1.5 text-right">
+        <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+        <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
+      </div>
+    </div>
+  );
+}
+
 export function SellerDashboardPage() {
   const { t, i18n } = useTranslation();
   const dashboardQuery = useMarketplaceFarmerDashboard();
@@ -21,7 +50,44 @@ export function SellerDashboardPage() {
   });
 
   if (dashboardQuery.isLoading) {
-    return <div className="rounded-xl border border-dashed bg-white p-8 text-sm text-slate-500">{t("marketplaceSeller.dashboard.loading")}</div>;
+    return (
+      <div className="space-y-6">
+        <SellerMarketplaceTabs />
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.dashboard.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("marketplaceSeller.dashboard.subtitle")}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => <KpiCardSkeleton key={i} />)}
+        </div>
+        <div className="grid gap-4 xl:grid-cols-5">
+          <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-3">
+            <CardContent className="p-6">
+              <div className="mb-4 h-4 w-32 animate-pulse rounded bg-slate-200" />
+              <div className="divide-y divide-slate-100">
+                {Array.from({ length: 3 }, (_, i) => <OrderRowSkeleton key={i} />)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-2">
+            <CardContent className="p-6">
+              <div className="mb-4 h-4 w-28 animate-pulse rounded bg-slate-200" />
+              <div className="space-y-3">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-lg bg-slate-200" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   if (dashboardQuery.isError || !dashboardQuery.data) {
@@ -60,7 +126,7 @@ export function SellerDashboardPage() {
     {
       key: "views",
       label: t("marketplaceSeller.dashboard.metrics.views"),
-      value: "1,234",
+      value: "—",
       icon: TrendingUp,
       iconClassName: "bg-red-50 text-red-500",
     },
@@ -72,6 +138,7 @@ export function SellerDashboardPage() {
 
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">{t("marketplaceSeller.dashboard.title")}</h1>
+        <p className="mt-1 text-sm text-slate-500">{t("marketplaceSeller.dashboard.subtitle")}</p>
       </div>
 
       {/* Metric cards */}
@@ -96,9 +163,17 @@ export function SellerDashboardPage() {
         {/* Recent orders */}
         <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-3">
           <CardContent className="p-6">
-            <h2 className="mb-4 text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.recentOrdersTitle")}</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.recentOrdersTitle")}</h2>
+              <Link to="/farmer/marketplace-orders" className="text-xs font-medium text-[#155dfc] hover:underline">
+                {t("marketplaceSeller.dashboard.viewAll")} →
+              </Link>
+            </div>
             {dashboard.recentOrders.length === 0 ? (
-              <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.recentOrdersEmpty")}</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <ShoppingBag className="mb-3 text-slate-300" size={40} />
+                <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.recentOrdersEmpty")}</p>
+              </div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {dashboard.recentOrders.map((order) => (
@@ -110,7 +185,7 @@ export function SellerDashboardPage() {
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{order.orderCode}</p>
                       <p className="text-xs text-slate-500">
-                        {order.items?.length ?? "?"} {t("marketplaceSeller.dashboard.itemsLabel", "sản phẩm")}
+                        {order.items?.length ?? "?"} {t("marketplaceSeller.dashboard.itemsLabel")}
                       </p>
                     </div>
                     <div className="text-right">
@@ -127,15 +202,36 @@ export function SellerDashboardPage() {
         {/* Low stock products */}
         <Card className="rounded-[14px] border-slate-200 shadow-sm xl:col-span-2">
           <CardContent className="p-6">
-            <h2 className="mb-4 text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.lowStockTitle")}</h2>
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-900">{t("marketplaceSeller.dashboard.lowStockTitle")}</h2>
+                <Link to="/farmer/marketplace-products" className="text-xs font-medium text-[#155dfc] hover:underline">
+                  {t("marketplaceSeller.dashboard.manageProducts")}
+                </Link>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">{t("marketplaceSeller.dashboard.lowStockHint")}</p>
+            </div>
             {lowStockProductsQuery.isLoading && (
-              <p className="text-sm text-slate-500">{t("marketplaceSeller.products.loading")}</p>
+              <div className="space-y-3">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-lg bg-slate-200" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
             {lowStockProductsQuery.isError && (
               <p className="text-sm text-red-600">{t("marketplaceSeller.products.error")}</p>
             )}
             {!lowStockProductsQuery.isLoading && !lowStockProductsQuery.isError && lowStockProducts.length === 0 && (
-              <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.lowStockEmpty")}</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Inbox className="mb-3 text-slate-300" size={40} />
+                <p className="text-sm text-slate-500">{t("marketplaceSeller.dashboard.lowStockEmpty")}</p>
+              </div>
             )}
 
             <div className="space-y-3">
