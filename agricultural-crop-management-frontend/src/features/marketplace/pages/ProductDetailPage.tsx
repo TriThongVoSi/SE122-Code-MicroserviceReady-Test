@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Calendar, MapPin, Minus, Plus, ShieldCheck, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Minus, Package, Plus, ShieldCheck, ShoppingCart, Star } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
 import { Badge, Button, Card, CardContent } from "@/shared/ui";
@@ -72,232 +72,288 @@ export function ProductDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Link
-        to="/marketplace/products"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
-      >
-        <ArrowLeft size={15} /> Quay lại danh sách sản phẩm
-      </Link>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-4 py-6">
+        <Link
+          to="/marketplace/products"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-emerald-700 hover:underline"
+        >
+          <ArrowLeft size={15} /> Quay lại danh sách sản phẩm
+        </Link>
 
-      <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-2">
-        <div className="space-y-4">
-          <div className="aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-            <img
-              src={product.imageUrls[0] ?? product.imageUrl}
-              alt={product.name}
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-sm uppercase tracking-wider text-gray-500">{product.category}</span>
-            {product.traceable ? <Badge className="bg-emerald-500 text-white">Có truy xuất</Badge> : null}
-          </div>
-
-          <h1 className="mb-4 text-3xl font-bold text-gray-900">{product.name}</h1>
-
-          <div className="mb-6 flex items-center gap-4">
-            <div className="flex items-center text-yellow-500">
-              <Star className="fill-current" size={20} />
-              <span className="ml-1 font-medium text-gray-900">
-                {product.ratingAverage ? product.ratingAverage.toFixed(1) : "5.0"}
-              </span>
-            </div>
-            <span className="text-gray-400">|</span>
-            <span className="text-gray-600">{product.ratingCount} đánh giá</span>
-            <span className="text-gray-400">|</span>
-            <span className="text-gray-600">{product.availableQuantity} sản phẩm có sẵn</span>
-          </div>
-
-          <div className="mb-6 text-3xl font-bold text-emerald-600">
-            {formatVnd(product.price)} <span className="text-lg font-normal text-gray-500">/ {product.unit}</span>
-          </div>
-
-          <p className="mb-8 leading-relaxed text-gray-700">{product.shortDescription}</p>
-
-          <div className="mb-8">
-            <div className="mb-3 text-sm font-medium text-gray-900">Số lượng</div>
-            {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center rounded-md border border-gray-200">
-                  <button
-                    className="p-2 text-gray-600 hover:bg-gray-50"
-                    onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                    type="button"
-                  >
-                    <Minus size={20} />
-                  </button>
-                  <span className="w-12 text-center font-medium">{quantityValue}</span>
-                  <button
-                    className="p-2 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => setQuantity((prev) => prev + 1)}
-                    disabled={!canIncrease}
-                    type="button"
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
-                <span className="text-sm text-gray-500">{product.availableQuantity} sản phẩm có sẵn</span>
-              </div>
-            ) : (
-              <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Hãy đăng nhập để thêm sản phẩm vào giỏ hàng hoặc đặt mua ngay.
-              </p>
-            )}
-          </div>
-
-          <div className="mt-auto flex flex-wrap gap-4">
-            {isAuthenticated ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex-1"
-                  disabled={isAdding || product.availableQuantity <= 0}
-                  onClick={async () => {
-                    await addToCart(product.id, quantity);
-                  }}
-                >
-                  Thêm vào giỏ
-                </Button>
-                <Button
-                  size="lg"
-                  className="flex-1"
-                  disabled={isAdding || product.availableQuantity <= 0}
-                  onClick={async () => {
-                    const mode = await addToCart(product.id, quantity);
-                    if (mode === "server") {
-                      navigate("/marketplace/cart");
+        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+              {product.imageUrls[0] || product.imageUrl ? (
+                <img
+                  src={product.imageUrls[0] ?? product.imageUrl}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `
+                        <div class="flex h-full w-full items-center justify-center">
+                          <div class="text-center">
+                            <svg class="mx-auto h-24 w-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-400">Không có hình ảnh</p>
+                          </div>
+                        </div>
+                      `;
                     }
                   }}
-                >
-                  Mua ngay
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild size="lg" className="flex-1">
-                  <Link to="/sign-up">Tạo tài khoản để mua</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="flex-1">
-                  <Link to="/sign-in">Tôi đã có tài khoản</Link>
-                </Button>
-              </>
-            )}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <div className="text-center">
+                    <Package className="mx-auto h-24 w-24 text-gray-300" strokeWidth={1.5} />
+                    <p className="mt-2 text-sm text-gray-400">Không có hình ảnh</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col space-y-6">
+            <div>
+              <div className="mb-3 flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+                  {product.category}
+                </span>
+                {product.traceable && (
+                  <Badge variant="success" className="gap-1 text-xs">
+                    <ShieldCheck size={12} /> Có truy xuất
+                  </Badge>
+                )}
+              </div>
+
+              <h1 className="mb-4 text-3xl font-bold text-gray-900 leading-tight">{product.name}</h1>
+
+              <div className="mb-4 flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-1">
+                  <Star className="fill-yellow-400 text-yellow-400" size={16} />
+                  <span className="font-semibold text-gray-900">
+                    {product.ratingAverage ? product.ratingAverage.toFixed(1) : "5.0"}
+                  </span>
+                </div>
+                <span className="text-gray-300">|</span>
+                <span className="text-gray-600">{product.ratingCount} đánh giá</span>
+                <span className="text-gray-300">|</span>
+                <span className="text-gray-600">Đã bán {product.ratingCount > 100 ? `${(product.ratingCount / 100).toFixed(1)}k` : product.ratingCount}</span>
+              </div>
+
+              <div className="mb-6">
+                <div className="text-4xl font-bold text-emerald-600">
+                  {formatVnd(product.price)}
+                  <span className="ml-2 text-lg font-normal text-gray-600">/ {product.unit}</span>
+                </div>
+              </div>
+
+              {product.shortDescription && (
+                <p className="mb-6 text-sm leading-relaxed text-gray-700">{product.shortDescription}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-3 block text-sm font-medium text-gray-900">Số lượng</label>
+              {isAuthenticated ? (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center rounded-lg border border-gray-300 bg-white">
+                    <button
+                      className="h-9 w-9 flex items-center justify-center text-gray-600 transition-colors hover:bg-gray-50"
+                      onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                      type="button"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="min-w-12 text-center text-sm font-medium text-gray-900">{quantityValue}</span>
+                    <button
+                      className="h-9 w-9 flex items-center justify-center text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => setQuantity((prev) => prev + 1)}
+                      disabled={!canIncrease}
+                      type="button"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <span className="text-sm text-gray-500">{product.availableQuantity} sản phẩm có sẵn</span>
+                </div>
+              ) : (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                  Hãy đăng nhập để thêm sản phẩm vào giỏ hàng hoặc đặt mua ngay.
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    disabled={isAdding || product.availableQuantity <= 0}
+                    onClick={async () => {
+                      await addToCart(product.id, quantity);
+                    }}
+                  >
+                    <ShoppingCart size={18} />
+                    Thêm vào giỏ
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={isAdding || product.availableQuantity <= 0}
+                    onClick={async () => {
+                      const mode = await addToCart(product.id, quantity);
+                      if (mode === "server") {
+                        navigate("/marketplace/cart");
+                      }
+                    }}
+                  >
+                    {isAdding ? "Đang xử lý..." : "Mua ngay"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild variant="outline" size="lg" className="flex-1 border border-gray-300">
+                    <Link to="/sign-in">Đăng nhập</Link>
+                  </Button>
+                  <Button asChild size="lg" className="flex-1">
+                    <Link to="/sign-up">Tạo tài khoản</Link>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
       {product.traceable ? (
-        <div className="mb-12">
-          <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <ShieldCheck className="text-emerald-600" /> Thông tin truy xuất nguồn gốc
-          </h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="mb-4 text-lg font-semibold text-emerald-800">Thông tin nông trại</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Tên nông trại:</span>
-                    <span className="font-medium">{traceabilityQuery.data?.farm?.name ?? product.farmName ?? product.farmerDisplayName}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Khu vực:</span>
-                    <span className="flex items-center gap-1 font-medium">
-                      <MapPin size={14} /> {traceabilityQuery.data?.farm?.region ?? product.region ?? "Đang cập nhật"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Địa chỉ:</span>
-                    <span className="max-w-[220px] text-right font-medium">
-                      {traceabilityQuery.data?.farm?.address ?? "Đang cập nhật"}
-                    </span>
-                  </div>
+        <div className="mb-6">
+          <div className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+            <ShieldCheck className="text-emerald-600" size={24} />
+            Thông tin truy xuất nguồn gốc
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-4 text-base font-bold text-emerald-700">Thông tin Nông trại</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tên nông trại:</span>
+                  <span className="font-semibold text-gray-900 text-right">
+                    {traceabilityQuery.data?.farm?.name ?? product.farmName ?? product.farmerDisplayName}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Khu vực:</span>
+                  <span className="flex items-center gap-1 font-semibold text-gray-900">
+                    <MapPin size={14} className="text-emerald-600" />
+                    {traceabilityQuery.data?.farm?.region ?? product.region ?? "Đang cập nhật"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Địa chỉ:</span>
+                  <span className="max-w-[250px] text-right font-semibold text-gray-900">
+                    {traceabilityQuery.data?.farm?.address ?? "Đang cập nhật"}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="mb-4 text-lg font-semibold text-emerald-800">Thông tin mùa vụ và lô hàng</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Mùa vụ:</span>
-                    <span className="font-medium">{traceabilityQuery.data?.season?.name ?? product.seasonName ?? "Đang cập nhật"}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Mã lô:</span>
-                    <span className="font-medium">{traceabilityQuery.data?.lot?.lotCode ?? product.traceabilityCode ?? "Đang cập nhật"}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="text-gray-500">Ngày thu hoạch:</span>
-                    <span className="flex items-center gap-1 font-medium">
-                      <Calendar size={14} /> {traceabilityQuery.data?.lot?.harvestedAt ?? "Đang cập nhật"}
-                    </span>
-                  </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-4 text-base font-bold text-emerald-700">Thông tin Lô hàng</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Mã lô:</span>
+                  <span className="font-semibold text-gray-900">
+                    {traceabilityQuery.data?.lot?.lotCode ?? product.traceabilityCode ?? "Đang cập nhật"}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Mùa vụ:</span>
+                  <span className="font-semibold text-gray-900">
+                    {traceabilityQuery.data?.season?.name ?? product.seasonName ?? "Đang cập nhật"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Ngày thu hoạch:</span>
+                  <span className="flex items-center gap-1 font-semibold text-gray-900">
+                    <Calendar size={14} className="text-emerald-600" />
+                    {traceabilityQuery.data?.lot?.harvestedAt ?? "Đang cập nhật"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
 
-      <div className="mb-12">
-        <h2 className="mb-6 text-2xl font-bold text-gray-900">Mô tả sản phẩm</h2>
-        <div className="prose max-w-none text-gray-700">
-          <p>{product.description}</p>
-          <p className="mt-4 text-sm text-gray-500">Cập nhật lần cuối: {formatDateTime(product.updatedAt)}</p>
+      {product.description && (
+        <div className="mb-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-bold text-gray-900">Mô tả sản phẩm</h2>
+            <div className="text-sm leading-relaxed text-gray-700">
+              <p>{product.description}</p>
+              <p className="mt-4 text-xs text-gray-400">Cập nhật lần cuối: {formatDateTime(product.updatedAt)}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Thông tin nhanh</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs text-gray-500">Người bán</p>
-                <p className="text-sm font-medium text-gray-900">{product.farmerDisplayName}</p>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs text-gray-500">Tồn kho</p>
-                <p className="text-sm font-medium text-gray-900">{product.availableQuantity} {product.unit}</p>
-              </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-bold text-gray-900">Thông tin bổ sung</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs text-gray-500 mb-1">Người bán</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">{product.farmerDisplayName}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Đánh giá gần đây</h2>
-            {reviewsQuery.isLoading ? (
-              <p className="text-sm text-gray-500">Đang tải đánh giá...</p>
-            ) : reviewsQuery.isError ? (
-              <p className="text-sm text-red-600">Không thể tải đánh giá.</p>
-            ) : reviewsQuery.data && reviewsQuery.data.items.length > 0 ? (
-              <div className="space-y-3">
-                {reviewsQuery.data.items.map((review) => (
-                  <div key={review.id} className="rounded-lg border border-gray-200 p-4">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-900">{review.buyerDisplayName}</p>
-                      <StarRating rating={(review as { rating?: number }).rating} />
-                    </div>
-                    <p className="text-xs text-gray-400">{formatDateTime(review.createdAt)}</p>
-                    <p className="mt-2 text-sm text-gray-600">{review.comment}</p>
-                  </div>
-                ))}
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs text-gray-500 mb-1">Tồn kho</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {product.availableQuantity} {product.unit}
+              </p>
+            </div>
+            {product.region && (
+              <div className="col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs text-gray-500 mb-1">Khu vực</p>
+                <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                  <MapPin size={14} className="text-emerald-600" /> {product.region}
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">Chưa có đánh giá nào cho sản phẩm này.</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-base font-bold text-gray-900">Đánh giá gần đây</h2>
+          {reviewsQuery.isLoading ? (
+            <p className="text-sm text-gray-500">Đang tải đánh giá...</p>
+          ) : reviewsQuery.isError ? (
+            <p className="text-sm text-red-600">Không thể tải đánh giá.</p>
+          ) : reviewsQuery.data && reviewsQuery.data.items.length > 0 ? (
+            <div className="space-y-3">
+              {reviewsQuery.data.items.map((review) => (
+                <div key={review.id} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900">{review.buyerDisplayName}</p>
+                    <StarRating rating={(review as { rating?: number }).rating} />
+                  </div>
+                  <p className="text-xs text-gray-400 mb-1">{formatDateTime(review.createdAt)}</p>
+                  <p className="text-sm text-gray-600">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Chưa có đánh giá nào cho sản phẩm này.</p>
+          )}
+        </div>
       </div>
+    </div>
     </div>
   );
 }
