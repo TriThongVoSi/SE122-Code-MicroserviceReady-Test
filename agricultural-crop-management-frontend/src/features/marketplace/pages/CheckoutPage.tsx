@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Banknote, Building2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Banknote, Building2, MapPin, Pencil, Phone, Plus, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/shared/lib";
@@ -259,17 +259,17 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900">Thanh toán</h1>
+    <div className="container mx-auto max-w-7xl px-4 py-10">
+      <h1 className="mb-10 text-3xl font-bold text-gray-900">Thanh toán</h1>
 
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <div className="flex-1 space-y-6">
+      <div className="flex flex-col gap-10 lg:flex-row">
+        <div className="flex-1 space-y-8">
           <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardHeader className="border-b border-gray-100">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <CardTitle>Thông tin giao hàng</CardTitle>
-                  <p className="mt-1 text-sm text-gray-500">{t("marketplaceBuyer.checkout.shippingAddressDesc")}</p>
+                  <CardTitle className="text-lg font-semibold text-gray-900">Thông tin giao hàng</CardTitle>
+                  <p className="mt-1.5 text-sm text-gray-500">{t("marketplaceBuyer.checkout.shippingAddressDesc")}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -294,44 +294,59 @@ export function CheckoutPage() {
                       setAddressFormMessage(null);
                     }}
                   >
-                    <Plus size={14} className="mr-1" />
+                    <Plus size={16} />
                     Địa chỉ mới
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               {addressMode === "saved" ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {addressesQuery.data && addressesQuery.data.length > 0 ? (
                     <>
-                      <select
-                        className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"
-                        value={selectedAddress?.id ?? ""}
-                        onChange={(event) => {
-                          const next = Number(event.target.value);
-                          setSelectedAddressId(Number.isFinite(next) ? next : null);
-                        }}
-                      >
-                        {addressesQuery.data.map((address) => (
-                          <option key={address.id} value={address.id}>
-                            {formatAddressLabel(address)}
-                          </option>
-                        ))}
-                      </select>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">Chọn địa chỉ giao hàng</label>
+                        <select
+                          className="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm shadow-sm transition-colors hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          value={selectedAddress?.id ?? ""}
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            setSelectedAddressId(Number.isFinite(next) ? next : null);
+                          }}
+                        >
+                          {addressesQuery.data.map((address) => (
+                            <option key={address.id} value={address.id}>
+                              {formatAddressLabel(address)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
                       {selectedAddress ? (
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="space-y-1 text-sm text-gray-600">
-                              <p className="font-medium text-gray-900">{selectedAddress.fullName}</p>
-                              <p>{selectedAddress.phone}</p>
-                              <p>{formatAddressLabel(selectedAddress)}</p>
-                              {selectedAddress.isDefault ? (
-                                <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
-                                  {t("marketplaceBuyer.checkout.defaultBadge")}
+                        <div className="rounded-lg border-2 border-emerald-100 bg-emerald-50/30 p-5">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2.5">
+                              <div className="flex items-center gap-2 text-gray-900">
+                                <User size={16} className="text-emerald-600" />
+                                <span className="font-semibold">{selectedAddress.fullName}</span>
+                                {selectedAddress.isDefault ? (
+                                  <span className="ml-1 inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                    {t("marketplaceBuyer.checkout.defaultBadge")}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Phone size={16} className="text-emerald-600" />
+                                <span>{selectedAddress.phone}</span>
+                              </div>
+                              <div className="flex items-start gap-2 text-sm text-gray-600">
+                                <MapPin size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                                <span className="leading-relaxed">
+                                  {selectedAddress.street}
+                                  {selectedAddress.detail ? `, ${selectedAddress.detail}` : ""}, {selectedAddress.ward}, {selectedAddress.district}, {selectedAddress.province}
                                 </span>
-                              ) : null}
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <Button
@@ -344,7 +359,7 @@ export function CheckoutPage() {
                                   setAddressFormMessage(null);
                                 }}
                               >
-                                <Pencil size={14} className="mr-1" />
+                                <Pencil size={16} />
                                 Sửa
                               </Button>
                               <Button
@@ -356,28 +371,28 @@ export function CheckoutPage() {
                                   setSelectedAddressId(null);
                                 }}
                               >
-                                <Trash2 size={14} className="mr-1" />
+                                <Trash2 size={16} />
                                 Xóa
                               </Button>
                             </div>
                           </div>
                           {deleteAddressError ? (
-                            <p className="mt-2 text-sm text-red-600">{deleteAddressError}</p>
+                            <p className="mt-3 text-sm text-red-600">{deleteAddressError}</p>
                           ) : null}
                         </div>
                       ) : null}
                     </>
                   ) : (
-                    <div className="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+                    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
                       {t("marketplaceBuyer.checkout.noSavedAddress")}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="space-y-5 rounded-lg border border-gray-200 bg-gray-50 p-5">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Họ tên</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Họ tên</label>
                       <Input
                         value={addressForm.fullName}
                         onChange={(event) =>
@@ -386,7 +401,7 @@ export function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Số điện thoại</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Số điện thoại</label>
                       <Input
                         value={addressForm.phone}
                         onChange={(event) =>
@@ -395,7 +410,7 @@ export function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Tỉnh / Thành</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Tỉnh / Thành</label>
                       <Input
                         value={addressForm.province}
                         onChange={(event) =>
@@ -404,7 +419,7 @@ export function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Quận / Huyện</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Quận / Huyện</label>
                       <Input
                         value={addressForm.district}
                         onChange={(event) =>
@@ -413,7 +428,7 @@ export function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Phường / Xã</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Phường / Xã</label>
                       <Input
                         value={addressForm.ward}
                         onChange={(event) =>
@@ -422,7 +437,7 @@ export function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Đường</label>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Đường</label>
                       <Input
                         value={addressForm.street}
                         onChange={(event) =>
@@ -433,8 +448,9 @@ export function CheckoutPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Chi tiết thêm</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Chi tiết thêm</label>
                     <Input
+                      placeholder="Số nhà, tên tòa nhà, v.v."
                       value={addressForm.detail ?? ""}
                       onChange={(event) =>
                         setAddressForm((current) => ({ ...current, detail: event.target.value }))
@@ -442,22 +458,25 @@ export function CheckoutPage() {
                     />
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-[160px_1fr] sm:items-center">
-                    <select
-                      value={addressForm.label ?? "home"}
-                      onChange={(event) =>
-                        setAddressForm((current) => ({
-                          ...current,
-                          label: event.target.value as MarketplaceAddress["label"],
-                        }))
-                      }
-                      className="h-10 rounded-md border border-gray-200 bg-white px-3 text-sm"
-                    >
-                      <option value="home">Nhà riêng</option>
-                      <option value="office">Văn phòng</option>
-                      <option value="other">Khác</option>
-                    </select>
-                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Loại địa chỉ</label>
+                      <select
+                        value={addressForm.label ?? "home"}
+                        onChange={(event) =>
+                          setAddressForm((current) => ({
+                            ...current,
+                            label: event.target.value as MarketplaceAddress["label"],
+                          }))
+                        }
+                        className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm shadow-sm transition-colors hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      >
+                        <option value="home">Nhà riêng</option>
+                        <option value="office">Văn phòng</option>
+                        <option value="other">Khác</option>
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2.5 text-sm text-gray-700">
                       <input
                         type="checkbox"
                         checked={addressForm.isDefault ?? false}
@@ -467,6 +486,7 @@ export function CheckoutPage() {
                             isDefault: event.target.checked,
                           }))
                         }
+                        className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
                       />
                       Đặt làm địa chỉ mặc định
                     </label>
@@ -475,7 +495,7 @@ export function CheckoutPage() {
                   {addressFormMessage ? <p className="text-sm text-red-600">{addressFormMessage}</p> : null}
                   {addressMutationError ? <p className="text-sm text-red-600">{addressMutationError}</p> : null}
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3 pt-2">
                     <Button disabled={currentAddressMutation.isPending} onClick={saveAddress}>
                       {currentAddressMutation.isPending
                         ? t("marketplaceBuyer.checkout.addressForm.saving")
@@ -498,22 +518,24 @@ export function CheckoutPage() {
                 </div>
               )}
 
-              <div className="rounded-lg border border-dashed border-gray-200 p-4">
+              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 p-5">
                 <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">{t("marketplaceBuyer.checkout.overrideSection")}</p>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <Input
                     placeholder={t("marketplaceBuyer.checkout.recipientOverride")}
                     value={recipientName}
                     onChange={(event) => setRecipientName(event.target.value)}
+                    className="bg-white"
                   />
                   <Input
                     placeholder={t("marketplaceBuyer.checkout.phoneOverride")}
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
+                    className="bg-white"
                   />
                 </div>
                 <Input
-                  className="mt-3"
+                  className="mt-3 bg-white"
                   placeholder={t("marketplaceBuyer.checkout.addressOverride")}
                   value={addressLine}
                   onChange={(event) => setAddressLine(event.target.value)}
@@ -521,7 +543,7 @@ export function CheckoutPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Ghi chú</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Ghi chú</label>
                 <Input
                   placeholder={t("marketplaceBuyer.checkout.orderNote")}
                   value={note}
@@ -532,54 +554,58 @@ export function CheckoutPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Phương thức thanh toán</CardTitle>
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="text-lg font-semibold text-gray-900">Phương thức thanh toán</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <label
                 className={cn(
-                  "flex cursor-pointer items-center rounded-lg border p-4 transition-colors",
+                  "flex cursor-pointer items-start gap-4 rounded-lg border-2 p-5 transition-all duration-200",
                   paymentMethod === "COD"
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:bg-gray-50",
+                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50",
                 )}
               >
                 <input
                   type="radio"
                   name="marketplace-payment"
-                  className="text-emerald-600 focus:ring-emerald-500"
+                  className="mt-1 h-4 w-4 shrink-0 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
                   checked={paymentMethod === "COD"}
                   onChange={() => setPaymentMethod("COD")}
                 />
-                <div className="ml-3 flex items-start gap-3">
-                  <Banknote size={18} className="mt-0.5 shrink-0 text-gray-500" />
-                  <div>
-                    <span className="block text-sm font-medium text-gray-900">{t("marketplaceBuyer.checkout.codLabel")}</span>
-                    <span className="block text-sm text-gray-500">{t("marketplaceBuyer.checkout.codDesc")}</span>
+                <div className="flex flex-1 items-start gap-3">
+                  <div className="rounded-lg bg-emerald-100 p-2.5">
+                    <Banknote size={20} className="text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-base font-semibold text-gray-900">{t("marketplaceBuyer.checkout.codLabel")}</span>
+                    <span className="mt-1 block text-sm text-gray-600">{t("marketplaceBuyer.checkout.codDesc")}</span>
                   </div>
                 </div>
               </label>
 
               <label
                 className={cn(
-                  "flex cursor-pointer items-center rounded-lg border p-4 transition-colors",
+                  "flex cursor-pointer items-start gap-4 rounded-lg border-2 p-5 transition-all duration-200",
                   paymentMethod === "BANK_TRANSFER"
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-gray-200 hover:bg-gray-50",
+                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50",
                 )}
               >
                 <input
                   type="radio"
                   name="marketplace-payment"
-                  className="text-emerald-600 focus:ring-emerald-500"
+                  className="mt-1 h-4 w-4 shrink-0 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
                   checked={paymentMethod === "BANK_TRANSFER"}
                   onChange={() => setPaymentMethod("BANK_TRANSFER")}
                 />
-                <div className="ml-3 flex items-start gap-3">
-                  <Building2 size={18} className="mt-0.5 shrink-0 text-gray-500" />
-                  <div>
-                    <span className="block text-sm font-medium text-gray-900">{t("marketplaceBuyer.checkout.bankTransferLabel")}</span>
-                    <span className="block text-sm text-gray-500">{t("marketplaceBuyer.checkout.bankTransferDesc")}</span>
+                <div className="flex flex-1 items-start gap-3">
+                  <div className="rounded-lg bg-blue-100 p-2.5">
+                    <Building2 size={20} className="text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-base font-semibold text-gray-900">{t("marketplaceBuyer.checkout.bankTransferLabel")}</span>
+                    <span className="mt-1 block text-sm text-gray-600">{t("marketplaceBuyer.checkout.bankTransferDesc")}</span>
                   </div>
                 </div>
               </label>
@@ -588,49 +614,56 @@ export function CheckoutPage() {
         </div>
 
         <div className="w-full shrink-0 lg:w-96">
-          <Card className="sticky top-24">
-            <CardHeader>
-              <CardTitle>Đơn hàng của bạn</CardTitle>
+          <Card className="sticky top-24 border-2 border-gray-200 shadow-lg">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="text-lg font-semibold text-gray-900">Đơn hàng của bạn</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-6 space-y-4">
                 {cart.items.map((item) => (
-                  <div key={item.productId} className="flex justify-between text-sm">
-                    <div className="flex-1 pr-4">
-                      <span className="font-medium text-gray-900">{item.name}</span>
-                      <span className="ml-2 text-gray-500">x{item.quantity}</span>
+                  <div key={item.productId} className="flex items-start justify-between gap-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <span className="block font-medium text-gray-900 line-clamp-2">{item.name}</span>
+                      <span className="mt-1 text-gray-500">
+                        {item.quantity} x {formatVnd(item.unitPrice)}
+                      </span>
                     </div>
-                    <span className="font-medium">{formatVnd(item.unitPrice * item.quantity)}</span>
+                    <span className="font-semibold text-gray-900 shrink-0">{formatVnd(item.unitPrice * item.quantity)}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="mb-6 space-y-3 border-t border-gray-200 pt-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">{t("marketplaceBuyer.checkout.subtotal")}</span>
-                  <span className="font-medium">{formatVnd(cart.subtotal)}</span>
+              <div className="mb-6 space-y-3 border-t border-gray-200 pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t("marketplaceBuyer.checkout.subtotal")}</span>
+                  <span className="font-medium text-gray-900">{formatVnd(cart.subtotal)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">{t("marketplaceBuyer.checkout.shipping")}</span>
-                  <span className="font-medium">{formatVnd(shippingFee)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t("marketplaceBuyer.checkout.shipping")}</span>
+                  <span className="font-medium text-gray-900">{formatVnd(shippingFee)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
-                  <span className="font-bold text-gray-900">{t("marketplaceBuyer.checkout.total")}</span>
-                  <span className="text-xl font-bold text-emerald-600">{formatVnd(total)}</span>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  <span className="text-base font-bold text-gray-900">{t("marketplaceBuyer.checkout.total")}</span>
+                  <span className="text-2xl font-bold text-emerald-600">{formatVnd(total)}</span>
                 </div>
               </div>
 
               {effectiveRecipientName && effectivePhone && effectiveShippingAddressLine ? (
-                <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-                  <p className="font-medium text-gray-900">{t("marketplaceBuyer.checkout.deliverTo")}</p>
-                  <p>{effectiveRecipientName}</p>
-                  <p>{effectivePhone}</p>
-                  <p>{effectiveShippingAddressLine}</p>
+                <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <MapPin size={16} className="text-emerald-600" />
+                    <p className="text-sm font-semibold text-gray-900">{t("marketplaceBuyer.checkout.deliverTo")}</p>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-700">
+                    <p className="font-medium">{effectiveRecipientName}</p>
+                    <p>{effectivePhone}</p>
+                    <p className="text-gray-600">{effectiveShippingAddressLine}</p>
+                  </div>
                 </div>
               ) : null}
 
               {submitErrorMessage ? (
-                <p className="mb-3 text-sm text-red-600">{submitErrorMessage}</p>
+                <p className="mb-4 text-sm text-red-600">{submitErrorMessage}</p>
               ) : null}
 
               <Button
