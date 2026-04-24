@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui";
-import { useMarketplaceCart, useMarketplaceCartMergeBridge } from "../hooks";
+import { useMarketplaceCartCount, useMarketplaceCartMergeBridge } from "../hooks";
 import "./MarketplacePublicLayout.css";
 
 function resolvePortalRoute(role: string | undefined): string {
@@ -285,8 +285,7 @@ export function MarketplacePublicLayout() {
   const showPortalAction = isAuthenticated && user?.role !== "buyer";
 
   useMarketplaceCartMergeBridge();
-  const serverCartQuery = useMarketplaceCart({ enabled: isAuthenticated });
-  const serverCartCount = serverCartQuery.data?.itemCount ?? 0;
+  const cartCount = useMarketplaceCartCount();
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -318,11 +317,11 @@ export function MarketplacePublicLayout() {
               className="relative rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-emerald-600"
             >
               <ShoppingCart size={24} />
-              {serverCartCount > 0 ? (
+              {cartCount > 0 && (
                 <span className="absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
-                  {serverCartCount}
+                  {cartCount}
                 </span>
-              ) : null}
+              )}
             </Link>
 
             <div className="marketplace-header__desktop-actions">
@@ -420,7 +419,7 @@ export function MarketplacePublicLayout() {
           isAuthenticated={isAuthenticated}
           userName={user?.name}
           userRole={user?.role}
-          cartCount={serverCartCount}
+          cartCount={cartCount}
           onLogout={() => {
             void logout();
           }}
