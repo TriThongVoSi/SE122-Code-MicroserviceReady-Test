@@ -83,21 +83,21 @@ DROP TABLE IF EXISTS provinces;
 -- =========================================================
 
 CREATE TABLE provinces (
-    Id INT NOT NULL PRIMARY KEY,
-    Name VARCHAR(128) NOT NULL,
-    Slug VARCHAR(128) NOT NULL,
-    Type VARCHAR(32) NOT NULL,
-    NameWithType VARCHAR(256) NOT NULL
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    slug VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    name_with_type VARCHAR(256) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE wards (
-    Id INT NOT NULL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Slug VARCHAR(255) NOT NULL,
-    Type VARCHAR(64) NOT NULL,
-    NameWithType VARCHAR(512) NOT NULL,
-    ProvinceId INT NOT NULL,
-    CONSTRAINT fk_wards_province FOREIGN KEY (ProvinceId) REFERENCES provinces(Id)
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    type VARCHAR(64) NOT NULL,
+    name_with_type VARCHAR(512) NOT NULL,
+    province_id INT NOT NULL,
+    CONSTRAINT fk_wards_province FOREIGN KEY (province_id) REFERENCES provinces(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE roles (
@@ -121,8 +121,8 @@ CREATE TABLE users (
     joined_date DATETIME NULL,
     CONSTRAINT uk_users_username UNIQUE (user_name),
     CONSTRAINT uk_users_email UNIQUE (email),
-    CONSTRAINT fk_users_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
-    CONSTRAINT fk_users_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+    CONSTRAINT fk_users_province FOREIGN KEY (province_id) REFERENCES provinces(id),
+    CONSTRAINT fk_users_ward FOREIGN KEY (ward_id) REFERENCES wards(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE user_roles (
@@ -156,8 +156,8 @@ CREATE TABLE farms (
     area DECIMAL(19,2) NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_farms_user FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT fk_farms_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
-    CONSTRAINT fk_farms_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+    CONSTRAINT fk_farms_province FOREIGN KEY (province_id) REFERENCES provinces(id),
+    CONSTRAINT fk_farms_ward FOREIGN KEY (ward_id) REFERENCES wards(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE plots (
@@ -282,8 +282,8 @@ CREATE TABLE warehouses (
     province_id INT NULL,
     ward_id INT NULL,
     CONSTRAINT fk_warehouses_farm FOREIGN KEY (farm_id) REFERENCES farms(farm_id),
-    CONSTRAINT fk_warehouses_province FOREIGN KEY (province_id) REFERENCES provinces(Id),
-    CONSTRAINT fk_warehouses_ward FOREIGN KEY (ward_id) REFERENCES wards(Id)
+    CONSTRAINT fk_warehouses_province FOREIGN KEY (province_id) REFERENCES provinces(id),
+    CONSTRAINT fk_warehouses_ward FOREIGN KEY (ward_id) REFERENCES wards(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE stock_locations (
@@ -468,10 +468,14 @@ CREATE TABLE nutrient_input_events (
     applied_date DATE NULL,
     measured BOOLEAN NOT NULL DEFAULT TRUE,
     data_source VARCHAR(120) NULL,
+    source_type VARCHAR(40) NULL,
+    source_document VARCHAR(255) NULL,
     note TEXT NULL,
+    created_by_user_id BIGINT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_nutrient_input_event_season FOREIGN KEY (season_id) REFERENCES seasons(season_id),
-    CONSTRAINT fk_nutrient_input_event_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id)
+    CONSTRAINT fk_nutrient_input_event_plot FOREIGN KEY (plot_id) REFERENCES plots(plot_id),
+    CONSTRAINT fk_nutrient_input_event_user FOREIGN KEY (created_by_user_id) REFERENCES users(user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE irrigation_water_analyses (
@@ -632,6 +636,7 @@ CREATE TABLE password_reset_tokens (
 
 CREATE TABLE marketplace_products (
     id BIGINT NOT NULL PRIMARY KEY,
+    version BIGINT NOT NULL DEFAULT 0,
     slug VARCHAR(191) NOT NULL,
     name VARCHAR(255) NOT NULL,
     category VARCHAR(120) NULL,
@@ -776,7 +781,7 @@ CREATE TABLE marketplace_product_reviews (
     CONSTRAINT fk_marketplace_reviews_buyer_user FOREIGN KEY (buyer_user_id) REFERENCES users(user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_wards_province ON wards(ProvinceId);
+CREATE INDEX idx_wards_province ON wards(province_id);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_province ON users(province_id);
 CREATE INDEX idx_farms_user ON farms(user_id);
@@ -824,11 +829,11 @@ CREATE INDEX idx_marketplace_reviews_order ON marketplace_product_reviews(order_
 -- =========================================================
 -- 0.1 LOCATIONS, ROLES, USERS
 -- =========================================================
-INSERT INTO provinces (Id, Name, Slug, Type, NameWithType) VALUES
+INSERT INTO provinces (id, name, slug, type, name_with_type) VALUES
     (24, 'Đồng Tháp', 'dong-thap', 'tinh', 'Tỉnh Đồng Tháp'),
     (30, 'Lâm Đồng', 'lam-dong', 'tinh', 'Tỉnh Lâm Đồng');
 
-INSERT INTO wards (Id, Name, Slug, Type, NameWithType, ProvinceId) VALUES
+INSERT INTO wards (id, name, slug, type, name_with_type, province_id) VALUES
     (25112, 'Mỹ An', 'my-an', 'phuong', 'Phường Mỹ An', 24),
     (30001, 'Xuân Trường', 'xuan-truong', 'xa', 'Xã Xuân Trường', 30);
 
@@ -1544,25 +1549,25 @@ INSERT INTO user_preferences (id, user_id, currency_code, weight_unit, locale, c
 -- 33. MARKETPLACE DEMO DATA
 -- =========================================================
 INSERT INTO marketplace_products
-    (id, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
+    (id, version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
      farmer_user_id, farm_id, season_id, lot_id, traceable, status, published_at, created_at, updated_at)
 VALUES
-    (1, 'dau-nanh-ags398-thu-nghiem', 'Đậu nành AGS398 thử nghiệm', 'SOYBEAN', 'Listing bản nháp cho luồng farmer', 'Sản phẩm đang ở trạng thái nháp để demo quy trình tạo listing của nông hộ.', 155000.00, 'kg', 180.000,
+    (1, 0, 'dau-nanh-ags398-thu-nghiem', 'Đậu nành AGS398 thử nghiệm', 'SOYBEAN', 'Listing bản nháp cho luồng farmer', 'Sản phẩm đang ở trạng thái nháp để demo quy trình tạo listing của nông hộ.', 155000.00, 'kg', 180.000,
      'https://images.example.com/marketplace/soybean-draft-cover.jpg', '["https://images.example.com/marketplace/soybean-draft-cover.jpg","https://images.example.com/marketplace/soybean-draft-detail.jpg"]',
      2, 1, 3, 1, TRUE, 'DRAFT', NULL, '2026-04-01 08:00:00', '2026-04-01 08:00:00'),
-    (2, 'gao-om5451-chon-loc', 'Gạo OM5451 chọn lọc', 'RICE', 'Gạo lúa nước truy xuất đầy đủ từ kho thành phẩm.', 'Sản phẩm demo chính cho catalog buyer, farm detail và traceability.', 125000.00, 'kg', 600.000,
+    (2, 0, 'gao-om5451-chon-loc', 'Gạo OM5451 chọn lọc', 'RICE', 'Gạo lúa nước truy xuất đầy đủ từ kho thành phẩm.', 'Sản phẩm demo chính cho catalog buyer, farm detail và traceability.', 125000.00, 'kg', 600.000,
      'https://images.example.com/marketplace/rice-om5451-cover.jpg', '["https://images.example.com/marketplace/rice-om5451-cover.jpg","https://images.example.com/marketplace/rice-om5451-pack.jpg"]',
      2, 1, 4, 2, TRUE, 'PUBLISHED', '2026-04-02 08:00:00', '2026-04-02 08:00:00', '2026-04-20 08:00:00'),
-    (3, 'lac-tuoi-an-phat', 'Lạc tươi An Phát', 'PEANUT', 'Listing đang chờ duyệt từ nông trại An Phát.', 'Dùng để demo dashboard farmer với trạng thái pending review.', 92000.00, 'kg', 120.000,
+    (3, 0, 'lac-tuoi-an-phat', 'Lạc tươi An Phát', 'PEANUT', 'Listing đang chờ duyệt từ nông trại An Phát.', 'Dùng để demo dashboard farmer với trạng thái pending review.', 92000.00, 'kg', 120.000,
      'https://images.example.com/marketplace/peanut-cover.jpg', '["https://images.example.com/marketplace/peanut-cover.jpg"]',
      2, 2, 5, 3, TRUE, 'PENDING_REVIEW', NULL, '2026-04-03 08:00:00', '2026-04-03 08:00:00'),
-    (4, 'dau-den-cao-cap-tet-2026', 'Đậu đen cao cấp Tết 2026', 'BLACK_BEAN', 'Listing đã ẩn sau chiến dịch Tết.', 'Dùng để demo trạng thái hidden trong dashboard admin/farmer.', 98000.00, 'kg', 1500.000,
+    (4, 0, 'dau-den-cao-cap-tet-2026', 'Đậu đen cao cấp Tết 2026', 'BLACK_BEAN', 'Listing đã ẩn sau chiến dịch Tết.', 'Dùng để demo trạng thái hidden trong dashboard admin/farmer.', 98000.00, 'kg', 1500.000,
      'https://images.example.com/marketplace/blackbean-cover.jpg', '["https://images.example.com/marketplace/blackbean-cover.jpg"]',
      2, 2, 10, 4, TRUE, 'HIDDEN', '2026-03-01 08:00:00', '2026-03-01 08:00:00', '2026-04-05 08:00:00'),
-    (5, 'dau-nanh-ags398-say-kho-2026', 'Đậu nành AGS398 sấy khô 2026', 'SOYBEAN', 'Lô mới cho mùa vụ hiện tại, phù hợp đơn bán lẻ.', 'Sản phẩm published dùng cho demo order completed, review và pending bank transfer.', 145000.00, 'kg', 260.000,
+    (5, 0, 'dau-nanh-ags398-say-kho-2026', 'Đậu nành AGS398 sấy khô 2026', 'SOYBEAN', 'Lô mới cho mùa vụ hiện tại, phù hợp đơn bán lẻ.', 'Sản phẩm published dùng cho demo order completed, review và pending bank transfer.', 145000.00, 'kg', 260.000,
      'https://images.example.com/marketplace/soybean-2026-cover.jpg', '["https://images.example.com/marketplace/soybean-2026-cover.jpg","https://images.example.com/marketplace/soybean-2026-detail.jpg"]',
      2, 1, 11, 5, TRUE, 'PUBLISHED', '2026-04-10 08:00:00', '2026-04-10 08:00:00', '2026-04-21 08:00:00'),
-    (6, 'ngo-ngot-cao-nguyen-xanh', 'Ngô ngọt Cao Nguyên Xanh', 'CORN', 'Sản phẩm published của seller thứ hai để demo split order.', 'Listing published của farmer2 với traceability đầy đủ và khu vực khác để demo lọc theo vùng.', 170000.00, 'kg', 820.000,
+    (6, 0, 'ngo-ngot-cao-nguyen-xanh', 'Ngô ngọt Cao Nguyên Xanh', 'CORN', 'Sản phẩm published của seller thứ hai để demo split order.', 'Listing published của farmer2 với traceability đầy đủ và khu vực khác để demo lọc theo vùng.', 170000.00, 'kg', 820.000,
      'https://images.example.com/marketplace/corn-highland-cover.jpg', '["https://images.example.com/marketplace/corn-highland-cover.jpg","https://images.example.com/marketplace/corn-highland-detail.jpg"]',
      @farmer2_user_id, 4, 14, 6, TRUE, 'PUBLISHED', '2026-04-12 08:00:00', '2026-04-12 08:00:00', '2026-04-22 08:00:00');
 

@@ -2,7 +2,7 @@ package org.example.QuanLyMuaVu.module.marketplace.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -138,7 +138,7 @@ public class MarketplaceService {
     AuditLogService auditLogService;
     NotificationService notificationService;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceProductSummaryResponse> listProducts(
             String category,
             String q,
@@ -170,7 +170,7 @@ public class MarketplaceService {
         return PageResponse.of(productPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceProductDetailResponse getProductBySlug(String slug) {
         MarketplaceProduct product = marketplaceProductRepository
                 .findSellableBySlugAndStatus(slug, MarketplaceProductStatus.PUBLISHED)
@@ -184,7 +184,7 @@ public class MarketplaceService {
         return toProductDetail(product, rating);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceReviewResponse> listProductReviews(Long productId, int page, int size) {
         marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
@@ -198,7 +198,7 @@ public class MarketplaceService {
         return PageResponse.of(reviewPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceFarmSummaryResponse> listFarms(String q, String region, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.ASC, "name"));
         Page<Farm> farmPage = marketplaceProductRepository.searchDistinctFarmsWithPublishedProducts(
@@ -217,7 +217,7 @@ public class MarketplaceService {
         return PageResponse.of(farmPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceFarmDetailResponse getFarmDetail(Integer farmId) {
         Farm farm = farmRepository.findById(farmId).orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
         long productCount = marketplaceProductRepository.countSellableByFarmIdAndStatus(farmId, MarketplaceProductStatus.PUBLISHED);
@@ -240,7 +240,7 @@ public class MarketplaceService {
                 ownerPhone);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceTraceabilityResponse getTraceability(Long productId) {
         MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
@@ -273,7 +273,7 @@ public class MarketplaceService {
                 LocalDateTime.now());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceCartResponse getCart() {
         Long userId = currentUserService.getCurrentUserId();
         Optional<MarketplaceCart> cartOpt = marketplaceCartRepository.findByUser_Id(userId);
@@ -580,7 +580,7 @@ public class MarketplaceService {
                 orderResponses);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceOrderResponse> listOrders(MarketplaceOrderStatus status, int page, int size) {
         Long userId = currentUserService.getCurrentUserId();
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -594,7 +594,7 @@ public class MarketplaceService {
         return PageResponse.of(orderPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceOrderResponse getOrderDetail(Long orderId) {
         Long userId = currentUserService.getCurrentUserId();
         MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, userId)
@@ -667,7 +667,7 @@ public class MarketplaceService {
         return toOrderResponse(savedOrder);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<MarketplaceAddressResponse> listAddresses() {
         Long userId = currentUserService.getCurrentUserId();
         return marketplaceAddressRepository.findAllByUser_IdOrderByIsDefaultDescIdDesc(userId).stream()
@@ -782,7 +782,7 @@ public class MarketplaceService {
         return toReviewResponse(marketplaceProductReviewRepository.save(review));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceFarmerDashboardResponse getFarmerDashboard() {
         Long farmerUserId = currentUserService.getCurrentUserId();
 
@@ -823,7 +823,7 @@ public class MarketplaceService {
                 recentOrders);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceProductSummaryResponse> listFarmerProducts(
             String q,
             MarketplaceProductStatus status,
@@ -851,7 +851,7 @@ public class MarketplaceService {
         return PageResponse.of(productPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceFarmerProductFormOptionsResponse getFarmerProductFormOptions() {
         Long farmerUserId = currentUserService.getCurrentUserId();
 
@@ -885,7 +885,7 @@ public class MarketplaceService {
                         .toList());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceProductDetailResponse getFarmerProductDetail(Long productId) {
         Long farmerUserId = currentUserService.getCurrentUserId();
         MarketplaceProduct product = getOwnedProductForFarmer(productId, farmerUserId);
@@ -977,7 +977,7 @@ public class MarketplaceService {
         return toProductDetail(saved, rating);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceOrderResponse> listFarmerOrders(
             MarketplaceOrderStatus status,
             int page,
@@ -994,7 +994,7 @@ public class MarketplaceService {
         return PageResponse.of(orderPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceOrderResponse getFarmerOrderDetail(Long orderId) {
         Long farmerUserId = currentUserService.getCurrentUserId();
         MarketplaceOrder order = marketplaceOrderRepository.findByIdAndFarmerUserIdWithItems(orderId, farmerUserId)
@@ -1029,7 +1029,7 @@ public class MarketplaceService {
         return toOrderResponse(saved);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceProductSummaryResponse> listAdminProducts(
             String q,
             MarketplaceProductStatus status,
@@ -1093,7 +1093,7 @@ public class MarketplaceService {
         return toProductDetail(saved, rating);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PageResponse<MarketplaceOrderResponse> listAdminOrders(
             MarketplaceOrderStatus status,
             int page,
@@ -1108,7 +1108,7 @@ public class MarketplaceService {
         return PageResponse.of(orderPage, items);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceOrderResponse getAdminOrderDetail(Long orderId) {
         MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
@@ -1192,7 +1192,7 @@ public class MarketplaceService {
         return toOrderResponse(saved);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<MarketplaceOrderAuditLogResponse> listOrderAuditLogs(Long orderId) {
         marketplaceOrderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
@@ -1201,7 +1201,7 @@ public class MarketplaceService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public MarketplaceAdminStatsResponse getAdminStats() {
         long totalProducts = marketplaceProductRepository.count();
         long pendingReviewProducts = marketplaceProductRepository.countByStatus(MarketplaceProductStatus.PENDING_REVIEW);
@@ -1614,9 +1614,10 @@ public class MarketplaceService {
             if (productId != null) {
                 MarketplaceProduct product = productById.get(productId);
                 if (product == null) {
-                    throw new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND);
+                    log.warn("restoreOrderStock: product id={} no longer exists in DB, skipping stock restore for this product", productId);
+                } else {
+                    product.setStockQuantity(currentListingQuantity(product).add(orderItem.getQuantity()));
                 }
-                product.setStockQuantity(currentListingQuantity(product).add(orderItem.getQuantity()));
             }
 
             ProductWarehouseLot orderLot = orderItem.getLot();

@@ -44,6 +44,13 @@ public class ApplicationInitConfig {
     static final String EMPLOYEE_FULL_NAME = "Nguyen Van Employee";
     static final String EMPLOYEE_PHONE = "0902234567";
 
+    // Buyer account constants
+    static final String BUYER_USER_NAME = "buyer";
+    static final String BUYER_EMAIL = "buyer@acm.local";
+    static final String BUYER_PASSWORD = "12345678";
+    static final String BUYER_FULL_NAME = "Tran Thi Buyer";
+    static final String BUYER_PHONE = "0903234000";
+
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository) {
         log.info("Dang khoi tao du lieu mac dinh (vai tro va nguoi dung)...");
@@ -64,6 +71,11 @@ public class ApplicationInitConfig {
                     "Employee",
                     "Employee user",
                     roleRepository);
+            org.example.QuanLyMuaVu.module.identity.entity.Role buyerRole = ensureRoleExists(
+                    PredefinedRole.BUYER_ROLE,
+                    "Buyer",
+                    "Buyer user",
+                    roleRepository);
 
             // 2. Ensure default admin user exists with role
             ensureUserExistsWithRole(ADMIN_USER_NAME, ADMIN_EMAIL, ADMIN_PASSWORD,
@@ -76,6 +88,10 @@ public class ApplicationInitConfig {
             // 4. Ensure default employee user exists with role
             ensureUserExistsWithRole(EMPLOYEE_USER_NAME, EMPLOYEE_EMAIL, EMPLOYEE_PASSWORD,
                     EMPLOYEE_FULL_NAME, EMPLOYEE_PHONE, employeeRole, userRepository);
+
+            // 5. Ensure default buyer user exists with role
+            ensureUserExistsWithRole(BUYER_USER_NAME, BUYER_EMAIL, BUYER_PASSWORD,
+                    BUYER_FULL_NAME, BUYER_PHONE, buyerRole, userRepository);
 
             log.info("Khoi tao du lieu mac dinh hoan tat.");
         };
