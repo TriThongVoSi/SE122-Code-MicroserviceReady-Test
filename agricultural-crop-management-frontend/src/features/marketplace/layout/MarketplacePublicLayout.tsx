@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
+  ChevronDown,
   Facebook,
   Instagram,
   LogOut,
@@ -15,6 +16,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui";
 import { useMarketplaceCart, useMarketplaceCartMergeBridge } from "../hooks";
 import "./MarketplacePublicLayout.css";
 
@@ -227,6 +235,12 @@ function MobileMenu({
                 <ShoppingCart size={16} /> Giỏ hàng ({cartCount})
               </Link>
 
+              {!showPortalLink ? (
+                <Link to="/marketplace/profile" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
+                  <User size={16} /> Hồ sơ của tôi
+                </Link>
+              ) : null}
+
               <Link to="/marketplace/orders" onClick={onClose} className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-600">
                 <Package size={16} /> Đơn hàng của tôi
               </Link>
@@ -314,26 +328,64 @@ export function MarketplacePublicLayout() {
             <div className="marketplace-header__desktop-actions">
               {isAuthenticated ? (
                 <>
-                  <div className="marketplace-header__user">
-                    <span className="text-sm font-medium text-gray-900">{user?.name ?? "Người dùng"}</span>
-                    <span className="text-xs text-gray-500">{formatRoleLabel(user?.role)}</span>
-                  </div>
-
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/marketplace/orders">Đơn hàng</Link>
-                  </Button>
-
                   {showPortalAction ? (
-                    <Button asChild variant="outline" size="sm">
-                      <Link to={resolvePortalRoute(user?.role)}>
-                        <Store size={14} /> {resolvePortalButtonLabel(user?.role)}
-                      </Link>
-                    </Button>
-                  ) : null}
+                    <>
+                      <div className="marketplace-header__user">
+                        <span className="text-sm font-medium text-gray-900">{user?.name ?? "Người dùng"}</span>
+                        <span className="text-xs text-gray-500">{formatRoleLabel(user?.role)}</span>
+                      </div>
 
-                  <Button variant="ghost" size="icon" onClick={logout} title="Đăng xuất">
-                    <LogOut size={18} />
-                  </Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link to="/marketplace/orders">Đơn hàng</Link>
+                      </Button>
+
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={resolvePortalRoute(user?.role)}>
+                          <Store size={14} /> {resolvePortalButtonLabel(user?.role)}
+                        </Link>
+                      </Button>
+
+                      <Button variant="ghost" size="icon" onClick={logout} title="Đăng xuất">
+                        <LogOut size={18} />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="flex items-center gap-2">
+                            <User size={16} />
+                            <span className="text-sm font-medium">{user?.name ?? "Người dùng"}</span>
+                            <ChevronDown size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <div className="px-2 py-1.5">
+                            <p className="text-sm font-medium text-gray-900">{user?.name ?? "Người dùng"}</p>
+                            <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
+                          </div>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link to="/marketplace/profile" className="flex items-center cursor-pointer">
+                              <User size={16} className="mr-2" />
+                              Hồ sơ của tôi
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/marketplace/orders" className="flex items-center cursor-pointer">
+                              <Package size={16} className="mr-2" />
+                              Đơn hàng của tôi
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600">
+                            <LogOut size={16} className="mr-2" />
+                            Đăng xuất
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

@@ -24,6 +24,7 @@ export type UserRole = "admin" | "farmer" | "buyer" | "employee";
 export interface User {
   id?: number;
   username: string;
+  name?: string;
   role: UserRole;
   email?: string;
   profile?: ProfileInfo;
@@ -266,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const refreshedUser: User = {
         id: result.userId,
         username: result.username || "",
+        name: result.profile?.fullName || result.username || "",
         role: primaryRole,
         email: result.email,
         profile: result.profile,
@@ -368,6 +370,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mappedUser: User = {
         id: userId ?? (userIdFromToken ? Number(userIdFromToken) : undefined),
         username,
+        name: profile?.fullName || username,
         role: primaryRole,
         email: identifier.includes("@") ? identifier : undefined,
         profile,
