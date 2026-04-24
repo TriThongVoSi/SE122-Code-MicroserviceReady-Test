@@ -26,6 +26,10 @@ function statusVariant(status: MarketplaceOrderStatus):
   switch (status) {
     case "PENDING":
       return "warning";
+    case "CONFIRMED":
+    case "PREPARING":
+      return "info";
+    case "DELIVERING":
     case "COMPLETED":
       return "success";
     case "CANCELLED":
@@ -117,13 +121,13 @@ export function MyOrdersPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {orders.map((order) => (
-          <Card key={order.id} className="overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-200 bg-gray-50 py-4">
+          <Card key={order.id} className="overflow-hidden shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-200 bg-gray-50 py-3 px-4">
               <div>
-                <CardTitle className="text-sm font-medium text-gray-500">
-                  Mã đơn: <span className="font-bold text-gray-900">#{order.orderCode}</span>
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Mã đơn: <span className="font-semibold text-gray-900">#{order.orderCode}</span>
                 </CardTitle>
                 <div className="mt-1 text-xs text-gray-500">
                   Đặt ngày: {formatDateTime(order.createdAt)}
@@ -136,31 +140,31 @@ export function MyOrdersPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-100">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-4">
+                  <div key={item.id} className="flex items-center gap-3 p-4">
                     <img
                       src={item.imageUrl}
                       alt={item.productName}
-                      className="h-16 w-16 rounded-md bg-gray-100 object-cover"
+                      className="h-14 w-14 rounded-md bg-gray-100 object-cover flex-shrink-0"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                      <div className="mt-1 text-sm text-gray-500">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 truncate">{item.productName}</h4>
+                      <div className="mt-0.5 text-sm text-gray-500">
                         Số lượng: {item.quantity} x {formatVnd(item.unitPriceSnapshot)}
                       </div>
                     </div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-semibold text-gray-900 flex-shrink-0">
                       {formatVnd(item.lineTotal)}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 p-4">
-                <div className="text-sm text-gray-500">
+              <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="text-sm text-gray-600">
                   Tổng tiền ({order.items.length} sản phẩm):
-                  <span className="ml-2 text-lg font-bold text-emerald-600">{formatVnd(order.totalAmount)}</span>
+                  <span className="ml-2 text-base font-bold text-emerald-600">{formatVnd(order.totalAmount)}</span>
                 </div>
                 <Link to={`/marketplace/orders/${order.id}`}>
                   <Button variant="outline" size="sm" className="flex items-center gap-1">
