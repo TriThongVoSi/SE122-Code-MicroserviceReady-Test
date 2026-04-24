@@ -1553,22 +1553,33 @@ INSERT INTO marketplace_products
      farmer_user_id, farm_id, season_id, lot_id, traceable, status, published_at, created_at, updated_at)
 VALUES
     (1, 0, 'dau-nanh-ags398-thu-nghiem', 'Đậu nành AGS398 thử nghiệm', 'SOYBEAN', 'Listing bản nháp cho luồng farmer', 'Sản phẩm đang ở trạng thái nháp để demo quy trình tạo listing của nông hộ.', 155000.00, 'kg', 180.000,
-     'https://images.example.com/marketplace/soybean-draft-cover.jpg', '["https://images.example.com/marketplace/soybean-draft-cover.jpg","https://images.example.com/marketplace/soybean-draft-detail.jpg"]',
+     'https://loremflickr.com/1200/800/soybean,beans?lock=3981',
+     '["https://loremflickr.com/1200/800/soybean,beans?lock=3981","https://loremflickr.com/1200/800/soybean,agriculture?lock=3982"]',
      2, 1, 3, 1, TRUE, 'DRAFT', NULL, '2026-04-01 08:00:00', '2026-04-01 08:00:00'),
+
     (2, 0, 'gao-om5451-chon-loc', 'Gạo OM5451 chọn lọc', 'RICE', 'Gạo lúa nước truy xuất đầy đủ từ kho thành phẩm.', 'Sản phẩm demo chính cho catalog buyer, farm detail và traceability.', 125000.00, 'kg', 600.000,
-     'https://images.example.com/marketplace/rice-om5451-cover.jpg', '["https://images.example.com/marketplace/rice-om5451-cover.jpg","https://images.example.com/marketplace/rice-om5451-pack.jpg"]',
+     'https://loremflickr.com/1200/800/rice,grain?lock=5451',
+     '["https://loremflickr.com/1200/800/rice,grain?lock=5451","https://loremflickr.com/1200/800/rice,field?lock=5452"]',
      2, 1, 4, 2, TRUE, 'PUBLISHED', '2026-04-02 08:00:00', '2026-04-02 08:00:00', '2026-04-20 08:00:00'),
+
     (3, 0, 'lac-tuoi-an-phat', 'Lạc tươi An Phát', 'PEANUT', 'Listing đang chờ duyệt từ nông trại An Phát.', 'Dùng để demo dashboard farmer với trạng thái pending review.', 92000.00, 'kg', 120.000,
-     'https://images.example.com/marketplace/peanut-cover.jpg', '["https://images.example.com/marketplace/peanut-cover.jpg"]',
+     'https://loremflickr.com/1200/800/peanut,nuts?lock=9201',
+     '["https://loremflickr.com/1200/800/peanut,nuts?lock=9201","https://loremflickr.com/1200/800/peanut,agriculture?lock=9202"]',
      2, 2, 5, 3, TRUE, 'PENDING_REVIEW', NULL, '2026-04-03 08:00:00', '2026-04-03 08:00:00'),
+
     (4, 0, 'dau-den-cao-cap-tet-2026', 'Đậu đen cao cấp Tết 2026', 'BLACK_BEAN', 'Listing đã ẩn sau chiến dịch Tết.', 'Dùng để demo trạng thái hidden trong dashboard admin/farmer.', 98000.00, 'kg', 1500.000,
-     'https://images.example.com/marketplace/blackbean-cover.jpg', '["https://images.example.com/marketplace/blackbean-cover.jpg"]',
+     'https://loremflickr.com/1200/800/blackbeans,beans?lock=20261',
+     '["https://loremflickr.com/1200/800/blackbeans,beans?lock=20261","https://loremflickr.com/1200/800/blackbeans,food?lock=20262"]',
      2, 2, 10, 4, TRUE, 'HIDDEN', '2026-03-01 08:00:00', '2026-03-01 08:00:00', '2026-04-05 08:00:00'),
+
     (5, 0, 'dau-nanh-ags398-say-kho-2026', 'Đậu nành AGS398 sấy khô 2026', 'SOYBEAN', 'Lô mới cho mùa vụ hiện tại, phù hợp đơn bán lẻ.', 'Sản phẩm published dùng cho demo order completed, review và pending bank transfer.', 145000.00, 'kg', 260.000,
-     'https://images.example.com/marketplace/soybean-2026-cover.jpg', '["https://images.example.com/marketplace/soybean-2026-cover.jpg","https://images.example.com/marketplace/soybean-2026-detail.jpg"]',
+     'https://loremflickr.com/1200/800/soybeans,drybeans?lock=3985',
+     '["https://loremflickr.com/1200/800/soybeans,drybeans?lock=3985","https://loremflickr.com/1200/800/soybean,harvest?lock=3986"]',
      2, 1, 11, 5, TRUE, 'PUBLISHED', '2026-04-10 08:00:00', '2026-04-10 08:00:00', '2026-04-21 08:00:00'),
+
     (6, 0, 'ngo-ngot-cao-nguyen-xanh', 'Ngô ngọt Cao Nguyên Xanh', 'CORN', 'Sản phẩm published của seller thứ hai để demo split order.', 'Listing published của farmer2 với traceability đầy đủ và khu vực khác để demo lọc theo vùng.', 170000.00, 'kg', 820.000,
-     'https://images.example.com/marketplace/corn-highland-cover.jpg', '["https://images.example.com/marketplace/corn-highland-cover.jpg","https://images.example.com/marketplace/corn-highland-detail.jpg"]',
+     'https://loremflickr.com/1200/800/corn,maize?lock=1701',
+     '["https://loremflickr.com/1200/800/corn,maize?lock=1701","https://loremflickr.com/1200/800/cornfield,agriculture?lock=1702"]',
      @farmer2_user_id, 4, 14, 6, TRUE, 'PUBLISHED', '2026-04-12 08:00:00', '2026-04-12 08:00:00', '2026-04-22 08:00:00');
 
 INSERT INTO marketplace_carts (id, user_id, created_at, updated_at) VALUES
@@ -1612,11 +1623,11 @@ INSERT INTO marketplace_order_items
     (id, order_id, product_id, product_name_snapshot, product_slug_snapshot, image_url_snapshot, unit_price_snapshot,
      quantity, line_total, traceable_snapshot, farm_id, season_id, lot_id)
 VALUES
-    (1, 1, 5, 'Đậu nành AGS398 sấy khô 2026', 'dau-nanh-ags398-say-kho-2026', 'https://images.example.com/marketplace/soybean-2026-cover.jpg',
+    (1, 1, 5, 'Đậu nành AGS398 sấy khô 2026', 'dau-nanh-ags398-say-kho-2026', 'https://loremflickr.com/1200/800/soybeans,drybeans?lock=3985',
      145000.00, 2.000, 290000.00, TRUE, 1, 11, 5),
-    (2, 2, 6, 'Ngô ngọt Cao Nguyên Xanh', 'ngo-ngot-cao-nguyen-xanh', 'https://images.example.com/marketplace/corn-highland-cover.jpg',
+    (2, 2, 6, 'Ngô ngọt Cao Nguyên Xanh', 'ngo-ngot-cao-nguyen-xanh', 'https://loremflickr.com/1200/800/corn,maize?lock=1701',
      170000.00, 1.250, 212500.00, TRUE, 4, 14, 6),
-    (3, 3, 2, 'Gạo OM5451 chọn lọc', 'gao-om5451-chon-loc', 'https://images.example.com/marketplace/rice-om5451-cover.jpg',
+    (3, 3, 2, 'Gạo OM5451 chọn lọc', 'gao-om5451-chon-loc', 'https://loremflickr.com/1200/800/rice,grain?lock=5451',
      125000.00, 3.500, 437500.00, TRUE, 1, 4, 2);
 
 INSERT INTO marketplace_product_reviews
