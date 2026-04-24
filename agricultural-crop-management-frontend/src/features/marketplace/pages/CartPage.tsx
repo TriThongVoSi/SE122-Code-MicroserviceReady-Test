@@ -57,88 +57,90 @@ export function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
+      <h1 className="mb-8 text-3xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
 
       <div className="flex flex-col gap-8 lg:flex-row">
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 space-y-6">
           {cart.items.map((item) => (
-            <Card key={item.productId} className="overflow-hidden">
-              <CardContent className="flex items-center gap-4 p-4">
+            <Card key={item.productId} className="overflow-hidden border-2 border-gray-200 bg-white transition-all hover:border-emerald-300 hover:shadow-md">
+              <CardContent className="flex items-start gap-4 p-6">
                 <img
                   src={item.imageUrl}
                   alt={item.name}
-                  className="h-24 w-24 rounded-md bg-gray-100 object-cover"
+                  className="h-20 w-20 rounded-lg bg-gray-100 object-cover"
                   referrerPolicy="no-referrer"
                 />
-                <div className="flex-1">
+                <div className="flex-1 space-y-1">
                   <Link
                     to={`/marketplace/products/${item.slug}`}
-                    className="line-clamp-1 font-semibold text-gray-900 transition-colors hover:text-emerald-600"
+                    className="line-clamp-2 text-base font-semibold text-gray-900 transition-colors hover:text-emerald-600"
                   >
                     {item.name}
                   </Link>
-                  <div className="mt-1 font-bold text-emerald-600">
+                  <div className="text-sm text-gray-600">
                     {formatVnd(item.unitPrice)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center rounded-md border border-gray-200">
+                <div className="flex flex-col items-end space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center rounded-lg border-2 border-gray-300">
+                      <button
+                        type="button"
+                        className="h-8 w-8 text-gray-600 transition-colors hover:bg-emerald-50 hover:text-emerald-600 active:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isMutating}
+                        onClick={async () => {
+                          const next = Math.max(1, item.quantity - 1);
+                          await updateItemMutation.mutateAsync({
+                            productId: item.productId,
+                            request: { quantity: next },
+                          });
+                        }}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="min-w-12 text-center text-sm font-medium">{item.quantity}</span>
+                      <button
+                        type="button"
+                        className="h-8 w-8 text-gray-600 transition-colors hover:bg-emerald-50 hover:text-emerald-600 active:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isMutating}
+                        onClick={async () => {
+                          const next = Math.min(item.maxQuantity, item.quantity + 1);
+                          await updateItemMutation.mutateAsync({
+                            productId: item.productId,
+                            request: { quantity: next },
+                          });
+                        }}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      className="p-1 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="h-8 w-8 rounded-md text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isMutating}
                       onClick={async () => {
-                        const next = Math.max(1, item.quantity - 1);
-                        await updateItemMutation.mutateAsync({
-                          productId: item.productId,
-                          request: { quantity: next },
-                        });
+                        await removeItemMutation.mutateAsync(item.productId);
                       }}
                     >
-                      <Minus size={16} />
-                    </button>
-                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      type="button"
-                      className="p-1 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isMutating}
-                      onClick={async () => {
-                        const next = Math.min(item.maxQuantity, item.quantity + 1);
-                        await updateItemMutation.mutateAsync({
-                          productId: item.productId,
-                          request: { quantity: next },
-                        });
-                      }}
-                    >
-                      <Plus size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
 
-                  <p className="w-24 text-right text-sm font-semibold text-gray-900">
+                  <p className="text-base font-bold text-emerald-600">
                     {formatVnd(item.unitPrice * item.quantity)}
                   </p>
-
-                  <button
-                    type="button"
-                    className="p-2 text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isMutating}
-                    onClick={async () => {
-                      await removeItemMutation.mutateAsync(item.productId);
-                    }}
-                  >
-                    <Trash2 size={20} />
-                  </button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="w-full shrink-0 lg:w-80">
-          <Card className="sticky top-24">
+        <div className="w-full shrink-0 lg:w-96">
+          <Card className="sticky top-24 border-2 border-gray-200 bg-gray-50 shadow-lg rounded-2xl">
             <CardContent className="p-6">
-              <h3 className="mb-4 text-lg font-bold">Tổng đơn hàng</h3>
+              <h3 className="mb-4 text-xl font-bold">Tổng đơn hàng</h3>
               <div className="mb-6 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Tạm tính:</span>
@@ -148,9 +150,9 @@ export function CartPage() {
                   <span className="text-gray-500">Phí giao hàng:</span>
                   <span className="font-medium">{formatVnd(SHIPPING_FEE)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                <div className="flex items-center justify-between border-t border-gray-300 pt-3">
                   <span className="font-bold text-gray-900">Tổng cộng:</span>
-                  <span className="text-xl font-bold text-emerald-600">{formatVnd(total)}</span>
+                  <span className="text-2xl font-bold text-emerald-600">{formatVnd(total)}</span>
                 </div>
               </div>
               <Button className="w-full" size="lg" onClick={() => navigate("/marketplace/checkout")}>
