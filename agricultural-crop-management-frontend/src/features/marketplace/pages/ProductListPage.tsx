@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { PackageOpen, Search } from "lucide-react";
+import { PackageOpen, Search, SlidersHorizontal } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth";
-import { Badge, Button, Card, CardContent, Input } from "@/shared/ui";
+import { cn } from "@/shared/lib";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import { useMarketplaceAddToCart, useMarketplaceProducts } from "../hooks";
 import { formatVnd } from "../lib/format";
 
@@ -81,72 +82,92 @@ export function ProductListPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col gap-8 md:flex-row">
         <aside className="w-full shrink-0 md:w-64">
-          <div className="sticky top-24 space-y-6">
-            <div>
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">Bộ lọc</h3>
-              <div className="space-y-5">
+          <div className="sticky top-24">
+            <Card>
+              <CardHeader className="border-b border-gray-100 pb-4">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                  <SlidersHorizontal size={16} className="text-emerald-600" />
+                  Bộ lọc
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5 pt-5">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Danh mục</label>
-                  <div className="space-y-2">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        checked={!category}
-                        onChange={() => updateParams({ category: null })}
-                        className="text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span>Tất cả</span>
-                    </label>
+                  <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Danh mục</p>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      className={cn(
+                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                        !category
+                          ? "bg-emerald-50 font-semibold text-emerald-700"
+                          : "text-gray-600 hover:bg-gray-100",
+                      )}
+                      onClick={() => updateParams({ category: null })}
+                    >
+                      Tất cả
+                    </button>
                     {categories.map((cat) => (
-                      <label key={cat} className="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          checked={category === cat}
-                          onChange={() => updateParams({ category: cat })}
-                          className="text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <span>{cat}</span>
-                      </label>
+                      <button
+                        key={cat}
+                        type="button"
+                        className={cn(
+                          "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                          category === cat
+                            ? "bg-emerald-50 font-semibold text-emerald-700"
+                            : "text-gray-600 hover:bg-gray-100",
+                        )}
+                        onClick={() => updateParams({ category: category === cat ? null : cat })}
+                      >
+                        {cat}
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Khu vực</label>
+                <div className="border-t border-gray-100 pt-5">
+                  <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Khu vực</p>
                   <Input
+                    className="border-gray-300"
                     value={region}
                     onChange={(event) => updateParams({ region: event.target.value || null })}
                     placeholder="Ví dụ: Lâm Đồng"
                   />
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Truy xuất nguồn gốc</label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <div className="border-t border-gray-100 pt-5">
+                  <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Truy xuất nguồn gốc</p>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border-2 px-3 py-2.5 text-sm transition-colors",
+                      traceable
+                        ? "border-emerald-500 bg-emerald-50 font-medium text-emerald-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50",
+                    )}
+                  >
                     <input
                       type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
                       checked={traceable}
                       onChange={(event) => updateParams({ traceable: event.target.checked ? "true" : null })}
-                      className="rounded text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span>Chỉ sản phẩm có truy xuất</span>
+                    Chỉ sản phẩm có truy xuất
                   </label>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Sắp xếp</label>
+                <div className="border-t border-gray-100 pt-5">
+                  <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Sắp xếp</p>
                   <select
                     value={sort}
                     onChange={(event) => updateParams({ sort: event.target.value || "newest" })}
-                    className="h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"
+                    className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm shadow-sm transition-colors hover:border-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                   >
                     <option value="newest">Mới nhất</option>
                     <option value="price_asc">Giá thấp đến cao</option>
                     <option value="price_desc">Giá cao đến thấp</option>
                   </select>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </aside>
 

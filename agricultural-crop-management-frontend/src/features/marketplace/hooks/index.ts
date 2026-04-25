@@ -1,4 +1,5 @@
 export { useMarketplaceAddToCart } from "./useMarketplaceAddToCart";
+export { useMarketplaceCartCount } from "./useMarketplaceCartCount";
 export { useMarketplaceCartMergeBridge } from "./useMarketplaceCartMergeBridge";
 export {
   marketplaceQueryKeys,
