@@ -394,6 +394,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Họ tên</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.fullName}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, fullName: event.target.value }))
@@ -403,6 +404,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Số điện thoại</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.phone}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, phone: event.target.value }))
@@ -412,6 +414,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Tỉnh / Thành</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.province}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, province: event.target.value }))
@@ -421,6 +424,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Quận / Huyện</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.district}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, district: event.target.value }))
@@ -430,6 +434,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Phường / Xã</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.ward}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, ward: event.target.value }))
@@ -439,6 +444,7 @@ export function CheckoutPage() {
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Đường</label>
                       <Input
+                        className="border-gray-300"
                         value={addressForm.street}
                         onChange={(event) =>
                           setAddressForm((current) => ({ ...current, street: event.target.value }))
@@ -450,6 +456,7 @@ export function CheckoutPage() {
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">Chi tiết thêm</label>
                     <Input
+                      className="border-gray-300"
                       placeholder="Số nhà, tên tòa nhà, v.v."
                       value={addressForm.detail ?? ""}
                       onChange={(event) =>
@@ -525,17 +532,17 @@ export function CheckoutPage() {
                     placeholder={t("marketplaceBuyer.checkout.recipientOverride")}
                     value={recipientName}
                     onChange={(event) => setRecipientName(event.target.value)}
-                    className="bg-white"
+                    className="border-gray-300 bg-white"
                   />
                   <Input
                     placeholder={t("marketplaceBuyer.checkout.phoneOverride")}
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
-                    className="bg-white"
+                    className="border-gray-300 bg-white"
                   />
                 </div>
                 <Input
-                  className="mt-3 bg-white"
+                  className="mt-3 border-gray-300 bg-white"
                   placeholder={t("marketplaceBuyer.checkout.addressOverride")}
                   value={addressLine}
                   onChange={(event) => setAddressLine(event.target.value)}
@@ -545,6 +552,7 @@ export function CheckoutPage() {
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">Ghi chú</label>
                 <Input
+                  className="border-gray-300"
                   placeholder={t("marketplaceBuyer.checkout.orderNote")}
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
