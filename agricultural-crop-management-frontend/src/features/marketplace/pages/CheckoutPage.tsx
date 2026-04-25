@@ -562,7 +562,7 @@ export function CheckoutPage() {
                 className={cn(
                   "flex cursor-pointer items-start gap-4 rounded-lg border-2 p-5 transition-all duration-200",
                   paymentMethod === "COD"
-                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                    ? "border-emerald-600 bg-emerald-100 shadow-md"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50",
                 )}
               >
@@ -588,7 +588,7 @@ export function CheckoutPage() {
                 className={cn(
                   "flex cursor-pointer items-start gap-4 rounded-lg border-2 p-5 transition-all duration-200",
                   paymentMethod === "BANK_TRANSFER"
-                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                    ? "border-emerald-600 bg-emerald-100 shadow-md"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50",
                 )}
               >
