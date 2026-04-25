@@ -84,8 +84,8 @@ function MarketplaceNavLink({
       onClick={onClick}
       className={({ isActive }) =>
         isActive
-          ? "text-sm font-medium text-emerald-600"
-          : "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-600"
+          ? "rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200"
+          : "rounded-full px-3 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-emerald-600"
       }
     >
       {label}
