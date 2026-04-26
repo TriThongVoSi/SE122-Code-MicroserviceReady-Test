@@ -4,6 +4,7 @@ export { useMarketplaceCartMergeBridge } from "./useMarketplaceCartMergeBridge";
 export {
   marketplaceQueryKeys,
   useMarketplaceAddresses,
+  useMarketplaceCategories,
   useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
   useMarketplaceAdminOrders,

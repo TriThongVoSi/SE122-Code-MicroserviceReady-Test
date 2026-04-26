@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { cn } from "@/shared/lib";
+import { ProductFilterDropdown } from "./ProductFilterDropdown";
 import {
   ChevronDown,
   Facebook,
@@ -64,10 +66,73 @@ function formatRoleLabel(role: string | undefined) {
 }
 
 const NAV_LINKS = [
-  { to: "/marketplace/products", label: "Sản phẩm" },
   { to: "/marketplace/farms", label: "Nông trại" },
   { to: "/marketplace/traceability", label: "Truy xuất" },
 ];
+
+const PRODUCTS_NAV_ACTIVE_STYLE = { color: "#3BA55D", background: "#f0faf4" };
+
+function ProductsNavItem() {
+  const [isOpen, setIsOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const handleEnter = () => {
+    clearTimeout(closeTimerRef.current);
+    setIsOpen(true);
+  };
+
+  const handleLeave = () => {
+    closeTimerRef.current = setTimeout(() => setIsOpen(false), 150);
+  };
+
+  return (
+    <div
+      className="relative"
+      onKeyDown={(e) => { if (e.key === "Escape") setIsOpen(false); }}
+    >
+      <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+        <NavLink
+          to="/marketplace/products"
+          onFocus={handleEnter}
+          onBlur={handleLeave}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition-colors",
+              isActive || isOpen
+                ? "font-semibold ring-1 ring-[#3BA55D]"
+                : "text-gray-600 hover:bg-gray-100 hover:text-emerald-600",
+            )
+          }
+          style={({ isActive }) => (isActive || isOpen ? PRODUCTS_NAV_ACTIVE_STYLE : undefined)}
+        >
+          {({ isActive }) => (
+            <>
+              <span style={isActive || isOpen ? { color: "#3BA55D" } : undefined}>Sản phẩm</span>
+              <ChevronDown
+                className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")}
+                style={isActive || isOpen ? { color: "#3BA55D" } : undefined}
+              />
+            </>
+          )}
+        </NavLink>
+      </div>
+
+      {isOpen && (
+        <div
+          className="absolute left-0 top-[calc(100%+8px)] z-[60]"
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        >
+          <ProductFilterDropdown
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
+            onClose={() => setIsOpen(false)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MarketplaceNavLink({
   to,
@@ -218,6 +283,9 @@ function MobileMenu({
           <Link to="/marketplace" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
             Trang chủ
           </Link>
+          <Link to="/marketplace/products" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
+            Sản phẩm
+          </Link>
           {NAV_LINKS.map((link) => (
             <MarketplaceNavLink key={link.to} to={link.to} label={link.label} onClick={onClose} />
           ))}
@@ -300,6 +368,7 @@ export function MarketplacePublicLayout() {
             </Link>
 
             <nav className="marketplace-header__nav">
+              <ProductsNavItem />
               {NAV_LINKS.map((link) => (
                 <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
               ))}
