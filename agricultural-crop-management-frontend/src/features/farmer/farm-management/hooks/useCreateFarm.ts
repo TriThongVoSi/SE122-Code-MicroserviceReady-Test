@@ -11,8 +11,8 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
         resolver: zodResolver(FarmCreateRequestSchema),
         defaultValues: {
             name: '',
-            provinceId: null,
-            wardId: null,
+            provinceId: undefined,
+            wardId: undefined,
             area: null,
         },
     });
@@ -23,8 +23,8 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
             toast.success('Farm created successfully');
             form.reset({
                 name: '',
-                provinceId: null,
-                wardId: null,
+                provinceId: undefined,
+                wardId: undefined,
                 area: null,
             }, {
                 keepErrors: false,
@@ -68,7 +68,7 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
         },
     });
 
-    const handleSubmit = form.handleSubmit((data) => {
+    const handleSubmit = form.handleSubmit((data: FarmCreateRequest) => {
         console.log('[useCreateFarm] Submitting farm data:', data);
         mutation.mutate(data);
     });

@@ -1,17 +1,16 @@
 package org.example.QuanLyMuaVu.module.inventory.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
-import org.example.QuanLyMuaVu.Enums.StockMovementType;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.farm.port.FarmAccessPort;
+import org.example.QuanLyMuaVu.module.inventory.dto.request.RecordStockMovementRequest;
 import org.example.QuanLyMuaVu.module.inventory.dto.request.StockInRequest;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.StockInResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.StockMovementResponse;
@@ -19,13 +18,11 @@ import org.example.QuanLyMuaVu.module.inventory.dto.response.SupplierResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.SupplyItemResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.SupplyLotResponse;
 import org.example.QuanLyMuaVu.module.inventory.entity.StockLocation;
-import org.example.QuanLyMuaVu.module.inventory.entity.StockMovement;
 import org.example.QuanLyMuaVu.module.inventory.entity.Supplier;
 import org.example.QuanLyMuaVu.module.inventory.entity.SupplyItem;
 import org.example.QuanLyMuaVu.module.inventory.entity.SupplyLot;
 import org.example.QuanLyMuaVu.module.inventory.entity.Warehouse;
 import org.example.QuanLyMuaVu.module.inventory.repository.StockLocationRepository;
-import org.example.QuanLyMuaVu.module.inventory.repository.StockMovementRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.SupplierRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.SupplyItemRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.SupplyLotRepository;
@@ -46,8 +43,8 @@ public class SuppliesService {
     SupplyLotRepository supplyLotRepository;
     WarehouseRepository warehouseRepository;
     StockLocationRepository stockLocationRepository;
-    StockMovementRepository stockMovementRepository;
     FarmAccessPort farmAccessService;
+    InventoryService inventoryService;
 
     // ============================================
     // CATALOG: SUPPLIERS
@@ -140,22 +137,21 @@ public class SuppliesService {
                 .build();
         lot = supplyLotRepository.save(lot);
 
-        // 8. Create StockMovement (type IN, positive quantity)
-        StockMovement movement = StockMovement.builder()
-                .supplyLot(lot)
-                .warehouse(warehouse)
-                .location(location)
-                .movementType(StockMovementType.IN)
-                .quantity(request.getQuantity().abs()) // Always positive for IN
-                .movementDate(LocalDateTime.now())
+        // 8. Record movement through InventoryService to keep movement+balance consistency.
+        RecordStockMovementRequest movementRequest = RecordStockMovementRequest.builder()
+                .supplyLotId(lot.getId())
+                .warehouseId(warehouse.getId())
+                .locationId(location != null ? location.getId() : null)
+                .movementType("IN")
+                .quantity(request.getQuantity().abs())
                 .note(request.getNote() != null ? request.getNote() : "Stock IN via Suppliers & Supplies")
                 .build();
-        movement = stockMovementRepository.save(movement);
+        StockMovementResponse movement = inventoryService.recordMovement(movementRequest);
 
         // 9. Return response
         return StockInResponse.builder()
                 .supplyLot(toSupplyLotResponse(lot))
-                .movement(toStockMovementResponse(movement))
+                .movement(movement)
                 .build();
     }
 
@@ -205,51 +201,4 @@ public class SuppliesService {
                 .build();
     }
 
-    private StockMovementResponse toStockMovementResponse(StockMovement movement) {
-        return StockMovementResponse.builder()
-                .id(movement.getId())
-                .supplyLotId(movement.getSupplyLot() != null ? movement.getSupplyLot().getId() : null)
-                .batchCode(movement.getSupplyLot() != null ? movement.getSupplyLot().getBatchCode() : null)
-                .supplyItemName(movement.getSupplyLot() != null && movement.getSupplyLot().getSupplyItem() != null
-                        ? movement.getSupplyLot().getSupplyItem().getName()
-                        : null)
-                .unit(movement.getSupplyLot() != null && movement.getSupplyLot().getSupplyItem() != null
-                        ? movement.getSupplyLot().getSupplyItem().getUnit()
-                        : null)
-                .warehouseId(movement.getWarehouse() != null ? movement.getWarehouse().getId() : null)
-                .warehouseName(movement.getWarehouse() != null ? movement.getWarehouse().getName() : null)
-                .locationId(movement.getLocation() != null ? movement.getLocation().getId() : null)
-                .locationLabel(movement.getLocation() != null ? buildLocationLabel(movement.getLocation()) : null)
-                .movementType(movement.getMovementType() != null ? movement.getMovementType().name() : null)
-                .quantity(movement.getQuantity())
-                .movementDate(movement.getMovementDate())
-                .seasonId(movement.getSeason() != null ? movement.getSeason().getId() : null)
-                .seasonName(movement.getSeason() != null ? movement.getSeason().getSeasonName() : null)
-                .taskId(movement.getTask() != null ? movement.getTask().getId() : null)
-                .taskTitle(movement.getTask() != null ? movement.getTask().getTitle() : null)
-                .note(movement.getNote())
-                .build();
-    }
-
-    private String buildLocationLabel(StockLocation location) {
-        StringBuilder sb = new StringBuilder();
-        if (location.getZone() != null)
-            sb.append(location.getZone());
-        if (location.getAisle() != null) {
-            if (sb.length() > 0)
-                sb.append("-");
-            sb.append(location.getAisle());
-        }
-        if (location.getShelf() != null) {
-            if (sb.length() > 0)
-                sb.append("-");
-            sb.append(location.getShelf());
-        }
-        if (location.getBin() != null) {
-            if (sb.length() > 0)
-                sb.append("-");
-            sb.append(location.getBin());
-        }
-        return sb.length() > 0 ? sb.toString() : "Location " + location.getId();
-    }
 }

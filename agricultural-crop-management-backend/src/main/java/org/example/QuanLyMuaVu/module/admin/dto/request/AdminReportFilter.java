@@ -1,5 +1,6 @@
 package org.example.QuanLyMuaVu.module.admin.dto.request;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,18 @@ public class AdminReportFilter {
     /** Filter by variety ID */
     private Integer varietyId;
 
+    /** Optional minimum plot area in hectare */
+    private BigDecimal areaMinHa;
+
+    /** Optional maximum plot area in hectare */
+    private BigDecimal areaMaxHa;
+
+    /** Optional zero-based page index for large result sets */
+    private Integer page;
+
+    /** Optional page size for large result sets */
+    private Integer size;
+
     /**
      * Get effective start date for query.
      * Uses fromDate if set, otherwise computes from year.
@@ -65,5 +78,27 @@ public class AdminReportFilter {
             return LocalDate.of(year + 1, 1, 1);
         }
         return null; // No date filtering when year is not specified
+    }
+
+    public boolean hasPagination() {
+        return size != null && size > 0;
+    }
+
+    public int getSafePage() {
+        if (page == null || page < 0) {
+            return 0;
+        }
+        return page;
+    }
+
+    public int getSafeSize() {
+        if (!hasPagination()) {
+            return 0;
+        }
+        return Math.min(size, 500);
+    }
+
+    public int getSafeOffset() {
+        return getSafePage() * getSafeSize();
     }
 }

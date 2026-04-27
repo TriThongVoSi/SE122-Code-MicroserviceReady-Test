@@ -1,34 +1,28 @@
 # =========================
-# Dependencies / package caches
-# =========================
-node_modules/
-.pnpm-store/
-.npm/
-.yarn/
-.yarn-cache/
-
-# =========================
-# Build artifacts (Java / Maven)
+# Build artifacts (Spring Boot / Java)
 # =========================
 target/
 build/
 out/
+bin/
+.gradle/
 *.class
 *.jar
 *.war
 *.ear
 *.nar
-*.zip
-*.tar
-*.gz
-
-# Keep Maven wrapper files committed
-!mvnw
-!mvnw.cmd
-!.mvn/
-!.mvn/wrapper/
 !.mvn/wrapper/maven-wrapper.jar
-!.mvn/wrapper/maven-wrapper.properties
+!gradle/wrapper/gradle-wrapper.jar
+
+# Maven generated files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
 # =========================
 # Test, coverage, and reports
@@ -37,7 +31,6 @@ surefire-reports/
 failsafe-reports/
 test-output/
 coverage/
-.coverage
 .jacoco/
 jacoco.exec
 
@@ -49,6 +42,8 @@ logs/
 *.pid
 *.pid.lock
 *.seed
+hs_err_pid*
+replay_pid*
 
 # =========================
 # Environment variables and local configs
@@ -57,12 +52,12 @@ logs/
 .env.*
 *.env
 *.env.*
-
-# Keep safe examples/templates
 !.env.example
 !.env.*.example
 !.env.template
 !.env.*.template
+!.env.sample
+!.env.*.sample
 
 # Spring profile local overrides
 application-local.yml
@@ -82,8 +77,6 @@ credentials.*
 service-account*.json
 firebase-adminsdk*.json
 google-credentials*.json
-
-# Private key and certificate bundles
 *.pem
 *.key
 *.p12
@@ -95,8 +88,16 @@ google-credentials*.json
 # IDE / Editor files
 # =========================
 .idea/
-*.iml
 .vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.sts4-cache/
 *.swp
 *.swo
 *~
@@ -107,14 +108,6 @@ google-credentials*.json
 .DS_Store
 Thumbs.db
 Desktop.ini
-
-# =========================
-# Optional frontend build outputs
-# =========================
-dist/
-.next/
-.nuxt/
-storybook-static/
 
 # =========================
 # Docker / local infra overrides

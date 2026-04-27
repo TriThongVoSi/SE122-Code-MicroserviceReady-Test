@@ -12,6 +12,7 @@ import org.example.QuanLyMuaVu.module.season.dto.request.AddSeasonEmployeeReques
 import org.example.QuanLyMuaVu.module.season.dto.request.AssignTaskEmployeeRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.BulkAssignSeasonEmployeesRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.PayrollRecalculateRequest;
+import org.example.QuanLyMuaVu.module.season.dto.request.UpdatePayrollRecordRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.UpdateSeasonEmployeeRequest;
 import org.example.QuanLyMuaVu.module.season.dto.response.EmployeeDirectoryResponse;
 import org.example.QuanLyMuaVu.module.season.dto.response.PayrollRecordResponse;
@@ -111,6 +112,21 @@ public class FarmerLaborManagementController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
         return ApiResponse.success(laborManagementService.listSeasonPayroll(seasonId, employeeUserId, page, size));
+    }
+
+    @GetMapping("/seasons/{seasonId}/payroll/{payrollRecordId}")
+    public ApiResponse<PayrollRecordResponse> getSeasonPayrollDetail(
+            @PathVariable Integer seasonId,
+            @PathVariable Integer payrollRecordId) {
+        return ApiResponse.success(laborManagementService.getSeasonPayrollDetail(seasonId, payrollRecordId));
+    }
+
+    @PatchMapping("/seasons/{seasonId}/payroll/{payrollRecordId}")
+    public ApiResponse<PayrollRecordResponse> updateSeasonPayroll(
+            @PathVariable Integer seasonId,
+            @PathVariable Integer payrollRecordId,
+            @Valid @RequestBody UpdatePayrollRecordRequest request) {
+        return ApiResponse.success(laborManagementService.updateSeasonPayroll(seasonId, payrollRecordId, request));
     }
 
     @PostMapping("/seasons/{seasonId}/payroll/recalculate")

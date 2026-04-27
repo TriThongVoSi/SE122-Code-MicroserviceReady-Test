@@ -57,12 +57,12 @@ export const useCreateFieldLog = (
     return useMutation({
         mutationFn: (data) => fieldLogApi.create(seasonId, data),
         ...mutationOptions,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({
                 queryKey: fieldLogKeys.listBySeasonBase(seasonId),
                 exact: false,
             });
-            onSuccess?.(data, variables, context);
+            onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -76,14 +76,14 @@ export const useUpdateFieldLog = (
     return useMutation({
         mutationFn: ({ id, data }) => fieldLogApi.update(id, data),
         ...mutationOptions,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             const { id } = variables;
             queryClient.invalidateQueries({ queryKey: fieldLogKeys.detail(id) });
             queryClient.invalidateQueries({
                 queryKey: fieldLogKeys.listBySeasonBase(seasonId),
                 exact: false,
             });
-            onSuccess?.(data, variables, context);
+            onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -97,12 +97,12 @@ export const useDeleteFieldLog = (
     return useMutation({
         mutationFn: fieldLogApi.delete,
         ...mutationOptions,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({
                 queryKey: fieldLogKeys.listBySeasonBase(seasonId),
                 exact: false,
             });
-            onSuccess?.(data, variables, context);
+            onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };

@@ -116,6 +116,8 @@ public class AdminReportResponse {
         private String cropName;
         private BigDecimal totalQuantity;
         private BigDecimal totalRevenue;
+        private BigDecimal marketplaceRevenue; // nullable until marketplace contract is provided
+        private String marketplaceRevenueStatus; // e.g. TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT
         private BigDecimal avgPricePerUnit; // nullable if no quantity
     }
 
@@ -135,6 +137,8 @@ public class AdminReportResponse {
         private String cropName;
         private String farmName;
         private BigDecimal totalRevenue; // scale 0 (VND)
+        private BigDecimal marketplaceRevenue; // nullable until marketplace contract is provided
+        private String marketplaceRevenueStatus; // e.g. TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT
         private BigDecimal totalExpense; // scale 0 (VND)
         private BigDecimal grossProfit; // scale 0 (VND)
         private BigDecimal profitMargin; // scale 2 (%), nullable if no revenue
@@ -155,6 +159,8 @@ public class AdminReportResponse {
         private Integer farmId;
         private Integer plotId;
         private Integer varietyId;
+        private BigDecimal areaMinHa;
+        private BigDecimal areaMaxHa;
     }
 
     /**
@@ -169,6 +175,8 @@ public class AdminReportResponse {
         private BigDecimal totalCost;
         private BigDecimal costPerTon;
         private BigDecimal revenue;
+        private BigDecimal marketplaceRevenue; // nullable until marketplace contract is provided
+        private String marketplaceRevenueStatus; // e.g. TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT
         private BigDecimal grossProfit;
         private BigDecimal marginPercent;
         private List<String> warnings;
@@ -284,6 +292,8 @@ public class AdminReportResponse {
     public static class RevenueTotals {
         private BigDecimal totalQuantity;
         private BigDecimal totalRevenue;
+        private BigDecimal marketplaceRevenue; // nullable until marketplace contract is provided
+        private String marketplaceRevenueStatus; // e.g. TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT
         private BigDecimal avgPrice;
     }
 
@@ -318,6 +328,8 @@ public class AdminReportResponse {
     @AllArgsConstructor
     public static class ProfitTotals {
         private BigDecimal totalRevenue;
+        private BigDecimal marketplaceRevenue; // nullable until marketplace contract is provided
+        private String marketplaceRevenueStatus; // e.g. TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT
         private BigDecimal totalCost;
         private BigDecimal grossProfit;
         private BigDecimal marginPercent;

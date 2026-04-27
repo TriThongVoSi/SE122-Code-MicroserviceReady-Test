@@ -1,7 +1,7 @@
 import { useProfileMe } from "@/entities/user";
 import { useAuth } from "@/features/auth";
-import { useI18n } from "@/hooks/useI18n";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { EmployeePortalShellState, EmployeeView } from "../types";
@@ -17,7 +17,7 @@ const resolveViewFromPath = (pathname: string): EmployeeView => {
 };
 
 export function useEmployeePortalShell(): EmployeePortalShellState {
-  const { t } = useI18n();
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { data: profile } = useProfileMe();
   const navigate = useNavigate();
@@ -54,6 +54,11 @@ export function useEmployeePortalShell(): EmployeePortalShellState {
   const handleViewChange = (view: string) => {
     if (view.startsWith("/")) {
       navigate(view);
+      return;
+    }
+
+    if (view === "chat") {
+      navigate("/chat");
       return;
     }
 

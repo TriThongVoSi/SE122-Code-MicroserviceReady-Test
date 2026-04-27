@@ -18,6 +18,7 @@ import lombok.experimental.FieldDefaults;
 public class AdminInventoryOptionsResponse {
     List<FarmOption> farms;
     List<String> categories;
+    List<ItemOption> items;
 
     @Getter
     @Setter
@@ -26,6 +27,17 @@ public class AdminInventoryOptionsResponse {
     @AllArgsConstructor
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class FarmOption {
+        Integer id;
+        String name;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class ItemOption {
         Integer id;
         String name;
     }

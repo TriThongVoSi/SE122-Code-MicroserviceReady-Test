@@ -10,9 +10,9 @@ export const plotKeys = {
     lists: () => [...plotKeys.all, 'list'] as const,
     listAll: () => [...plotKeys.lists(), 'all'] as const,
     byFarm: (farmId: number, params?: PlotListParams) =>
-        (params
+        params
             ? [...plotKeys.lists(), 'farm', farmId, params]
-            : [...plotKeys.lists(), 'farm', farmId]) as const,
+            : [...plotKeys.lists(), 'farm', farmId],
     details: () => [...plotKeys.all, 'detail'] as const,
     detail: (id: number) => [...plotKeys.details(), id] as const,
 } as const;

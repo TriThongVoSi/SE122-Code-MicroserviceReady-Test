@@ -193,6 +193,37 @@ export const UserSummarySchema = z.object({
 
 export type UserSummary = z.infer<typeof UserSummarySchema>;
 
+export const AdminAuditLogSchema = z.object({
+  id: z.number().int(),
+  module: z.string(),
+  operation: z.string(),
+  entityType: z.string(),
+  entityId: z.number().int(),
+  performedBy: z.string(),
+  performedAt: z.string(),
+  snapshotData: z.string().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  ipAddress: z.string().nullable().optional(),
+});
+
+export type AdminAuditLog = z.infer<typeof AdminAuditLogSchema>;
+
+export const AdminAuditLogListParamsSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  module: z.string().optional(),
+  entityType: z.string().optional(),
+  action: z.string().optional(),
+  user: z.string().optional(),
+  entityId: z.number().int().optional(),
+  page: z.number().int().min(0).default(0),
+  size: z.number().int().min(1).max(200).default(20),
+});
+
+export type AdminAuditLogListParams = z.infer<
+  typeof AdminAuditLogListParamsSchema
+>;
+
 // ═══════════════════════════════════════════════════════════════
 // QUERY KEYS
 // ═══════════════════════════════════════════════════════════════
@@ -222,6 +253,10 @@ export const adminKeys = {
     [...adminKeys.documents, "list", params] as const,
   documentDetail: (id: number) =>
     [...adminKeys.documents, "detail", id] as const,
+  // Audit logs
+  auditLogs: ["admin", "auditLogs"] as const,
+  auditLogList: (params?: AdminAuditLogListParams) =>
+    [...adminKeys.auditLogs, "list", params] as const,
   // Summary
   summary: ["admin", "summary"] as const,
 };
@@ -699,6 +734,7 @@ export const AdminInventoryRiskLotSchema = z.object({
   onHand: z.number(),
   daysToExpiry: z.number().optional().nullable(),
   status: z.string(),
+  severity: z.string().optional().nullable(),
   unit: z.string().optional().nullable(),
   unitCost: z.number().optional().nullable(),
 });
@@ -742,16 +778,24 @@ export const AdminInventoryFarmOptionSchema = z.object({
   name: z.string(),
 });
 
+export const AdminInventoryItemOptionSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+});
+
 export const AdminInventoryOptionsSchema = z.object({
   farms: z.array(AdminInventoryFarmOptionSchema),
   categories: z.array(z.string()),
+  items: z.array(AdminInventoryItemOptionSchema).optional().default([]),
 });
 
 export const adminInventoryApi = {
   /** GET /api/v1/admin/inventory/lots - Risk lots drill-down */
   listRiskLots: async (params: {
     farmId?: number;
+    itemId?: number;
     status?: string;
+    severity?: string;
     windowDays?: number;
     q?: string;
     sort?: string;
@@ -1121,6 +1165,10 @@ export interface ReportFilterParams {
   farmId?: number;
   plotId?: number;
   varietyId?: number;
+  areaMinHa?: number;
+  areaMaxHa?: number;
+  page?: number;
+  size?: number;
   granularity?: "DAY" | "WEEK" | "MONTH";
   analytics?: boolean;
 }
@@ -1179,6 +1227,8 @@ export const RevenueReportSchema = z.object({
   cropName: z.string().nullable(),
   totalQuantity: NumericSchema,
   totalRevenue: NumericSchema,
+  marketplaceRevenue: NumericSchema.optional().nullable(),
+  marketplaceRevenueStatus: z.string().optional().nullable(),
   avgPricePerUnit: NullableRatioSchema,
 });
 
@@ -1188,6 +1238,8 @@ export const ProfitReportSchema = z.object({
   cropName: z.string().nullable(),
   farmName: z.string().nullable(),
   totalRevenue: NumericSchema,
+  marketplaceRevenue: NumericSchema.optional().nullable(),
+  marketplaceRevenueStatus: z.string().optional().nullable(),
   totalExpense: NumericSchema,
   grossProfit: NumericSchema,
   profitMargin: NullableRatioSchema,
@@ -1234,6 +1286,8 @@ export const AppliedFiltersSchema = z.object({
   plotId: z.number().int().optional().nullable(),
   cropId: z.number().int().optional().nullable(),
   varietyId: z.number().int().optional().nullable(),
+  areaMinHa: NumericSchema.optional().nullable(),
+  areaMaxHa: NumericSchema.optional().nullable(),
 });
 
 export const ReportSummarySchema = z.object({
@@ -1241,6 +1295,8 @@ export const ReportSummarySchema = z.object({
   totalCost: NumericSchema,
   costPerTon: NullableRatioSchema,
   revenue: NumericSchema,
+  marketplaceRevenue: NumericSchema.optional().nullable(),
+  marketplaceRevenueStatus: z.string().optional().nullable(),
   grossProfit: NumericSchema,
   marginPercent: NullableRatioSchema,
   warnings: z.array(z.string()).optional().nullable(),
@@ -1316,6 +1372,8 @@ export const RevenueRowSchema = z.object({
 export const RevenueTotalsSchema = z.object({
   totalQuantity: NumericSchema,
   totalRevenue: NumericSchema,
+  marketplaceRevenue: NumericSchema.optional().nullable(),
+  marketplaceRevenueStatus: z.string().optional().nullable(),
   avgPrice: NullableRatioSchema,
 });
 
@@ -1338,6 +1396,8 @@ export const ProfitRowSchema = z.object({
 
 export const ProfitTotalsSchema = z.object({
   totalRevenue: NumericSchema,
+  marketplaceRevenue: NumericSchema.optional().nullable(),
+  marketplaceRevenueStatus: z.string().optional().nullable(),
   totalCost: NumericSchema,
   grossProfit: NumericSchema,
   marginPercent: NullableRatioSchema,
@@ -1390,6 +1450,10 @@ const normalizeReportParams = (p?: ReportFilterParams) => ({
   ...(p?.farmId !== undefined && { farmId: p.farmId }),
   ...(p?.plotId !== undefined && { plotId: p.plotId }),
   ...(p?.varietyId !== undefined && { varietyId: p.varietyId }),
+  ...(p?.areaMinHa !== undefined && { areaMinHa: p.areaMinHa }),
+  ...(p?.areaMaxHa !== undefined && { areaMaxHa: p.areaMaxHa }),
+  ...(p?.page !== undefined && { page: p.page }),
+  ...(p?.size !== undefined && { size: p.size }),
   ...(p?.granularity !== undefined && { granularity: p.granularity }),
   ...(p?.analytics !== undefined && { analytics: p.analytics }),
 });
@@ -2050,5 +2114,20 @@ export const adminUsersLegacyApi = {
       { roles },
     );
     return response.data;
+  },
+};
+
+export const adminAuditLogApi = {
+  /** GET /api/v1/admin/audit-logs - List audit logs with filters */
+  list: async (
+    params?: AdminAuditLogListParams,
+  ): Promise<PageResponse<AdminAuditLog>> => {
+    const validatedParams = params
+      ? AdminAuditLogListParamsSchema.parse(params)
+      : undefined;
+    const response = await httpClient.get("/api/v1/admin/audit-logs", {
+      params: validatedParams,
+    });
+    return parsePageResponse(response.data, AdminAuditLogSchema);
   },
 };

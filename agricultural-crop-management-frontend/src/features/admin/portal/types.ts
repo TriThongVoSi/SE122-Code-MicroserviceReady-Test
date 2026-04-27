@@ -9,6 +9,7 @@ export type AdminView =
   | "inventory"
   | "incidents"
   | "alerts"
+  | "audit-logs"
   | "users-roles"
   | "farms-plots"
   | "crops-varieties"

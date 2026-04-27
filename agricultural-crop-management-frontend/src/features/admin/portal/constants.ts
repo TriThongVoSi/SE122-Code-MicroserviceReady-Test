@@ -9,6 +9,7 @@ export const ADMIN_VIEW_CONFIG: Record<AdminView, AdminViewConfig> = {
   inventory: { title: "Inventory", breadcrumbLabel: "Inventory" },
   incidents: { title: "Incidents", breadcrumbLabel: "Incidents" },
   alerts: { title: "Alerts Center", breadcrumbLabel: "Alerts" },
+  "audit-logs": { title: "Audit Logs", breadcrumbLabel: "Audit Logs" },
   "users-roles": {
     title: "Users & Roles / Người dùng & Phân quyền",
     breadcrumbLabel: "Users & Roles",

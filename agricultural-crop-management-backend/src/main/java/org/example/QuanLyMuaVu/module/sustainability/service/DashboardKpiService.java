@@ -2,8 +2,11 @@ package org.example.QuanLyMuaVu.module.sustainability.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.QuanLyMuaVu.Enums.TaskStatus;
 import org.example.QuanLyMuaVu.module.financial.port.ExpenseQueryPort;
 import org.example.QuanLyMuaVu.module.season.port.HarvestQueryPort;
 import org.example.QuanLyMuaVu.module.season.port.TaskQueryPort;
@@ -61,6 +64,40 @@ public class DashboardKpiService {
         }
         return DashboardOverviewResponse.Expenses.builder()
                 .totalExpense(totalExpense)
+                .build();
+    }
+
+    public DashboardOverviewResponse.TaskStatusSummary buildTaskStatusSummary(
+            org.example.QuanLyMuaVu.module.season.entity.Season season) {
+        if (season == null || season.getId() == null) {
+            return DashboardOverviewResponse.TaskStatusSummary.builder()
+                    .totalTasks(0)
+                    .pendingTasks(0)
+                    .inProgressTasks(0)
+                    .completedTasks(0)
+                    .overdueTasks(0)
+                    .cancelledTasks(0)
+                    .byStatus(new LinkedHashMap<>())
+                    .build();
+        }
+
+        Map<TaskStatus, Long> rawCounts = taskQueryPort.countTaskStatusBySeasonId(season.getId());
+        Map<String, Integer> byStatus = new LinkedHashMap<>();
+        int total = 0;
+        for (TaskStatus status : TaskStatus.values()) {
+            int count = rawCounts.getOrDefault(status, 0L).intValue();
+            byStatus.put(status.name(), count);
+            total += count;
+        }
+
+        return DashboardOverviewResponse.TaskStatusSummary.builder()
+                .totalTasks(total)
+                .pendingTasks(byStatus.getOrDefault(TaskStatus.PENDING.name(), 0))
+                .inProgressTasks(byStatus.getOrDefault(TaskStatus.IN_PROGRESS.name(), 0))
+                .completedTasks(byStatus.getOrDefault(TaskStatus.DONE.name(), 0))
+                .overdueTasks(byStatus.getOrDefault(TaskStatus.OVERDUE.name(), 0))
+                .cancelledTasks(byStatus.getOrDefault(TaskStatus.CANCELLED.name(), 0))
+                .byStatus(byStatus)
                 .build();
     }
 

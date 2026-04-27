@@ -8,6 +8,7 @@ import org.example.QuanLyMuaVu.module.sustainability.dto.response.FieldMapRespon
 import org.example.QuanLyMuaVu.module.sustainability.dto.response.FieldRecommendationsResponse;
 import org.example.QuanLyMuaVu.module.sustainability.dto.response.SustainabilityOverviewResponse;
 import org.example.QuanLyMuaVu.module.sustainability.service.SustainabilityDashboardService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasRole('FARMER')")
 public class SustainabilityController {
 
     private final SustainabilityDashboardService sustainabilityDashboardService;

@@ -104,3 +104,9 @@ export const PayrollRecalculateRequestSchema = z.object({
 });
 
 export type PayrollRecalculateRequest = z.infer<typeof PayrollRecalculateRequestSchema>;
+
+export const PayrollRecordUpdateRequestSchema = z.object({
+  note: z.string().max(4000).nullable().optional(),
+});
+
+export type PayrollRecordUpdateRequest = z.infer<typeof PayrollRecordUpdateRequestSchema>;

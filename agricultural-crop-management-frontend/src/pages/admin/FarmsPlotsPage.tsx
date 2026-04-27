@@ -298,7 +298,7 @@ export function FarmsPlotsPage() {
           </button>
         </div>
         <button
-          onClick={fetchFarms}
+          onClick={() => { void fetchFarms(); }}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted/50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -332,7 +332,7 @@ export function FarmsPlotsPage() {
                   <div className="flex flex-col items-center gap-2 text-destructive">
                     <AlertCircle className="h-6 w-6" />
                     {error}
-                    <button onClick={fetchFarms} className="text-sm text-primary hover:underline">
+                    <button onClick={() => { void fetchFarms(); }} className="text-sm text-primary hover:underline">
                       Try again
                     </button>
                   </div>
@@ -428,7 +428,7 @@ export function FarmsPlotsPage() {
           </select>
         </div>
         <button
-          onClick={fetchPlots}
+          onClick={() => { void fetchPlots(); }}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted/50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -461,7 +461,7 @@ export function FarmsPlotsPage() {
                   <div className="flex flex-col items-center gap-2 text-destructive">
                     <AlertCircle className="h-6 w-6" />
                     {error}
-                    <button onClick={fetchPlots} className="text-sm text-primary hover:underline">
+                    <button onClick={() => { void fetchPlots(); }} className="text-sm text-primary hover:underline">
                       Try again
                     </button>
                   </div>

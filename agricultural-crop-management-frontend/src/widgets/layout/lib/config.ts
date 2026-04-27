@@ -1,7 +1,7 @@
 import {
     Home, MapPin, Calendar, Package,
     ShoppingCart, BarChart3, Settings, Sprout, FileText,
-    Shield, Warehouse, Users, AlertTriangle, Bell, ClipboardList, Clock3, Wallet2
+    Shield, Warehouse, Users, AlertTriangle, Bell, ClipboardList, Clock3, Wallet2, MessageSquare
 } from 'lucide-react';
 import type { PortalType, PortalConfig } from '../model/types';
 
@@ -23,6 +23,7 @@ export const portalConfig: Record<PortalType, PortalConfig> = {
             { id: 'inventory', label: 'Inventory', icon: Package },
             { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
             { id: 'alerts', label: 'Alerts Center', icon: Bell },
+            { id: 'audit-logs', label: 'Audit Logs', icon: ClipboardList },
             { id: 'users-roles', label: 'Users & Roles', icon: Users },
             { id: 'farms-plots', label: 'Farms & Plots', icon: Warehouse },
             { id: 'crops-varieties', label: 'Crops & Varieties', icon: Sprout },
@@ -37,8 +38,7 @@ export const portalConfig: Record<PortalType, PortalConfig> = {
         emoji: '🌾',
         navigation: [
             { id: 'dashboard', label: 'Dashboard', icon: Home },
-            { id: 'marketplace-dashboard', label: 'Marketplace Dashboard', icon: ShoppingCart },
-            { id: 'marketplace-orders', label: 'Marketplace Orders', icon: Package },
+            { id: 'marketplace-workspace', label: 'Marketplace Workspace', icon: ShoppingCart },
             { id: 'farms', label: 'Farms & Plots', icon: MapPin },
             { id: 'seasons', label: 'Seasons', icon: Calendar },
             { id: 'suppliers-supplies', label: 'Suppliers & Supplies', icon: Package },
@@ -47,6 +47,7 @@ export const portalConfig: Record<PortalType, PortalConfig> = {
             { id: 'documents', label: 'Documents', icon: FileText },
             { id: 'reports', label: 'Reports', icon: FileText },
             { id: 'ai-assistant', label: 'AI Assistant', icon: Sprout },
+            { id: 'chat', label: 'Chat', icon: MessageSquare },
             { id: 'notifications', label: 'Notifications', icon: Bell },
         ],
     },
@@ -73,6 +74,7 @@ export const portalConfig: Record<PortalType, PortalConfig> = {
             { id: 'tasks', label: 'Assigned Tasks', icon: ClipboardList },
             { id: 'progress', label: 'Progress Reports', icon: Clock3 },
             { id: 'payroll', label: 'Payroll', icon: Wallet2 },
+            { id: 'chat', label: 'Chat', icon: MessageSquare },
         ],
     },
 };

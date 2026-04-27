@@ -87,12 +87,27 @@ export function AddPlotDialog({
       return;
     }
 
-    // Build request matching backend structure
+    const selectedSoilType = soilTypes?.find((soil) => String(soil.id) === soilTypeId);
+    const selectedStatus = plotStatuses?.find((status) => String(status.id) === plotStatusId);
+
+    const statusName = selectedStatus?.statusName?.toLowerCase() ?? "";
+    const mappedStatus: PlotRequest["status"] =
+      statusName.includes("maint")
+        ? "MAINTENANCE"
+        : statusName.includes("fallow")
+          ? "FALLOW"
+          : statusName.includes("idle") || statusName.includes("dormant")
+            ? "IDLE"
+            : statusName.includes("use") || statusName.includes("active")
+              ? "IN_USE"
+              : "AVAILABLE";
+
+    // Build request matching PlotRequest schema
     const formData: PlotRequest = {
       plotName: plotName.trim(),
       area: parseFloat(areaValue),
-      soilTypeId: parseInt(soilTypeId, 10),
-      plotStatusId: parseInt(plotStatusId, 10),
+      soilType: selectedSoilType?.soilName,
+      status: mappedStatus,
     };
 
     onSubmit(formData);

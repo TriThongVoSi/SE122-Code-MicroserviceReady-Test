@@ -35,6 +35,9 @@ const ForgotPasswordPage = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPasswordPage }))
 );
+const ChatPage = lazy(() =>
+  import('@/features/chat').then((m) => ({ default: m.ChatPage }))
+);
 
 // ═══════════════════════════════════════════════════════════════
 // LAZY IMPORTS — ProtectedRoute guard
@@ -368,6 +371,14 @@ export function AppRoutes() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/signin" element={<Navigate to="/sign-in" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
+        <Route
+          path="/chat"
+          element={(
+            <ProtectedRoute requireAuth>
+              <ChatPage />
+            </ProtectedRoute>
+          )}
+        />
 
         {/* ━━━ Public Layout Branch ━━━ */}
         <Route element={<PublicLayoutWrapper />}>
@@ -439,6 +450,7 @@ export function AppRoutes() {
         >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<FarmerDashboard />} />
+          <Route path="marketplace-workspace" element={<Navigate to="/farmer/marketplace-dashboard" replace />} />
           <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
           <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
           <Route path="marketplace-products/:id" element={<MarketplaceSellerProductDetailPage />} />

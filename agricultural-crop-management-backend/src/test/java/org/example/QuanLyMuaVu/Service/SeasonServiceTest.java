@@ -2,7 +2,8 @@ package org.example.QuanLyMuaVu.Service;
 
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.farm.entity.Plot;
-import org.example.QuanLyMuaVu.module.farm.service.FarmAccessService;
+import org.example.QuanLyMuaVu.module.farm.port.FarmAccessPort;
+import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.season.entity.Season;
 import org.example.QuanLyMuaVu.module.season.dto.request.CreateSeasonRequest;
@@ -15,8 +16,7 @@ import org.example.QuanLyMuaVu.module.season.mapper.SeasonMapper;
 import org.example.QuanLyMuaVu.module.cropcatalog.entity.Crop;
 import org.example.QuanLyMuaVu.module.cropcatalog.entity.Variety;
 import org.example.QuanLyMuaVu.module.cropcatalog.port.CropCatalogQueryPort;
-import org.example.QuanLyMuaVu.module.financial.repository.ExpenseRepository;
-import org.example.QuanLyMuaVu.module.farm.repository.PlotRepository;
+import org.example.QuanLyMuaVu.module.financial.port.ExpenseQueryPort;
 import org.example.QuanLyMuaVu.module.season.repository.FieldLogRepository;
 import org.example.QuanLyMuaVu.module.season.repository.HarvestRepository;
 import org.example.QuanLyMuaVu.module.season.repository.SeasonRepository;
@@ -25,6 +25,7 @@ import org.example.QuanLyMuaVu.module.season.service.SeasonQueryService;
 import org.example.QuanLyMuaVu.module.season.service.SeasonService;
 import org.example.QuanLyMuaVu.module.season.service.SeasonStatusService;
 import org.example.QuanLyMuaVu.module.season.service.SeasonValidationService;
+import org.example.QuanLyMuaVu.module.shared.pattern.Observer.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -67,7 +68,7 @@ public class SeasonServiceTest {
     private SeasonRepository seasonRepository;
 
     @Mock
-    private PlotRepository plotRepository;
+    private FarmQueryPort farmQueryPort;
 
     @Mock
     private CropCatalogQueryPort cropCatalogQueryPort;
@@ -76,7 +77,7 @@ public class SeasonServiceTest {
     private HarvestRepository harvestRepository;
 
     @Mock
-    private ExpenseRepository expenseRepository;
+    private ExpenseQueryPort expenseQueryPort;
 
     @Mock
     private TaskRepository taskRepository;
@@ -97,7 +98,10 @@ public class SeasonServiceTest {
     private SeasonValidationService validationService;
 
     @Mock
-    private FarmAccessService farmAccessService;
+    private FarmAccessPort farmAccessService;
+
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     @InjectMocks
     private SeasonService seasonService;
@@ -208,7 +212,7 @@ public class SeasonServiceTest {
         @DisplayName("Happy Path: Creates season with valid request")
         void createSeason_WithValidRequest_ReturnsSeasonDetailResponse() {
             // Arrange
-            when(plotRepository.findById(1)).thenReturn(Optional.of(testPlot));
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.of(testPlot));
             doNothing().when(farmAccessService).assertCurrentUserCanAccessPlot(testPlot);
             when(cropCatalogQueryPort.findCropById(1)).thenReturn(Optional.of(testCrop));
             when(cropCatalogQueryPort.findVarietyById(1)).thenReturn(Optional.of(testVariety));
@@ -260,7 +264,7 @@ public class SeasonServiceTest {
                     .initialPlantCount(1000)
                     .build();
 
-            when(plotRepository.findById(1)).thenReturn(Optional.of(testPlot));
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.of(testPlot));
             doNothing().when(farmAccessService).assertCurrentUserCanAccessPlot(any());
             when(cropCatalogQueryPort.findCropById(1)).thenReturn(Optional.of(testCrop));
             doNothing().when(validationService).validateSeasonDates(any(), any(), any());
@@ -285,7 +289,7 @@ public class SeasonServiceTest {
         @DisplayName("Negative Case: Throws PLOT_NOT_FOUND when plot doesn't exist")
         void createSeason_WhenPlotNotFound_ThrowsAppException() {
             // Arrange
-            when(plotRepository.findById(1)).thenReturn(Optional.empty());
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.empty());
 
             // Act & Assert
             AppException exception = assertThrows(AppException.class,
@@ -299,7 +303,7 @@ public class SeasonServiceTest {
         @DisplayName("Negative Case: Throws CROP_NOT_FOUND when crop doesn't exist")
         void createSeason_WhenCropNotFound_ThrowsAppException() {
             // Arrange
-            when(plotRepository.findById(1)).thenReturn(Optional.of(testPlot));
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.of(testPlot));
             doNothing().when(farmAccessService).assertCurrentUserCanAccessPlot(any());
             when(cropCatalogQueryPort.findCropById(1)).thenReturn(Optional.empty());
 
@@ -314,7 +318,7 @@ public class SeasonServiceTest {
         @DisplayName("Negative Case: Throws RESOURCE_NOT_FOUND when variety doesn't exist")
         void createSeason_WhenVarietyNotFound_ThrowsAppException() {
             // Arrange
-            when(plotRepository.findById(1)).thenReturn(Optional.of(testPlot));
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.of(testPlot));
             doNothing().when(farmAccessService).assertCurrentUserCanAccessPlot(any());
             when(cropCatalogQueryPort.findCropById(1)).thenReturn(Optional.of(testCrop));
             when(cropCatalogQueryPort.findVarietyById(1)).thenReturn(Optional.empty());
@@ -337,7 +341,7 @@ public class SeasonServiceTest {
                     .crop(differentCrop) // Different crop
                     .build();
 
-            when(plotRepository.findById(1)).thenReturn(Optional.of(testPlot));
+            when(farmQueryPort.findPlotById(1)).thenReturn(Optional.of(testPlot));
             doNothing().when(farmAccessService).assertCurrentUserCanAccessPlot(any());
             when(cropCatalogQueryPort.findCropById(1)).thenReturn(Optional.of(testCrop)); // Rice (id=1)
             when(cropCatalogQueryPort.findVarietyById(1)).thenReturn(Optional.of(varietyOfDifferentCrop));
@@ -509,7 +513,7 @@ public class SeasonServiceTest {
             when(taskRepository.existsBySeason_Id(1)).thenReturn(false);
             when(fieldLogRepository.existsBySeason_Id(1)).thenReturn(false);
             when(harvestRepository.existsBySeason_Id(1)).thenReturn(false);
-            when(expenseRepository.existsBySeason_Id(1)).thenReturn(false);
+            when(expenseQueryPort.existsExpenseBySeasonId(1)).thenReturn(false);
             doNothing().when(seasonRepository).delete(testSeason);
 
             // Act
@@ -613,7 +617,7 @@ public class SeasonServiceTest {
             when(taskRepository.existsBySeason_Id(1)).thenReturn(false);
             when(fieldLogRepository.existsBySeason_Id(1)).thenReturn(false);
             when(harvestRepository.existsBySeason_Id(1)).thenReturn(false);
-            when(expenseRepository.existsBySeason_Id(1)).thenReturn(true); // Has expenses
+            when(expenseQueryPort.existsExpenseBySeasonId(1)).thenReturn(true); // Has expenses
 
             // Act & Assert
             AppException exception = assertThrows(AppException.class,
@@ -695,7 +699,7 @@ public class SeasonServiceTest {
             when(taskRepository.existsBySeason_Id(1)).thenReturn(false);
             when(fieldLogRepository.existsBySeason_Id(1)).thenReturn(false);
             when(harvestRepository.existsBySeason_Id(1)).thenReturn(false);
-            when(expenseRepository.existsBySeason_Id(1)).thenReturn(false);
+            when(expenseQueryPort.existsExpenseBySeasonId(1)).thenReturn(false);
 
             // Act
             seasonService.delete(1);

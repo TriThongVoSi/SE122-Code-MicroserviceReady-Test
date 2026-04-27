@@ -10,11 +10,13 @@ import org.example.QuanLyMuaVu.module.farm.dto.request.FarmUpdateRequest;
 import org.example.QuanLyMuaVu.module.farm.dto.response.FarmResponse;
 import org.example.QuanLyMuaVu.module.farm.service.FarmService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/farms")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('FARMER')")
 public class FarmController {
 
         private final FarmService farmService;

@@ -1,6 +1,7 @@
 package org.example.QuanLyMuaVu.Service.Dashboard;
 
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
+import org.example.QuanLyMuaVu.Enums.TaskStatus;
 import org.example.QuanLyMuaVu.module.season.entity.Harvest;
 import org.example.QuanLyMuaVu.module.sustainability.dto.response.DashboardOverviewResponse;
 import org.example.QuanLyMuaVu.module.farm.entity.Plot;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -94,5 +96,28 @@ class DashboardKpiServiceTest {
 
         assertNotNull(kpis);
         assertTrue(kpis.getCostPerHectare() == null && kpis.getOnTimePercent() == null && kpis.getAvgYieldTonsPerHa() == null);
+    }
+
+    @Test
+    @DisplayName("buildTaskStatusSummary aggregates status counts")
+    void buildTaskStatusSummary_AggregatesStatuses() {
+        Season season = Season.builder().id(22).build();
+        when(taskQueryPort.countTaskStatusBySeasonId(22)).thenReturn(Map.of(
+                TaskStatus.PENDING, 3L,
+                TaskStatus.IN_PROGRESS, 2L,
+                TaskStatus.DONE, 5L,
+                TaskStatus.OVERDUE, 1L,
+                TaskStatus.CANCELLED, 1L));
+
+        DashboardOverviewResponse.TaskStatusSummary summary = dashboardKpiService.buildTaskStatusSummary(season);
+
+        assertNotNull(summary);
+        assertEquals(12, summary.getTotalTasks());
+        assertEquals(3, summary.getPendingTasks());
+        assertEquals(2, summary.getInProgressTasks());
+        assertEquals(5, summary.getCompletedTasks());
+        assertEquals(1, summary.getOverdueTasks());
+        assertEquals(1, summary.getCancelledTasks());
+        assertEquals(5, summary.getByStatus().size());
     }
 }

@@ -45,10 +45,11 @@ public class AdminReportReadRepository {
                 .addValue("cropId", filter.getCropId())
                 .addValue("farmId", filter.getFarmId())
                 .addValue("plotId", filter.getPlotId())
-                .addValue("varietyId", filter.getVarietyId());
+                .addValue("varietyId", filter.getVarietyId())
+                .addValue("areaMinHa", filter.getAreaMinHa())
+                .addValue("areaMaxHa", filter.getAreaMaxHa());
 
-        return jdbcTemplate.query(
-                """
+        StringBuilder sql = new StringBuilder("""
                         select s.season_id as seasonId,
                                s.season_name as seasonName,
                                s.start_date as startDate,
@@ -90,11 +91,19 @@ public class AdminReportReadRepository {
                           and (:cropId is null or s.crop_id = :cropId)
                           and (:farmId is null or p.farm_id = :farmId)
                           and (:plotId is null or p.plot_id = :plotId)
+                          and (:areaMinHa is null or p.area >= :areaMinHa)
+                          and (:areaMaxHa is null or p.area <= :areaMaxHa)
                           and (:varietyId is null or s.variety_id = :varietyId)
                         order by s.start_date desc, s.season_id desc
-                        """,
-                params,
-                SEASON_FINANCIAL_ROW_MAPPER);
+                        """);
+
+        if (filter.hasPagination()) {
+            params.addValue("limit", filter.getSafeSize());
+            params.addValue("offset", filter.getSafeOffset());
+            sql.append(" limit :limit offset :offset");
+        }
+
+        return jdbcTemplate.query(sql.toString(), params, SEASON_FINANCIAL_ROW_MAPPER);
     }
 
     private static Integer getInteger(ResultSet rs, String columnName) throws SQLException {

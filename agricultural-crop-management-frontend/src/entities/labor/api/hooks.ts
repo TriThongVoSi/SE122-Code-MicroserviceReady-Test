@@ -16,6 +16,7 @@ import type {
   EmployeeTaskProgressRequest,
   PayrollRecord,
   PayrollRecalculateRequest,
+  PayrollRecordUpdateRequest,
   SeasonEmployee,
   TaskProgressLog,
 } from "../model/types";
@@ -112,6 +113,18 @@ export const useEmployeePayrollRecords = (
   useQuery({
     queryKey: laborKeys.employeePayroll(params),
     queryFn: () => laborApi.listMyPayroll(params),
+    staleTime: 60 * 1000,
+    ...options,
+  });
+
+export const useEmployeePayrollDetail = (
+  payrollRecordId: number | null | undefined,
+  options?: Omit<UseQueryOptions<PayrollRecord, Error>, "queryKey" | "queryFn">
+) =>
+  useQuery({
+    queryKey: laborKeys.employeePayrollDetail(payrollRecordId ?? 0),
+    queryFn: () => laborApi.getMyPayrollDetail(payrollRecordId!),
+    enabled: !!payrollRecordId && payrollRecordId > 0,
     staleTime: 60 * 1000,
     ...options,
   });
@@ -222,6 +235,38 @@ export const useRecalculateSeasonPayroll = (
     onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: laborKeys.seasonPayrollBase(seasonId), exact: false });
       queryClient.invalidateQueries({ queryKey: laborKeys.employeePayrollBase(), exact: false });
+      onSuccess?.(data, variables, onMutateResult, context);
+    },
+  });
+};
+
+export const useUpdateSeasonPayrollRecord = (
+  seasonId: number,
+  options?: UseMutationOptions<
+    PayrollRecord,
+    Error,
+    { payrollRecordId: number; data: PayrollRecordUpdateRequest }
+  >
+) => {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...mutationOptions } = options ?? {};
+  return useMutation({
+    mutationFn: ({ payrollRecordId, data }) =>
+      laborApi.updateSeasonPayroll(seasonId, payrollRecordId, data),
+    ...mutationOptions,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: laborKeys.seasonPayrollBase(seasonId), exact: false });
+      queryClient.invalidateQueries({ queryKey: laborKeys.employeePayrollBase(), exact: false });
+      if (variables.payrollRecordId > 0) {
+        queryClient.invalidateQueries({
+          queryKey: laborKeys.seasonPayrollDetail(seasonId, variables.payrollRecordId),
+          exact: false,
+        });
+        queryClient.invalidateQueries({
+          queryKey: laborKeys.employeePayrollDetail(variables.payrollRecordId),
+          exact: false,
+        });
+      }
       onSuccess?.(data, variables, onMutateResult, context);
     },
   });

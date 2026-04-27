@@ -2,7 +2,9 @@ package org.example.QuanLyMuaVu.module.season.service;
 
 
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +70,23 @@ public class TaskQueryService implements TaskQueryPort {
             return 0L;
         }
         return taskRepository.countCompletedOnTimeBySeasonId(seasonId);
+    }
+
+    @Override
+    public Map<TaskStatus, Long> countTaskStatusBySeasonId(Integer seasonId) {
+        Map<TaskStatus, Long> byStatus = new EnumMap<>(TaskStatus.class);
+        if (seasonId == null) {
+            return byStatus;
+        }
+
+        for (TaskRepository.TaskStatusCountProjection row : taskRepository.countStatusBySeasonId(seasonId)) {
+            if (row == null || row.getStatus() == null) {
+                continue;
+            }
+            byStatus.put(row.getStatus(), row.getTotal() != null ? row.getTotal() : 0L);
+        }
+
+        return byStatus;
     }
 
     @Override

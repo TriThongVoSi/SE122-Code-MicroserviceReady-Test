@@ -30,6 +30,9 @@ const extractApiResult = <T>(response: any): T => {
     return response?.result ?? response;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
 // ═══════════════════════════════════════════════════════════════
 // TRANSFORM HELPERS
 // Backend returns data in the format specified in API documentation
@@ -86,21 +89,28 @@ export const farmApi = {
         console.log('[Farm API Client] Raw response:', response.data);
 
         // Extract result from ApiResponse wrapper
-        const rawResult = extractApiResult(response.data);
+        const rawResult = extractApiResult<unknown>(response.data);
         console.log('[Farm API Client] Extracted result:', rawResult);
 
         // Handle array payloads or 'content'/'items' formats from backend
+        const rawObject = isRecord(rawResult) ? rawResult : undefined;
         const content = Array.isArray(rawResult)
             ? rawResult
-            : (rawResult.content || rawResult.items || []);
+            : (Array.isArray(rawObject?.content)
+                ? rawObject.content
+                : Array.isArray(rawObject?.items)
+                    ? rawObject.items
+                    : []);
 
         // Transform each farm in the array
         const transformedResult = {
             content: content.map(transformFarmResponse),
-            page: Array.isArray(rawResult) ? 0 : (rawResult.page ?? 0),
-            size: Array.isArray(rawResult) ? content.length : (rawResult.size ?? 20),
-            totalElements: Array.isArray(rawResult) ? content.length : (rawResult.totalElements ?? content.length),
-            totalPages: Array.isArray(rawResult) ? 1 : (rawResult.totalPages ?? 1),
+            page: Array.isArray(rawResult) ? 0 : Number(rawObject?.page ?? 0),
+            size: Array.isArray(rawResult) ? content.length : Number(rawObject?.size ?? 20),
+            totalElements: Array.isArray(rawResult)
+                ? content.length
+                : Number(rawObject?.totalElements ?? content.length),
+            totalPages: Array.isArray(rawResult) ? 1 : Number(rawObject?.totalPages ?? 1),
         };
         console.log('[Farm API Client] Transformed result:', transformedResult);
 

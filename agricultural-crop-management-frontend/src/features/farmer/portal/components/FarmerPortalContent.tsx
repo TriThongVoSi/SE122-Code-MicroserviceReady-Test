@@ -7,6 +7,7 @@ const EXEMPT_ROUTES = [
   '/farmer/profile',
   '/farmer/settings',
   '/farmer/search',
+  '/farmer/marketplace-workspace',
   '/farmer/marketplace-dashboard',
   '/farmer/marketplace-products',
   '/farmer/marketplace-orders',

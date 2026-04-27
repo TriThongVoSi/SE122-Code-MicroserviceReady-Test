@@ -8,6 +8,7 @@ import org.example.QuanLyMuaVu.module.farm.entity.Plot;
 import org.example.QuanLyMuaVu.module.season.entity.Season;
 import org.example.QuanLyMuaVu.module.sustainability.entity.SoilTest;
 import org.example.QuanLyMuaVu.Enums.NutrientInputSourceType;
+import org.example.QuanLyMuaVu.Enums.SeasonStatus;
 import org.example.QuanLyMuaVu.module.sustainability.repository.SoilTestRepository;
 import org.example.QuanLyMuaVu.module.sustainability.service.SoilTestService;
 import org.example.QuanLyMuaVu.module.shared.security.CurrentUserService;
@@ -62,6 +63,7 @@ class SoilTestServiceTest {
                 .id(33)
                 .seasonName("Season 33")
                 .plot(plot)
+                .status(SeasonStatus.PLANNED)
                 .build();
     }
 

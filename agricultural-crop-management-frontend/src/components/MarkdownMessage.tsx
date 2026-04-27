@@ -87,8 +87,9 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               {children}
             </pre>
           ),
-          code: ({ inline, className, children, ...props }) => {
-            if (inline) {
+          code: ({ className, children, ...props }) => {
+            const isInline = !className;
+            if (isInline) {
               return (
                 <code
                   className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]"

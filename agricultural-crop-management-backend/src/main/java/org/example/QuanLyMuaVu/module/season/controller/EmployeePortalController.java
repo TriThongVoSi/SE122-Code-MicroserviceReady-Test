@@ -72,4 +72,9 @@ public class EmployeePortalController {
             @RequestParam(value = "size", defaultValue = "20") int size) {
         return ApiResponse.success(laborManagementService.listMyPayroll(seasonId, page, size));
     }
+
+    @GetMapping("/payroll/{payrollRecordId}")
+    public ApiResponse<PayrollRecordResponse> getMyPayrollDetail(@PathVariable Integer payrollRecordId) {
+        return ApiResponse.success(laborManagementService.getMyPayrollDetail(payrollRecordId));
+    }
 }

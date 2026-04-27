@@ -11,6 +11,10 @@ public enum ErrorCode {
         KEY_INVALID("ERR_KEY_INVALID", "Invalid key", HttpStatus.BAD_REQUEST),
 
         INTERNAL_SERVER_ERROR("ERR_INTERNAL_SERVER_ERROR", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR),
+        FIREBASE_CHAT_UNAVAILABLE(
+                        "FIREBASE_CHAT_UNAVAILABLE",
+                        "Firebase Chat token service is not configured.",
+                        HttpStatus.SERVICE_UNAVAILABLE),
         BAD_REQUEST("ERR_BAD_REQUEST", "Bad request", HttpStatus.BAD_REQUEST),
         LEGACY_NUTRIENT_INPUT_DEPRECATED(
                 "ERR_LEGACY_NUTRIENT_INPUT_DEPRECATED",

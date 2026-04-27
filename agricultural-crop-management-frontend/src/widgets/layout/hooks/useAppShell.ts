@@ -39,11 +39,19 @@ export function useAppShell(props: AppShellProps) {
     } = props;
 
     // UI State
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
         // Initialize from localStorage with portal-specific key
         const storageKey = `${portalType.toLowerCase()}_sidebar_collapsed`;
         const stored = localStorage.getItem(storageKey);
-        return stored ? JSON.parse(stored) : false;
+        if (!stored) {
+            return false;
+        }
+        try {
+            const parsed = JSON.parse(stored);
+            return typeof parsed === 'boolean' ? parsed : false;
+        } catch {
+            return false;
+        }
     });
     const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);

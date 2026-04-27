@@ -2,7 +2,10 @@ package org.example.QuanLyMuaVu.module.admin.service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import org.example.QuanLyMuaVu.module.admin.repository.DocumentFavoriteRepositor
 import org.example.QuanLyMuaVu.module.admin.repository.DocumentRecentOpenRepository;
 import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
 import org.example.QuanLyMuaVu.module.identity.port.IdentityCommandPort;
+import org.example.QuanLyMuaVu.module.shared.security.CurrentUserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,8 @@ public class AdminUserCommandService {
     private final DocumentFavoriteRepository documentFavoriteRepository;
     private final DocumentRecentOpenRepository documentRecentOpenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     /**
      * DTO for user response in admin operations.
@@ -94,6 +100,8 @@ public class AdminUserCommandService {
 
         org.example.QuanLyMuaVu.module.identity.entity.User user = identityCommandPort.findUserById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        List<String> beforeRoles = normalizeRoleCodes(user.getRoles());
+        String beforeStatus = user.getStatus() != null ? user.getStatus().name() : null;
 
         // Update username if provided and different
         if (request.getUsername() != null && !request.getUsername().isBlank()
@@ -139,6 +147,33 @@ public class AdminUserCommandService {
 
         user = identityCommandPort.saveUser(user);
         log.info("Successfully updated user ID: {}", id);
+        String actor = resolveAuditActor();
+        List<String> afterRoles = normalizeRoleCodes(user.getRoles());
+        String afterStatus = user.getStatus() != null ? user.getStatus().name() : null;
+
+        if (!beforeRoles.equals(afterRoles)) {
+            auditLogService.logModuleOperation(
+                    "IDENTITY",
+                    "USER",
+                    toAuditEntityId(user.getId()),
+                    "RBAC_ROLE_UPDATED",
+                    actor,
+                    buildRbacAuditSnapshot(user, buildChangeMap("beforeRoles", beforeRoles, "afterRoles", afterRoles)),
+                    "Admin updated user roles",
+                    null);
+        }
+
+        if (!equalsIgnoreCase(beforeStatus, afterStatus)) {
+            auditLogService.logModuleOperation(
+                    "IDENTITY",
+                    "USER",
+                    toAuditEntityId(user.getId()),
+                    "RBAC_STATUS_UPDATED",
+                    actor,
+                    buildRbacAuditSnapshot(user, buildChangeMap("beforeStatus", beforeStatus, "afterStatus", afterStatus)),
+                    "Admin updated user status",
+                    null);
+        }
 
         return toResponse(user);
     }
@@ -151,6 +186,7 @@ public class AdminUserCommandService {
 
         org.example.QuanLyMuaVu.module.identity.entity.User user = identityCommandPort.findUserById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        String beforeStatus = user.getStatus() != null ? user.getStatus().name() : null;
 
         try {
             UserStatus newStatus = UserStatus.valueOf(status.toUpperCase());
@@ -161,6 +197,18 @@ public class AdminUserCommandService {
 
         user = identityCommandPort.saveUser(user);
         log.info("Successfully updated status for user ID: {}", id);
+        String afterStatus = user.getStatus() != null ? user.getStatus().name() : null;
+        if (!equalsIgnoreCase(beforeStatus, afterStatus)) {
+            auditLogService.logModuleOperation(
+                    "IDENTITY",
+                    "USER",
+                    toAuditEntityId(user.getId()),
+                    "RBAC_STATUS_UPDATED",
+                    resolveAuditActor(),
+                    buildRbacAuditSnapshot(user, buildChangeMap("beforeStatus", beforeStatus, "afterStatus", afterStatus)),
+                    "Admin updated user status",
+                    null);
+        }
 
         return toResponse(user);
     }
@@ -273,5 +321,69 @@ public class AdminUserCommandService {
                 user.getPhone(),
                 user.getStatus() != null ? user.getStatus().name() : null,
                 roleNames);
+    }
+
+    private List<String> normalizeRoleCodes(Set<org.example.QuanLyMuaVu.module.identity.entity.Role> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return List.of();
+        }
+        return roles.stream()
+                .map(org.example.QuanLyMuaVu.module.identity.entity.Role::getCode)
+                .filter(code -> code != null && !code.isBlank())
+                .map(code -> code.trim().toUpperCase(Locale.ROOT))
+                .sorted()
+                .toList();
+    }
+
+    private Map<String, Object> buildRbacAuditSnapshot(
+            org.example.QuanLyMuaVu.module.identity.entity.User user,
+            Map<String, Object> changes) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("userId", user.getId());
+        snapshot.put("username", user.getUsername());
+        snapshot.put("email", user.getEmail());
+        snapshot.put("changes", changes);
+        return snapshot;
+    }
+
+    private Map<String, Object> buildChangeMap(String key1, Object value1, String key2, Object value2) {
+        Map<String, Object> changes = new LinkedHashMap<>();
+        changes.put(key1, value1);
+        changes.put(key2, value2);
+        return changes;
+    }
+
+    private String resolveAuditActor() {
+        try {
+            org.example.QuanLyMuaVu.module.identity.entity.User actor = currentUserService.getCurrentUser();
+            if (actor != null && actor.getUsername() != null && !actor.getUsername().isBlank()) {
+                return actor.getUsername();
+            }
+        } catch (Exception ex) {
+            log.debug("Could not resolve current admin actor for audit log: {}", ex.getMessage());
+        }
+        return "system";
+    }
+
+    private Integer toAuditEntityId(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        try {
+            return Math.toIntExact(userId);
+        } catch (ArithmeticException ex) {
+            log.warn("User ID is out of Integer range for audit_logs table: {}", userId);
+            return null;
+        }
+    }
+
+    private boolean equalsIgnoreCase(String left, String right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.equalsIgnoreCase(right);
     }
 }

@@ -7,6 +7,12 @@ import { preferencesApi } from '@/entities/preferences/api/client';
 import { preferencesKeys } from '@/entities/preferences/model/keys';
 import { PreferencesForm } from './PreferencesForm';
 
+vi.mock('@/hooks/useI18n', () => ({
+    useI18n: () => ({
+        t: (key: string) => key,
+    }),
+}));
+
 vi.mock('@/features/auth', () => ({
     useAuth: () => ({ isAuthenticated: true }),
 }));
@@ -103,7 +109,7 @@ describe('PreferencesForm', () => {
         fireEvent.change(selects[1], { target: { value: 'TON' } });
         fireEvent.change(selects[2], { target: { value: 'en-US' } });
 
-        fireEvent.click(screen.getByRole('button', { name: /save preferences/i }));
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
         await waitFor(() => {
             const cached = queryClient.getQueryData(preferencesKeys.me());

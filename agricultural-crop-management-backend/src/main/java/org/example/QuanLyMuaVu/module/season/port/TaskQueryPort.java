@@ -2,6 +2,7 @@ package org.example.QuanLyMuaVu.module.season.port;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.example.QuanLyMuaVu.Enums.TaskStatus;
 import org.example.QuanLyMuaVu.module.season.entity.DashboardTaskView;
@@ -23,6 +24,8 @@ public interface TaskQueryPort {
     long countCompletedBySeasonId(Integer seasonId);
 
     long countCompletedOnTimeBySeasonId(Integer seasonId);
+
+    Map<TaskStatus, Long> countTaskStatusBySeasonId(Integer seasonId);
 
     Optional<Task> findTaskById(Integer taskId);
 

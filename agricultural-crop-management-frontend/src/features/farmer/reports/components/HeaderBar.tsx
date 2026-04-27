@@ -20,6 +20,9 @@ interface HeaderBarProps {
     onExportClick: () => void;
     seasonOptions?: Array<{ value: string; label: string }>;
     disableSeasonSelect?: boolean;
+    title?: string;
+    subtitle?: string;
+    progressPercent?: number;
 }
 
 export function HeaderBar({
@@ -29,20 +32,32 @@ export function HeaderBar({
     onExportClick,
     seasonOptions,
     disableSeasonSelect = false,
+    title,
+    subtitle,
+    progressPercent,
 }: HeaderBarProps) {
     const options = seasonOptions ?? SEASON_OPTIONS;
+    const headingTitle = title ?? "Reports Overview";
+    const headingSubtitle = subtitle ?? "Track productivity, costs, and compliance";
 
     return (
         <Card className="border border-border rounded-xl shadow-sm mb-6 sticky top-0 z-10 bg-card">
             <CardContent className="px-6 py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-shrink-0">
-                        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 leading-tight">
-                            <BarChart3 className="w-6 h-6 text-emerald-600" />
-                            Reports Overview
-                        </h1>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 leading-tight">
+                                <BarChart3 className="w-6 h-6 text-emerald-600" />
+                                {headingTitle}
+                            </h1>
+                            {typeof progressPercent === "number" && (
+                                <span className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                    Tiến độ: {progressPercent}%
+                                </span>
+                            )}
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Track productivity, costs, and compliance
+                            {headingSubtitle}
                         </p>
                     </div>
 
@@ -82,6 +97,3 @@ export function HeaderBar({
         </Card>
     );
 }
-
-
-

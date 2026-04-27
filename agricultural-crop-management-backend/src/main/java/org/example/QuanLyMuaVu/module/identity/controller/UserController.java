@@ -24,19 +24,19 @@ public class UserController {
 
     UserService userService;
 
-    @PreAuthorize("hasAnyRole('BUYER','FARMER','EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
     @GetMapping("/me")
     public ApiResponse<FarmerResponse> me() {
         return ApiResponse.success(userService.getMyInfo());
     }
 
-    @PreAuthorize("hasAnyRole('BUYER','FARMER','EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
     @PutMapping("/profile")
     public ApiResponse<FarmerResponse> updateProfile(@RequestBody UserProfileUpdateRequest request) {
         return ApiResponse.success(userService.updateProfile(request));
     }
 
-    @PreAuthorize("hasAnyRole('BUYER','FARMER','EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
     @PutMapping("/change-password")
     public ApiResponse<FarmerResponse> changePassword(@Valid @RequestBody FarmerUpdateRequest request) {
         return ApiResponse.success(userService.changeMyPassword(request));

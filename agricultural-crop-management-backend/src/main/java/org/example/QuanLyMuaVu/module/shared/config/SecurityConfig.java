@@ -86,11 +86,14 @@ public class SecurityConfig {
                                                                 "/api/v1/marketplace/addresses/**",
                                                                 "/api/v1/marketplace/reviews/**")
                                                 .hasRole("BUYER")
-                                                .requestMatchers("/api/v1/notifications/**").authenticated()
+                                                .requestMatchers("/api/v1/notifications/**")
+                                                .hasAnyRole("ADMIN", "BUYER", "FARMER", "EMPLOYEE")
                                                 // Admin APIs (system-wide access for admins)
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                                 // Farmer APIs and farm-scoped resources (day-to-day operations)
                                                 .requestMatchers("/api/v1/farmer/**").hasRole("FARMER")
+                                                .requestMatchers("/api/v1/dashboard/**", "/api/v1/fields/**")
+                                                .hasRole("FARMER")
                                                 .requestMatchers("/api/v1/farms/**", "/api/v1/plots/**",
                                                                 "/api/v1/crops/**",
                                                                 "/api/v1/seasons/**")
@@ -101,9 +104,13 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/buyer/**").hasRole("BUYER")
                                                 // Employee APIs
                                                 .requestMatchers("/api/v1/employee/**").hasRole("EMPLOYEE")
-                                                // Shared user APIs (BUYER + FARMER + EMPLOYEE)
+                                                .requestMatchers(HttpMethod.POST, "/api/v1/firebase/chat-token")
+                                                .authenticated()
+                                                .requestMatchers("/api/v1/preferences/**")
+                                                .hasAnyRole("ADMIN", "BUYER", "FARMER", "EMPLOYEE")
+                                                // Shared user APIs (ADMIN + BUYER + FARMER + EMPLOYEE)
                                                 .requestMatchers("/api/v1/user/**")
-                                                .hasAnyRole("BUYER", "FARMER", "EMPLOYEE")
+                                                .hasAnyRole("ADMIN", "BUYER", "FARMER", "EMPLOYEE")
                                                 // Mixed shared features
                                                 .requestMatchers("/api/v1/reports/**", "/api/v1/ai/**")
                                                 .hasRole("BUYER")

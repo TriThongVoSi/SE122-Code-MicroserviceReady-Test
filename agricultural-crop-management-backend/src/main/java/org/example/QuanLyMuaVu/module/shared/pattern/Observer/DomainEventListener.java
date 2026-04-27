@@ -33,7 +33,7 @@ public class DomainEventListener {
                 event.getOwnerUserId());
 
         String link = event.getSeasonId() != null ? "/seasons/" + event.getSeasonId() : "/seasons";
-        incidentCommandPort.createNotification(
+        incidentCommandPort.createNotificationFromEvent(
                 event.getOwnerUserId(),
                 "New season created",
                 "org.example.QuanLyMuaVu.module.season.entity.Season '" + safeText(event.getSeasonName(), "N/A") + "' is ready for planning.",
@@ -56,19 +56,45 @@ public class DomainEventListener {
                 : "/tasks/" + event.getTaskId();
         String message = "Task '" + safeText(event.getTaskTitle(), "N/A") + "' has been completed.";
 
-        incidentCommandPort.createNotification(
+        incidentCommandPort.createNotificationFromEvent(
                 event.getOwnerUserId(),
                 "Task completed",
                 message,
                 link);
 
         if (event.getAssigneeUserId() != null && !event.getAssigneeUserId().equals(event.getOwnerUserId())) {
-            incidentCommandPort.createNotification(
+            incidentCommandPort.createNotificationFromEvent(
                     event.getAssigneeUserId(),
                     "Task completion confirmed",
                     message,
                     link);
         }
+    }
+
+    @EventListener
+    @Async
+    public void handleTaskAssigned(TaskAssignedEvent event) {
+        log.info("[EVENT] Task assigned: id={}, title={}, seasonId={}, assigneeId={}, ownerId={}, assignedBy={}",
+                event.getTaskId(),
+                event.getTaskTitle(),
+                event.getSeasonId(),
+                event.getAssigneeUserId(),
+                event.getOwnerUserId(),
+                event.getAssignedByUserId());
+
+        if (event.getAssigneeUserId() == null) {
+            return;
+        }
+
+        String link = event.getSeasonId() != null
+                ? "/seasons/" + event.getSeasonId() + "/tasks/" + event.getTaskId()
+                : "/tasks/" + event.getTaskId();
+
+        incidentCommandPort.createNotificationFromEvent(
+                event.getAssigneeUserId(),
+                "Task assigned",
+                "Task '" + safeText(event.getTaskTitle(), "N/A") + "' has been assigned to you.",
+                link);
     }
 
     @EventListener
@@ -88,7 +114,7 @@ public class DomainEventListener {
                 : "/incidents/" + event.getIncidentId();
         String message = "Severity " + severity + " incident requires follow-up.";
 
-        incidentCommandPort.createNotification(
+        incidentCommandPort.createNotificationFromEvent(
                 event.getOwnerUserId(),
                 title,
                 message,
@@ -145,7 +171,7 @@ public class DomainEventListener {
                 ? "/seasons/" + event.getSeasonId() + "/expenses"
                 : "/expenses";
         String category = safeText(event.getCategory(), "Uncategorized");
-        incidentCommandPort.createNotification(
+        incidentCommandPort.createNotificationFromEvent(
                 event.getOwnerUserId(),
                 "Expense " + action,
                 "Expense " + action + " for category '" + category + "'.",
@@ -165,7 +191,7 @@ public class DomainEventListener {
         String link = event.getSeasonId() != null
                 ? "/seasons/" + event.getSeasonId() + "/harvests"
                 : "/harvests";
-        incidentCommandPort.createNotification(
+        incidentCommandPort.createNotificationFromEvent(
                 event.getOwnerUserId(),
                 "Harvest " + action,
                 "Harvest lot " + action + " successfully.",

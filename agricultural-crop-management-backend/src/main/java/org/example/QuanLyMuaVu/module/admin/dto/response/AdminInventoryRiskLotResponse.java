@@ -25,6 +25,7 @@ public class AdminInventoryRiskLotResponse {
     Double onHand;
     Long daysToExpiry;
     String status;
+    String severity;
     String unit;
     Double unitCost;
 }

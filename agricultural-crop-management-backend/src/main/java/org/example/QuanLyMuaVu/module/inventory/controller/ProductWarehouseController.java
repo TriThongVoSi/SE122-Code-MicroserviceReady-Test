@@ -22,6 +22,7 @@ import org.example.QuanLyMuaVu.module.inventory.service.ProductWarehouseService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -89,6 +90,13 @@ public class ProductWarehouseController {
         return ApiResponse.success(productWarehouseService.updateLot(id, request));
     }
 
+    @Operation(summary = "Archive product lot", description = "Archive a lot without deleting transaction history")
+    @DeleteMapping("/lots/{id}")
+    public ApiResponse<Void> archiveLot(@PathVariable Integer id) {
+        productWarehouseService.archiveLot(id);
+        return ApiResponse.success(null);
+    }
+
     @Operation(summary = "Adjust product lot on-hand", description = "Adjust on-hand quantity for a product lot")
     @PostMapping("/lots/{id}/adjust")
     public ApiResponse<ProductWarehouseLotResponse> adjustLot(
@@ -123,4 +131,3 @@ public class ProductWarehouseController {
         return ApiResponse.success(productWarehouseService.getTraceability(id));
     }
 }
-

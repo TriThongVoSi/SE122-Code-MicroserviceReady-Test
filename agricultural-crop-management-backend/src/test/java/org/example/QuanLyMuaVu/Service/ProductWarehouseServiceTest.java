@@ -4,6 +4,7 @@ import org.example.QuanLyMuaVu.module.farm.service.FarmAccessService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.QuanLyMuaVu.module.inventory.dto.request.AdjustProductWarehouseLotRequest;
 import org.example.QuanLyMuaVu.module.inventory.dto.request.CreateProductWarehouseLotRequest;
+import org.example.QuanLyMuaVu.module.inventory.dto.request.StockOutProductWarehouseLotRequest;
 import org.example.QuanLyMuaVu.module.cropcatalog.entity.Crop;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.season.entity.Harvest;
@@ -15,6 +16,7 @@ import org.example.QuanLyMuaVu.module.inventory.entity.StockLocation;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.inventory.entity.Warehouse;
 import org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus;
+import org.example.QuanLyMuaVu.Enums.ProductWarehouseTransactionType;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.inventory.repository.ProductWarehouseLotRepository;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -141,7 +144,7 @@ class ProductWarehouseServiceTest {
                 .status(ProductWarehouseLotStatus.IN_STOCK)
                 .unit("kg")
                 .build();
-        when(productWarehouseLotRepository.findById(22)).thenReturn(Optional.of(lot));
+        when(productWarehouseLotRepository.findByIdForUpdate(22)).thenReturn(Optional.of(lot));
         doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(farm);
 
         AdjustProductWarehouseLotRequest request = AdjustProductWarehouseLotRequest.builder()
@@ -152,6 +155,101 @@ class ProductWarehouseServiceTest {
         AppException exception = assertThrows(AppException.class,
                 () -> productWarehouseService.adjustLot(22, request));
         assertEquals(ErrorCode.INSUFFICIENT_STOCK, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("adjustLot writes adjustment transaction with consistent resulting_on_hand")
+    void adjustLot_recordsTransactionWithConsistentResultingOnHand() {
+        ProductWarehouseLot lot = ProductWarehouseLot.builder()
+                .id(22)
+                .farm(farm)
+                .warehouse(warehouse)
+                .onHandQuantity(BigDecimal.valueOf(10))
+                .status(ProductWarehouseLotStatus.IN_STOCK)
+                .unit("kg")
+                .build();
+        when(productWarehouseLotRepository.findByIdForUpdate(22)).thenReturn(Optional.of(lot));
+        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(farm);
+        when(farmAccessService.getCurrentUser()).thenReturn(actor);
+        when(productWarehouseLotRepository.save(any(ProductWarehouseLot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productWarehouseTransactionRepository.save(any(ProductWarehouseTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdjustProductWarehouseLotRequest request = AdjustProductWarehouseLotRequest.builder()
+                .quantityDelta(BigDecimal.valueOf(3))
+                .note("inventory correction")
+                .build();
+
+        productWarehouseService.adjustLot(22, request);
+
+        ArgumentCaptor<ProductWarehouseTransaction> transactionCaptor = ArgumentCaptor.forClass(ProductWarehouseTransaction.class);
+        verify(productWarehouseTransactionRepository).save(transactionCaptor.capture());
+        ProductWarehouseTransaction transaction = transactionCaptor.getValue();
+
+        assertEquals(ProductWarehouseTransactionType.ADJUSTMENT, transaction.getTransactionType());
+        assertEquals(BigDecimal.valueOf(3), transaction.getQuantity());
+        assertEquals(BigDecimal.valueOf(13), transaction.getResultingOnHand());
+        assertEquals(BigDecimal.valueOf(13), lot.getOnHandQuantity());
+    }
+
+    @Test
+    @DisplayName("stockOutLot throws INSUFFICIENT_STOCK when requested quantity is greater than on hand")
+    void stockOutLot_whenQuantityGreaterThanOnHand_throwsInsufficientStock() {
+        ProductWarehouseLot lot = ProductWarehouseLot.builder()
+                .id(55)
+                .farm(farm)
+                .warehouse(warehouse)
+                .onHandQuantity(BigDecimal.valueOf(5))
+                .status(ProductWarehouseLotStatus.IN_STOCK)
+                .unit("kg")
+                .build();
+        when(productWarehouseLotRepository.findByIdForUpdate(55)).thenReturn(Optional.of(lot));
+        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(farm);
+        when(farmAccessService.getCurrentUser()).thenReturn(actor);
+
+        StockOutProductWarehouseLotRequest request = StockOutProductWarehouseLotRequest.builder()
+                .quantity(BigDecimal.valueOf(6))
+                .note("ship order")
+                .build();
+
+        AppException exception = assertThrows(AppException.class,
+                () -> productWarehouseService.stockOutLot(55, request));
+        assertEquals(ErrorCode.INSUFFICIENT_STOCK, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("stockOutLot writes stock-out transaction with consistent resulting_on_hand")
+    void stockOutLot_recordsTransactionWithConsistentResultingOnHand() {
+        ProductWarehouseLot lot = ProductWarehouseLot.builder()
+                .id(56)
+                .farm(farm)
+                .warehouse(warehouse)
+                .onHandQuantity(BigDecimal.valueOf(20))
+                .status(ProductWarehouseLotStatus.IN_STOCK)
+                .unit("kg")
+                .build();
+        when(productWarehouseLotRepository.findByIdForUpdate(56)).thenReturn(Optional.of(lot));
+        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(farm);
+        when(farmAccessService.getCurrentUser()).thenReturn(actor);
+        when(productWarehouseLotRepository.save(any(ProductWarehouseLot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(productWarehouseTransactionRepository.save(any(ProductWarehouseTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        StockOutProductWarehouseLotRequest request = StockOutProductWarehouseLotRequest.builder()
+                .quantity(BigDecimal.valueOf(7))
+                .note("ship order")
+                .build();
+
+        productWarehouseService.stockOutLot(56, request);
+
+        ArgumentCaptor<ProductWarehouseTransaction> transactionCaptor = ArgumentCaptor.forClass(ProductWarehouseTransaction.class);
+        verify(productWarehouseTransactionRepository).save(transactionCaptor.capture());
+        ProductWarehouseTransaction transaction = transactionCaptor.getValue();
+
+        assertEquals(ProductWarehouseTransactionType.STOCK_OUT, transaction.getTransactionType());
+        assertEquals(BigDecimal.valueOf(7), transaction.getQuantity());
+        assertEquals(BigDecimal.valueOf(13), transaction.getResultingOnHand());
+        assertEquals(BigDecimal.valueOf(13), lot.getOnHandQuantity());
     }
 
     @Test
@@ -180,6 +278,25 @@ class ProductWarehouseServiceTest {
         AppException exception = assertThrows(AppException.class,
                 () -> productWarehouseService.createLot(request));
         assertEquals(ErrorCode.PRODUCT_WAREHOUSE_RECEIPT_DUPLICATE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("archiveLot marks lot as ARCHIVED")
+    void archiveLot_marksStatusArchived() {
+        ProductWarehouseLot lot = ProductWarehouseLot.builder()
+                .id(77)
+                .farm(farm)
+                .status(ProductWarehouseLotStatus.IN_STOCK)
+                .build();
+
+        when(productWarehouseLotRepository.findByIdForUpdate(77)).thenReturn(Optional.of(lot));
+        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(farm);
+        when(productWarehouseLotRepository.save(any(ProductWarehouseLot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        productWarehouseService.archiveLot(77);
+
+        assertEquals(ProductWarehouseLotStatus.ARCHIVED, lot.getStatus());
+        verify(productWarehouseLotRepository).save(lot);
     }
 }
 

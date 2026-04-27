@@ -15,6 +15,7 @@ import {
 
 // Admin Pages
 import { AdminAlertsPage } from "@/pages/admin/AdminAlertsPage";
+import { AdminAuditLogsPage } from "@/pages/admin/AdminAuditLogsPage";
 import { AdminIncidentsPage } from "@/pages/admin/AdminIncidentsPage";
 import { AdminInventoryPage } from "@/pages/admin/AdminInventoryPage";
 import { CropsVarietiesPage } from "@/pages/admin/CropsVarietiesPage";
@@ -46,6 +47,8 @@ export function AdminPortalContent({ currentView }: AdminPortalContentProps) {
       return <AdminIncidentsPage />;
     case "alerts":
       return <AdminAlertsPage />;
+    case "audit-logs":
+      return <AdminAuditLogsPage />;
     case "users-roles":
       return <UsersRolesPage />;
     case "farms-plots":

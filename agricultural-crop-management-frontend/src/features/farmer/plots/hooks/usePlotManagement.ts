@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { usePlots, useCreatePlot, useDeletePlot, useUpdatePlot, type PlotRequest } from "@/entities/plot";
 import type { Plot, PlotStatus, ViewMode } from "../types";
-import { transformApiToFeature, mapPlotStatusToId } from "../utils";
+import { transformApiToFeature, mapPlotStatusToApiStatus } from "../utils";
 import { usePlotFilters } from "./usePlotFilters";
 
 /**
@@ -226,14 +226,14 @@ export const usePlotManagement = (): UsePlotManagementReturn => {
   const handleMarkDormant = useCallback((plot: Plot) => {
     const plotId = parseInt(plot.id, 10);
     if (!isNaN(plotId)) {
-      updateMutation.mutate({
-        id: plotId,
-        data: {
-          plotName: plot.name,
-          area: plot.area,
-          plotStatusId: 2, // Dormant
-        },
-      });
+        updateMutation.mutate({
+          id: plotId,
+          data: {
+            plotName: plot.name,
+            area: plot.area,
+            status: "IDLE",
+          },
+        });
     }
   }, [updateMutation]);
 
@@ -307,7 +307,7 @@ export const usePlotManagement = (): UsePlotManagementReturn => {
           data: {
             plotName: plot.name,
             area: plot.area,
-            plotStatusId: mapPlotStatusToId(status),
+            status: mapPlotStatusToApiStatus(status),
           },
         });
       }
