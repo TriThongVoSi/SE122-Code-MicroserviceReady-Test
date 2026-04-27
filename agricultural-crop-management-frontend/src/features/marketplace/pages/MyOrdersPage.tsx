@@ -69,8 +69,8 @@ function OrderItemPreview({ item }: { item: MarketplaceOrderItem }) {
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="h-16 w-16 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-          <Package size={20} className="text-slate-400" />
+        <div className="h-16 w-16 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+          <Package size={18} className="text-slate-300" />
         </div>
       )}
       <div className="flex-1 min-w-0">
@@ -109,13 +109,17 @@ function OrderSummaryCard({ order }: { order: MarketplaceOrder }) {
           <p className="px-4 py-2 text-xs text-gray-400 italic">+{extraCount} sản phẩm khác</p>
         )}
       </div>
-      <div className="border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <p className="text-sm text-gray-600">
+      <div className="border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-sm text-gray-600 flex-1">
           Tổng tiền ({order.items.length} sản phẩm):{" "}
           <span className="font-bold" style={{ color: "#3BA55D" }}>{formatVnd(order.totalAmount)}</span>
         </p>
         <Link to={`/marketplace/orders/${order.id}`} className="shrink-0">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto flex items-center justify-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-1 transition-colors duration-200 hover:bg-[#3BA55D] hover:border-[#3BA55D] hover:text-white"
+          >
             Xem chi tiết <ChevronRight size={16} />
           </Button>
         </Link>
