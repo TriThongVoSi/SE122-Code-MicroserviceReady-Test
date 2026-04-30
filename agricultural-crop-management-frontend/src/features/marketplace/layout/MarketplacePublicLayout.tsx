@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { cn } from "@/shared/lib";
+import { ProductFilterDropdown } from "./ProductFilterDropdown";
 import {
   ChevronDown,
   Facebook,
@@ -23,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui";
-import { useMarketplaceCart, useMarketplaceCartMergeBridge } from "../hooks";
+import { useMarketplaceCartCount, useMarketplaceCartMergeBridge, useScrolled } from "../hooks";
 import "./MarketplacePublicLayout.css";
 
 function resolvePortalRoute(role: string | undefined): string {
@@ -64,10 +66,73 @@ function formatRoleLabel(role: string | undefined) {
 }
 
 const NAV_LINKS = [
-  { to: "/marketplace/products", label: "Sản phẩm" },
   { to: "/marketplace/farms", label: "Nông trại" },
   { to: "/marketplace/traceability", label: "Truy xuất" },
 ];
+
+const PRODUCTS_NAV_ACTIVE_STYLE = { color: "#3BA55D", background: "#f0faf4" };
+
+function ProductsNavItem() {
+  const [isOpen, setIsOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const handleEnter = () => {
+    clearTimeout(closeTimerRef.current);
+    setIsOpen(true);
+  };
+
+  const handleLeave = () => {
+    closeTimerRef.current = setTimeout(() => setIsOpen(false), 150);
+  };
+
+  return (
+    <div
+      className="relative"
+      onKeyDown={(e) => { if (e.key === "Escape") setIsOpen(false); }}
+    >
+      <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+        <NavLink
+          to="/marketplace/products"
+          onFocus={handleEnter}
+          onBlur={handleLeave}
+          className={({ isActive }) =>
+            cn(
+              "fb-nav-link flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition-colors",
+              isActive || isOpen
+                ? "fb-active font-semibold ring-1 ring-[#3BA55D]"
+                : "text-gray-600 hover:bg-gray-100 hover:text-emerald-600",
+            )
+          }
+          style={({ isActive }) => (isActive || isOpen ? PRODUCTS_NAV_ACTIVE_STYLE : undefined)}
+        >
+          {({ isActive }) => (
+            <>
+              <span style={isActive || isOpen ? { color: "#3BA55D" } : undefined}>Sản phẩm</span>
+              <ChevronDown
+                className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")}
+                style={isActive || isOpen ? { color: "#3BA55D" } : undefined}
+              />
+            </>
+          )}
+        </NavLink>
+      </div>
+
+      {isOpen && (
+        <div
+          className="absolute left-0 top-[calc(100%+8px)] z-[60]"
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        >
+          <ProductFilterDropdown
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
+            onClose={() => setIsOpen(false)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MarketplaceNavLink({
   to,
@@ -83,9 +148,12 @@ function MarketplaceNavLink({
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        isActive
-          ? "text-sm font-medium text-emerald-600"
-          : "text-sm font-medium text-gray-600 transition-colors hover:text-emerald-600"
+        cn(
+          "fb-nav-link rounded-full px-3 py-1 text-sm transition-colors",
+          isActive
+            ? "fb-active bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-200"
+            : "font-medium text-gray-600 hover:bg-gray-100 hover:text-emerald-600",
+        )
       }
     >
       {label}
@@ -115,7 +183,7 @@ function MarketplaceSearchBar({ className = "" }: { className?: string }) {
         placeholder="Tìm kiếm nông sản, nông trại..."
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="w-full rounded-full border border-transparent bg-gray-100 py-2.5 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:border-emerald-200 focus:bg-white focus:ring-2 focus:ring-emerald-500"
+        className="fb-search-input w-full rounded-full border border-transparent bg-gray-100 py-2.5 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:bg-white"
       />
     </form>
   );
@@ -179,7 +247,7 @@ function MarketplaceFooter() {
         </div>
 
         <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} FarmTrace. Đồ án sinh viên.</p>
+          <p>&copy; {new Date().getFullYear()} FarmTrace.</p>
         </div>
       </div>
     </footer>
@@ -217,6 +285,9 @@ function MobileMenu({
         <nav className="flex flex-col gap-3">
           <Link to="/marketplace" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
             Trang chủ
+          </Link>
+          <Link to="/marketplace/products" onClick={onClose} className="text-sm font-medium text-gray-700 hover:text-emerald-600">
+            Sản phẩm
           </Link>
           {NAV_LINKS.map((link) => (
             <MarketplaceNavLink key={link.to} to={link.to} label={link.label} onClick={onClose} />
@@ -285,12 +356,17 @@ export function MarketplacePublicLayout() {
   const showPortalAction = isAuthenticated && user?.role !== "buyer";
 
   useMarketplaceCartMergeBridge();
-  const serverCartQuery = useMarketplaceCart({ enabled: isAuthenticated });
-  const serverCartCount = serverCartQuery.data?.itemCount ?? 0;
+  const cartCount = useMarketplaceCartCount();
+  const scrolled = useScrolled(80);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="marketplace-header sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+      <header
+        className={cn(
+          "marketplace-header fb-marketplace sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm",
+          scrolled && "fb-nav-scrolled",
+        )}
+      >
         <div className="marketplace-header__inner container mx-auto px-4">
           <div className="marketplace-header__left">
             <Link to="/marketplace" className="flex items-center gap-2">
@@ -301,6 +377,7 @@ export function MarketplacePublicLayout() {
             </Link>
 
             <nav className="marketplace-header__nav">
+              <ProductsNavItem />
               {NAV_LINKS.map((link) => (
                 <MarketplaceNavLink key={link.to} to={link.to} label={link.label} />
               ))}
@@ -318,11 +395,11 @@ export function MarketplacePublicLayout() {
               className="relative rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-emerald-600"
             >
               <ShoppingCart size={24} />
-              {serverCartCount > 0 ? (
-                <span className="absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
-                  {serverCartCount}
+              {cartCount > 0 && (
+                <span className="fb-cart-badge absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
+                  {cartCount}
                 </span>
-              ) : null}
+              )}
             </Link>
 
             <div className="marketplace-header__desktop-actions">
@@ -420,7 +497,7 @@ export function MarketplacePublicLayout() {
           isAuthenticated={isAuthenticated}
           userName={user?.name}
           userRole={user?.role}
-          cartCount={serverCartCount}
+          cartCount={cartCount}
           onLogout={() => {
             void logout();
           }}

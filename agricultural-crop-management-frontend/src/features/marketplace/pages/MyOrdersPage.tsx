@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { ChevronRight, Package } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
-import { type MarketplaceOrderStatus } from "@/shared/api";
+import { Button } from "@/shared/ui";
+import { type MarketplaceOrder, type MarketplaceOrderItem, type MarketplaceOrderStatus } from "@/shared/api";
 import { useMarketplaceOrders } from "../hooks";
-import { formatDateTime, formatVnd } from "../lib/format";
+import { formatDate, formatVnd } from "../lib/format";
 
 const ORDER_STATUSES: Array<{ value: MarketplaceOrderStatus }> = [
   { value: "PENDING" },
@@ -15,28 +15,30 @@ const ORDER_STATUSES: Array<{ value: MarketplaceOrderStatus }> = [
   { value: "CANCELLED" },
 ];
 
-function statusVariant(status: MarketplaceOrderStatus):
-  | "default"
-  | "warning"
-  | "success"
-  | "destructive"
-  | "secondary"
-  | "outline"
-  | "info" {
-  switch (status) {
-    case "PENDING":
-      return "warning";
-    case "CONFIRMED":
-    case "PREPARING":
-      return "info";
-    case "DELIVERING":
-    case "COMPLETED":
-      return "success";
-    case "CANCELLED":
-      return "destructive";
-    default:
-      return "secondary";
-  }
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Chờ xử lý",
+  CONFIRMED: "Đã xác nhận",
+  PREPARING: "Đang chuẩn bị",
+  DELIVERING: "Đang giao",
+  COMPLETED: "Hoàn tất",
+  CANCELLED: "Đã hủy",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-orange-100 text-orange-700 border border-orange-200",
+  CONFIRMED: "bg-blue-100 text-blue-700 border border-blue-200",
+  PREPARING: "bg-indigo-100 text-indigo-700 border border-indigo-200",
+  DELIVERING: "bg-sky-100 text-sky-700 border border-sky-200",
+  COMPLETED: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  CANCELLED: "bg-red-100 text-red-600 border border-red-200",
+};
+
+function getStatusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status;
+}
+
+function getStatusColor(status: string): string {
+  return STATUS_COLORS[status] ?? "bg-slate-100 text-slate-600 border border-slate-200";
 }
 
 function toPositiveInt(value: string | null, fallback: number) {
@@ -44,9 +46,90 @@ function toPositiveInt(value: string | null, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(status)}`}
+    >
+      {getStatusLabel(status)}
+    </span>
+  );
+}
+
+function OrderItemPreview({ item }: { item: MarketplaceOrderItem }) {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      {item.imageUrl && !imgError ? (
+        <img
+          src={item.imageUrl}
+          alt={item.productName}
+          className="h-16 w-16 rounded-lg object-cover shrink-0 bg-slate-100"
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="h-16 w-16 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+          <Package size={18} className="text-slate-300" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.productName}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Số lượng: {item.quantity} x {formatVnd(item.unitPriceSnapshot)}
+        </p>
+      </div>
+      <span className="text-sm font-semibold text-gray-800 shrink-0">
+        {formatVnd(item.lineTotal)}
+      </span>
+    </div>
+  );
+}
+
+function OrderSummaryCard({ order }: { order: MarketplaceOrder }) {
+  const previewItems = order.items.slice(0, 2);
+  const extraCount = order.items.length - previewItems.length;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
+      <div className="flex items-start justify-between px-4 py-3 border-b border-slate-100">
+        <div>
+          <p className="text-sm font-medium text-gray-500">
+            Mã đơn: <span className="font-semibold text-gray-900">#{order.orderCode}</span>
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Đặt ngày: {formatDate(order.createdAt)}</p>
+        </div>
+        <StatusBadge status={order.status} />
+      </div>
+      <div className="divide-y divide-slate-100">
+        {previewItems.map((item) => (
+          <OrderItemPreview key={item.id} item={item} />
+        ))}
+        {extraCount > 0 && (
+          <p className="px-4 py-2 text-xs text-gray-400 italic">+{extraCount} sản phẩm khác</p>
+        )}
+      </div>
+      <div className="border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-sm text-gray-600 flex-1">
+          Tổng tiền ({order.items.length} sản phẩm):{" "}
+          <span className="font-bold" style={{ color: "#3BA55D" }}>{formatVnd(order.totalAmount)}</span>
+        </p>
+        <Link to={`/marketplace/orders/${order.id}`} className="shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-1 transition-colors duration-200 hover:bg-[#3BA55D] hover:border-[#3BA55D] hover:text-white"
+          >
+            Xem chi tiết <ChevronRight size={16} />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function MyOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t } = useTranslation();
   const page = toPositiveInt(searchParams.get("page"), 1);
   const statusParam = searchParams.get("status");
   const selectedStatus = ORDER_STATUSES.some((item) => item.value === statusParam)
@@ -72,9 +155,9 @@ export function MyOrdersPage() {
 
   if (ordersQuery.isLoading) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-          {t("marketplaceBuyer.myOrders.loadingOrders")}
+          Đang tải đơn hàng...
         </div>
       </div>
     );
@@ -82,9 +165,9 @@ export function MyOrdersPage() {
 
   if (ordersQuery.isError) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="rounded-xl border border-dashed border-red-300 bg-white p-8 text-center text-sm text-red-600">
-          {t("marketplaceBuyer.myOrders.errorOrders")}
+          Không thể tải đơn hàng. Vui lòng thử lại.
         </div>
       </div>
     );
@@ -95,99 +178,52 @@ export function MyOrdersPage() {
   const totalPages = Math.max(orderPage?.totalPages ?? 1, 1);
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Đơn hàng của tôi</h1>
-        <div className="flex flex-wrap gap-2">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold text-gray-900">Đơn hàng của tôi</h1>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          style={!selectedStatus ? { backgroundColor: "#3BA55D", color: "#fff", borderColor: "#3BA55D" } : undefined}
+          onClick={() => updateParams({ status: null })}
+        >
+          Tất cả
+        </Button>
+        {ORDER_STATUSES.map(({ value }) => (
           <Button
+            key={value}
             type="button"
-            variant={!selectedStatus ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => updateParams({ status: null })}
+            style={selectedStatus === value ? { backgroundColor: "#3BA55D", color: "#fff", borderColor: "#3BA55D" } : undefined}
+            onClick={() => updateParams({ status: value === selectedStatus ? null : value })}
           >
-            Tất cả
+            {getStatusLabel(value)}
           </Button>
-          {ORDER_STATUSES.map((status) => (
-            <Button
-              key={status.value}
-              type="button"
-              variant={selectedStatus === status.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => updateParams({ status: status.value === selectedStatus ? null : status.value })}
-            >
-              {t(`marketplaceSeller.status.order.${status.value}`)}
-            </Button>
-          ))}
-        </div>
+        ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="mt-6 space-y-4">
         {orders.map((order) => (
-          <Card key={order.id} className="overflow-hidden shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-200 bg-gray-50 py-3 px-4">
-              <div>
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Mã đơn: <span className="font-semibold text-gray-900">#{order.orderCode}</span>
-                </CardTitle>
-                <div className="mt-1 text-xs text-gray-500">
-                  Đặt ngày: {formatDateTime(order.createdAt)}
-                </div>
-              </div>
-              <div>
-                <Badge variant={statusVariant(order.status)}>
-                  {t(`marketplaceSeller.status.order.${order.status}`)}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-4">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.productName}
-                      className="h-14 w-14 rounded-md bg-gray-100 object-cover flex-shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 truncate">{item.productName}</h4>
-                      <div className="mt-0.5 text-sm text-gray-500">
-                        Số lượng: {item.quantity} x {formatVnd(item.unitPriceSnapshot)}
-                      </div>
-                    </div>
-                    <div className="font-semibold text-gray-900 flex-shrink-0">
-                      {formatVnd(item.lineTotal)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3">
-                <div className="text-sm text-gray-600">
-                  Tổng tiền ({order.items.length} sản phẩm):
-                  <span className="ml-2 text-base font-bold text-emerald-600">{formatVnd(order.totalAmount)}</span>
-                </div>
-                <Link to={`/marketplace/orders/${order.id}`}>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1">
-                    Xem chi tiết <ChevronRight size={16} />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          <OrderSummaryCard key={order.id} order={order} />
         ))}
 
-        {orders.length === 0 ? (
+        {orders.length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white py-20 text-center">
             <Package size={48} className="mx-auto mb-4 text-gray-300" />
-            <h3 className="mb-2 text-lg font-medium text-gray-900">Chưa có đơn hàng nào</h3>
-            <p className="mb-6 text-gray-500">Bạn chưa thực hiện giao dịch nào trên FarmTrace.</p>
+            <h3 className="mb-2 text-lg font-medium text-gray-900">Bạn chưa có đơn hàng nào.</h3>
+            <p className="mb-6 text-sm text-gray-500">
+              Hãy khám phá sản phẩm nông sản và đặt đơn đầu tiên của bạn.
+            </p>
             <Link to="/marketplace/products">
-              <Button>Bắt đầu mua sắm</Button>
+              <Button>Mua sắm ngay</Button>
             </Link>
           </div>
-        ) : null}
+        )}
 
-        {orders.length > 0 ? (
+        {orders.length > 0 && (
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
             <p className="text-sm text-gray-500">
               Trang {page} / {totalPages}
@@ -211,7 +247,7 @@ export function MyOrdersPage() {
               </Button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

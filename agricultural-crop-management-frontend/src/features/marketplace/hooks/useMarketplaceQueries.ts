@@ -85,6 +85,20 @@ export function useMarketplaceProducts(query?: MarketplaceProductQuery) {
   });
 }
 
+export function useMarketplaceCategories(enabled: boolean) {
+  return useQuery({
+    queryKey: [...marketplaceQueryKeys.productsBase(), "categories"] as const,
+    enabled,
+    queryFn: async () => {
+      const response = await marketplaceApi.listProducts({ size: 100 });
+      return response.result;
+    },
+    select: (data) =>
+      Array.from(new Set(data.items.map((p) => p.category).filter(Boolean))).sort(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useMarketplaceProductDetail(slug?: string) {
   return useQuery({
     queryKey: marketplaceQueryKeys.product(slug),
