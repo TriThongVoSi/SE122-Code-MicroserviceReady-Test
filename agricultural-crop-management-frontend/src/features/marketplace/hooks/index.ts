@@ -1,3 +1,5 @@
+export { useInView } from "./useInView";
+export { useScrolled } from "./useScrolled";
 export { useMarketplaceAddToCart } from "./useMarketplaceAddToCart";
 export { useMarketplaceCartCount } from "./useMarketplaceCartCount";
 export { useMarketplaceCartMergeBridge } from "./useMarketplaceCartMergeBridge";

@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, Leaf, ShieldCheck, Star, Truck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/shared/lib";
 import { Card, CardContent } from "@/shared/ui";
-import { useMarketplaceFarms, useMarketplaceProducts } from "../hooks";
+import { useInView, useMarketplaceFarms, useMarketplaceProducts } from "../hooks";
 import { formatVnd } from "../lib/format";
 
 function ProductCardSkeleton() {
@@ -43,92 +45,136 @@ export function MarketHomePage() {
     featuredProducts[0]?.imageUrl ??
     "https://picsum.photos/seed/farm_hero/1200/800";
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const [card1Ref, card1InView] = useInView<HTMLDivElement>();
+  const [card2Ref, card2InView] = useInView<HTMLDivElement>();
+  const [card3Ref, card3InView] = useInView<HTMLDivElement>();
+
   return (
     <div>
-      <section className="relative overflow-hidden bg-emerald-50 py-16 lg:py-24">
+      <section className="fb-marketplace fb-hero">
+        <svg
+          className="fb-blob"
+          viewBox="0 0 480 480"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            fill="#E1F5EE"
+            d="M398,98c45,57,57,154,18,224s-138,114-219,99S52,357,42,277S82,108,162,68s191-27,236,30Z"
+          />
+        </svg>
+
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center gap-12 lg:flex-row">
-            <div className="z-10 flex-1 text-center lg:text-left">
-              <span className="mb-6 inline-block rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">
-                Chào mừng đến với FarmTrace
+          <div className="fb-hero-grid">
+            <div className={cn("fb-hero-left fb-stagger", mounted && "fb-mounted")}>
+              <span className="fb-chip">
+                <Leaf size={14} aria-hidden="true" />
+                Nông sản minh bạch
               </span>
-              <h1 className="mb-6 text-4xl font-bold leading-tight text-gray-900 md:text-5xl lg:text-6xl">
+
+              <h1 className="fb-h1">
                 Nông Sản Sạch,
-                <br className="hidden lg:block" />
-                <span className="text-emerald-600">Rõ Nguồn Gốc</span>
+                <br />
+                <span className="fb-h1-gradient">Rõ Nguồn Gốc</span>
               </h1>
-              <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600 lg:mx-0 lg:text-xl">
+
+              <p className="fb-subtitle">
                 Khám phá nông sản tươi ngon được kết nối trực tiếp với nông trại, mùa vụ và lô thu hoạch thật trong hệ thống hiện tại.
               </p>
-              <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
-                <Link
-                  to="/marketplace/products"
-                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-8 py-3.5 font-semibold text-white shadow-lg shadow-emerald-200 transition-colors hover:bg-emerald-700"
-                >
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link to="/marketplace/products" className="fb-cta-primary">
                   Mua sắm ngay
+                  <ArrowRight size={18} aria-hidden="true" />
                 </Link>
-                <Link
-                  to="/marketplace/traceability"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-emerald-100 bg-white px-8 py-3.5 font-semibold text-emerald-700 transition-colors hover:border-emerald-200 hover:bg-emerald-50"
-                >
+                <Link to="/marketplace/traceability" className="fb-cta-ghost">
                   Tìm hiểu truy xuất
                 </Link>
               </div>
+
+              <ul className="fb-trust-strip" aria-label="Cam kết">
+                <li>✓ 500+ nông trại</li>
+                <li>✓ Truy xuất minh bạch</li>
+                <li>✓ Giao toàn quốc</li>
+              </ul>
             </div>
 
-            <div className="relative z-10 mx-auto w-full max-w-2xl flex-1 lg:max-w-none">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-2xl lg:h-[500px] lg:aspect-auto">
+            <div className="fb-hero-right">
+              <div className="fb-hero-image-wrap">
                 <img
                   src={heroImage}
                   alt="Nông trại xanh tươi"
-                  className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6 text-white">
+                <div className="fb-hero-overlay" aria-hidden="true" />
+                <div className="absolute bottom-6 left-6 right-6 z-10 text-white">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white">
-                      Có truy xuất
-                    </span>
-                    <span className="rounded-full border border-white/20 bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
-                      Kết nối dữ liệu thật
-                    </span>
+                    <span className="fb-frosted-pill">Có truy xuất</span>
+                    <span className="fb-frosted-pill">Kết nối dữ liệu thật</span>
                   </div>
                   <p className="text-lg font-medium text-white/90">
                     Thu hoạch minh bạch, giao dịch trực tiếp từ nông trại địa phương
                   </p>
                 </div>
+                <aside className="fb-floating-card" aria-hidden="true">
+                  <span className="fb-pulse-dot" />
+                  <span>Đang giao dịch trực tiếp</span>
+                </aside>
               </div>
-              <div className="absolute -right-6 -top-6 -z-10 h-24 w-24 rounded-full bg-yellow-100 opacity-70 blur-2xl" />
-              <div className="absolute -bottom-8 -left-8 -z-10 h-32 w-32 rounded-full bg-emerald-200 opacity-60 blur-3xl" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-16">
+      <section className="fb-marketplace fb-features-section">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 gap-8 text-center md:grid-cols-3">
-            <div className="flex flex-col items-center">
-              <div className="mb-4 rounded-full bg-emerald-100 p-4 text-emerald-600">
-                <ShieldCheck size={32} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div
+              ref={card1Ref}
+              className={cn("fb-feature-card fb-reveal", card1InView && "fb-visible")}
+            >
+              <div className="fb-icon-circle">
+                <ShieldCheck size={28} aria-hidden="true" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Truy xuất rõ ràng</h3>
-              <p className="text-gray-600">Xem nông trại, mùa vụ và lô thu hoạch ngay trên từng sản phẩm.</p>
+              <h3 className="fb-card-title">Truy xuất rõ ràng</h3>
+              <p className="fb-card-body">
+                Xem nông trại, mùa vụ và lô thu hoạch ngay trên từng sản phẩm.
+              </p>
             </div>
-            <div className="flex flex-col items-center">
-              <div className="mb-4 rounded-full bg-emerald-100 p-4 text-emerald-600">
-                <Leaf size={32} />
+            <div
+              ref={card2Ref}
+              className={cn(
+                "fb-feature-card fb-reveal fb-reveal--delay-1",
+                card2InView && "fb-visible",
+              )}
+            >
+              <div className="fb-icon-circle">
+                <Leaf size={28} aria-hidden="true" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Sản phẩm minh bạch</h3>
-              <p className="text-gray-600">Người bán chỉ đăng được sản phẩm gắn với tồn kho thu hoạch hiện có.</p>
+              <h3 className="fb-card-title">Sản phẩm minh bạch</h3>
+              <p className="fb-card-body">
+                Người bán chỉ đăng được sản phẩm gắn với tồn kho thu hoạch hiện có.
+              </p>
             </div>
-            <div className="flex flex-col items-center">
-              <div className="mb-4 rounded-full bg-emerald-100 p-4 text-emerald-600">
-                <Truck size={32} />
+            <div
+              ref={card3Ref}
+              className={cn(
+                "fb-feature-card fb-reveal fb-reveal--delay-2",
+                card3InView && "fb-visible",
+              )}
+            >
+              <div className="fb-icon-circle">
+                <Truck size={28} aria-hidden="true" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Đặt mua trực tiếp</h3>
-              <p className="text-gray-600">Giữ trải nghiệm thương mại điện tử quen thuộc với giỏ hàng, checkout và đơn hàng thật.</p>
+              <h3 className="fb-card-title">Đặt mua trực tiếp</h3>
+              <p className="fb-card-body">
+                Giữ trải nghiệm thương mại điện tử quen thuộc với giỏ hàng, checkout và đơn hàng thật.
+              </p>
             </div>
           </div>
         </div>

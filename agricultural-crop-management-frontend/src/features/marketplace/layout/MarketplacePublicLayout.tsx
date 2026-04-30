@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui";
-import { useMarketplaceCartCount, useMarketplaceCartMergeBridge } from "../hooks";
+import { useMarketplaceCartCount, useMarketplaceCartMergeBridge, useScrolled } from "../hooks";
 import "./MarketplacePublicLayout.css";
 
 function resolvePortalRoute(role: string | undefined): string {
@@ -97,9 +97,9 @@ function ProductsNavItem() {
           onBlur={handleLeave}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition-colors",
+              "fb-nav-link flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition-colors",
               isActive || isOpen
-                ? "font-semibold ring-1 ring-[#3BA55D]"
+                ? "fb-active font-semibold ring-1 ring-[#3BA55D]"
                 : "text-gray-600 hover:bg-gray-100 hover:text-emerald-600",
             )
           }
@@ -148,9 +148,12 @@ function MarketplaceNavLink({
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        isActive
-          ? "rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200"
-          : "rounded-full px-3 py-1 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-emerald-600"
+        cn(
+          "fb-nav-link rounded-full px-3 py-1 text-sm transition-colors",
+          isActive
+            ? "fb-active bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-200"
+            : "font-medium text-gray-600 hover:bg-gray-100 hover:text-emerald-600",
+        )
       }
     >
       {label}
@@ -180,7 +183,7 @@ function MarketplaceSearchBar({ className = "" }: { className?: string }) {
         placeholder="Tìm kiếm nông sản, nông trại..."
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="w-full rounded-full border border-transparent bg-gray-100 py-2.5 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:border-emerald-200 focus:bg-white focus:ring-2 focus:ring-emerald-500"
+        className="fb-search-input w-full rounded-full border border-transparent bg-gray-100 py-2.5 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:bg-white"
       />
     </form>
   );
@@ -354,10 +357,16 @@ export function MarketplacePublicLayout() {
 
   useMarketplaceCartMergeBridge();
   const cartCount = useMarketplaceCartCount();
+  const scrolled = useScrolled(80);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="marketplace-header sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+      <header
+        className={cn(
+          "marketplace-header fb-marketplace sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm",
+          scrolled && "fb-nav-scrolled",
+        )}
+      >
         <div className="marketplace-header__inner container mx-auto px-4">
           <div className="marketplace-header__left">
             <Link to="/marketplace" className="flex items-center gap-2">
@@ -387,7 +396,7 @@ export function MarketplacePublicLayout() {
             >
               <ShoppingCart size={24} />
               {cartCount > 0 && (
-                <span className="absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
+                <span className="fb-cart-badge absolute right-0 top-0 inline-flex translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-bold leading-none text-white">
                   {cartCount}
                 </span>
               )}
