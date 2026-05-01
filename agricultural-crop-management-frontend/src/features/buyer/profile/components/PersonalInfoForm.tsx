@@ -16,6 +16,7 @@ export function PersonalInfoForm({ initialData, onSave, onCancel }: PersonalInfo
   const [phone, setPhone] = useState(initialData.phone);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validateForm = () => {
     const newErrors: { name?: string; phone?: string } = {};
@@ -42,8 +43,11 @@ export function PersonalInfoForm({ initialData, onSave, onCancel }: PersonalInfo
     }
 
     setIsSubmitting(true);
+    setSubmitError(null); // Clear previous errors
     try {
       await onSave({ name, phone });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Đã xảy ra lỗi. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -77,6 +81,12 @@ export function PersonalInfoForm({ initialData, onSave, onCancel }: PersonalInfo
           />
           {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
         </div>
+
+        {submitError && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+            {submitError}
+          </div>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
