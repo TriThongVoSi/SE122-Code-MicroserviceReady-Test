@@ -22,8 +22,9 @@ export function PersonalInfoPage() {
       toast.success('Cập nhật thông tin thành công');
       setIsEditing(false);
     } catch (error) {
+      console.error('Profile update failed:', error);
       toast.error('Có lỗi xảy ra khi cập nhật thông tin');
-      throw error;
+      // Dialog stays open so user can retry
     }
   };
 
