@@ -19,7 +19,11 @@ export function BuyerProfileLayout() {
     );
   }
 
-  const userData = {
+  const userData: {
+    name: string;
+    email: string;
+    avatar?: string | null;
+  } = {
     name: user.profile?.fullName || user.username || 'User',
     email: user.email || user.profile?.email || '',
     avatar: user.profile?.avatar,

@@ -84,7 +84,8 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           onChange={(e) => {
             setCurrentPassword(e.target.value);
             if (errors.currentPassword) {
-              setErrors({ ...errors, currentPassword: undefined });
+              const { currentPassword, ...rest } = errors;
+              setErrors(rest);
             }
           }}
           disabled={isSubmitting}
@@ -103,7 +104,8 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           onChange={(e) => {
             setNewPassword(e.target.value);
             if (errors.newPassword) {
-              setErrors({ ...errors, newPassword: undefined });
+              const { newPassword, ...rest } = errors;
+              setErrors(rest);
             }
           }}
           disabled={isSubmitting}
@@ -122,7 +124,8 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           onChange={(e) => {
             setConfirmPassword(e.target.value);
             if (errors.confirmPassword) {
-              setErrors({ ...errors, confirmPassword: undefined });
+              const { confirmPassword, ...rest } = errors;
+              setErrors(rest);
             }
           }}
           disabled={isSubmitting}

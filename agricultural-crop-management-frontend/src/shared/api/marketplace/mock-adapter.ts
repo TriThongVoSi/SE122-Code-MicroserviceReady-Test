@@ -58,6 +58,7 @@ type LotRef = {
   harvestedAt: string;
   unit: string;
   availableQuantity: number;
+  initialQuantity: number | null;
   productName: string;
   productVariant: string | null;
 };
