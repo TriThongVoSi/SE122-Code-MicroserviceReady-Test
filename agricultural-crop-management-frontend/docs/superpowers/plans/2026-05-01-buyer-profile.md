@@ -920,10 +920,41 @@ import {
 } from '@/features/marketplace/hooks';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import type { MarketplaceAddress, MarketplaceAddressUpsertRequest } from '@/shared/api';
+
+// Type for AddressCard component
+interface AddressCardData {
+  id: number;
+  name: string;
+  phone: string;
+  provinceName: string;
+  districtName: string;
+  wardName: string;
+  street: string;
+  detail?: string;
+  label: 'HOME' | 'OFFICE';
+  isDefault: boolean;
+}
+
+// Convert MarketplaceAddress to AddressCardData
+function toAddressCardData(address: MarketplaceAddress): AddressCardData {
+  return {
+    id: address.id,
+    name: address.fullName,
+    phone: address.phone,
+    provinceName: address.province,
+    districtName: address.district,
+    wardName: address.ward,
+    street: address.street,
+    detail: address.detail || undefined,
+    label: address.label === 'home' ? 'HOME' : address.label === 'office' ? 'OFFICE' : 'HOME',
+    isDefault: address.isDefault,
+  };
+}
 
 export function AddressBookPage() {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [editingAddress, setEditingAddress] = useState<AddressCardData | null>(null);
 
   const { data: addresses, isLoading } = useMarketplaceAddresses();
   const createMutation = useMarketplaceCreateAddressMutation();
@@ -933,7 +964,7 @@ export function AddressBookPage() {
   const handleSave = async (data: any) => {
     try {
       if (editingAddress) {
-        await updateMutation.mutateAsync({ id: editingAddress.id, ...data });
+        await updateMutation.mutateAsync({ addressId: editingAddress.id, request: data });
         toast.success('Cập nhật địa chỉ thành công');
         setEditingAddress(null);
       } else {
@@ -962,8 +993,21 @@ export function AddressBookPage() {
   const handleSetDefault = async (id: number) => {
     const address = addresses?.find((a) => a.id === id);
     if (!address) return;
+    
+    const request: MarketplaceAddressUpsertRequest = {
+      fullName: address.fullName,
+      phone: address.phone,
+      province: address.province,
+      district: address.district,
+      ward: address.ward,
+      street: address.street,
+      detail: address.detail,
+      label: address.label,
+      isDefault: true,
+    };
+    
     try {
-      await updateMutation.mutateAsync({ ...address, isDefault: true });
+      await updateMutation.mutateAsync({ addressId: address.id, request });
       toast.success('Đã đặt làm địa chỉ mặc định');
     } catch (error) {
       toast.error('Có lỗi xảy ra');
@@ -977,6 +1021,8 @@ export function AddressBookPage() {
       </div>
     );
   }
+
+  const addressCardData = addresses?.map(toAddressCardData) || [];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -1004,7 +1050,7 @@ export function AddressBookPage() {
             />
           )}
 
-          {addresses?.map((address) => (
+          {addressCardData.map((address) => (
             <AddressCard
               key={address.id}
               address={address}
@@ -1014,7 +1060,7 @@ export function AddressBookPage() {
             />
           ))}
 
-          {!addresses?.length && !showAddForm && (
+          {!addressCardData.length && !showAddForm && (
             <p className="py-8 text-center text-gray-500">
               Chưa có địa chỉ nào. Thêm địa chỉ đầu tiên của bạn.
             </p>
