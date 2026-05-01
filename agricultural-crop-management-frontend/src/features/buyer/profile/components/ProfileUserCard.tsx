@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
 import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent } from '@/shared/ui/card';
 
@@ -17,8 +17,12 @@ interface ProfileUserCardProps {
 }
 
 function getInitials(name: string): string {
-  return name
+  const trimmed = name.trim();
+  if (!trimmed) return '??'; // Fallback for empty names
+
+  return trimmed
     .split(' ')
+    .filter(part => part.length > 0) // Handle multiple spaces
     .map((n) => n[0])
     .join('')
     .toUpperCase()
@@ -32,6 +36,7 @@ export function ProfileUserCard({ user, stats, isLoading }: ProfileUserCardProps
     <Card className="p-6">
       <CardContent className="flex flex-col items-center space-y-4 p-0">
         <Avatar className="h-24 w-24 bg-emerald-600">
+          {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
           <AvatarFallback className="bg-emerald-600 text-2xl font-semibold text-white">
             {initials}
           </AvatarFallback>
