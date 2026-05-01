@@ -27,7 +27,9 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
       newErrors.newPassword = 'Mật khẩu phải có ít nhất 8 ký tự';
     }
 
-    if (newPassword !== confirmPassword) {
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Xác nhận mật khẩu là bắt buộc';
+    } else if (newPassword !== confirmPassword) {
       newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
     }
 
@@ -48,6 +50,12 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setErrors({}); // Clear any errors on success
+    } catch (error: any) {
+      // Display API error to user
+      setErrors({
+        currentPassword: error?.message || 'Có lỗi xảy ra khi đổi mật khẩu',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -73,7 +81,12 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           id="currentPassword"
           type="password"
           value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
+          onChange={(e) => {
+            setCurrentPassword(e.target.value);
+            if (errors.currentPassword) {
+              setErrors({ ...errors, currentPassword: undefined });
+            }
+          }}
           disabled={isSubmitting}
         />
         {errors.currentPassword && (
@@ -87,7 +100,12 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           id="newPassword"
           type="password"
           value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
+          onChange={(e) => {
+            setNewPassword(e.target.value);
+            if (errors.newPassword) {
+              setErrors({ ...errors, newPassword: undefined });
+            }
+          }}
           disabled={isSubmitting}
         />
         {errors.newPassword && (
@@ -101,7 +119,12 @@ export function PasswordChangeForm({ onSave, apiAvailable }: PasswordChangeFormP
           id="confirmPassword"
           type="password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (errors.confirmPassword) {
+              setErrors({ ...errors, confirmPassword: undefined });
+            }
+          }}
           disabled={isSubmitting}
         />
         {errors.confirmPassword && (
