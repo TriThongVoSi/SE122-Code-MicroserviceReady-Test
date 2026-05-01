@@ -76,6 +76,7 @@ export function AddressCard({ address, onEdit, onDelete, onSetDefault }: Address
               size="sm"
               onClick={() => onDelete(address.id)}
               className="ml-auto text-red-500 hover:text-red-600"
+              aria-label="Xóa địa chỉ"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
