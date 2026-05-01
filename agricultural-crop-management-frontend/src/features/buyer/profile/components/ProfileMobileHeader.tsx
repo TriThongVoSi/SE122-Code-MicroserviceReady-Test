@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { User, MapPin, Shield } from 'lucide-react';
-import { Avatar, AvatarFallback, Badge } from '@/shared/ui';
+import { Avatar, AvatarFallback, AvatarImage, Badge } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
 interface ProfileMobileHeaderProps {
@@ -12,8 +12,12 @@ interface ProfileMobileHeaderProps {
 }
 
 function getInitials(name: string): string {
-  return name
+  const trimmed = name.trim();
+  if (!trimmed) return '??'; // Fallback for empty names
+
+  return trimmed
     .split(' ')
+    .filter(part => part.length > 0) // Handle multiple spaces
     .map((n) => n[0])
     .join('')
     .toUpperCase()
@@ -33,6 +37,7 @@ export function ProfileMobileHeader({ user }: ProfileMobileHeaderProps) {
     <div className="border-b border-gray-200 bg-white">
       <div className="flex items-center gap-3 p-4">
         <Avatar className="h-12 w-12 bg-emerald-600">
+          {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
           <AvatarFallback className="bg-emerald-600 text-sm font-semibold text-white">
             {initials}
           </AvatarFallback>
