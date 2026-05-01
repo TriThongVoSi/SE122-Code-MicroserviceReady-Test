@@ -858,21 +858,23 @@ export function AddressForm({ mode, initialData, onSave, onCancel }: AddressForm
             className="mt-2 flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <input type="radio" id="home" value="HOME" checked={formData.label === 'HOME'} />
-              <Label htmlFor="home">Nhà riêng</Label>
+              <RadioGroupItem value="HOME" id="home" />
+              <Label htmlFor="home" className="cursor-pointer">Nhà riêng</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <input type="radio" id="office" value="OFFICE" checked={formData.label === 'OFFICE'} />
-              <Label htmlFor="office">Văn phòng</Label>
+              <RadioGroupItem value="OFFICE" id="office" />
+              <Label htmlFor="office" className="cursor-pointer">Văn phòng</Label>
             </div>
           </RadioGroup>
         </div>
 
-        <Checkbox
-          checked={formData.isDefault}
-          onCheckedChange={(checked) => setFormData({ ...formData, isDefault: !!checked })}
-          label="Đặt làm địa chỉ mặc định"
-        />
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <Checkbox
+            checked={formData.isDefault}
+            onCheckedChange={(checked) => setFormData({ ...formData, isDefault: !!checked })}
+          />
+          <span className="text-sm">Đặt làm địa chỉ mặc định</span>
+        </label>
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
