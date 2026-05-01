@@ -85,9 +85,9 @@ const MarketplaceMyOrdersPage = lazy(() =>
 const MarketplaceOrderDetailPage = lazy(() =>
   import('@/features/marketplace/pages').then((m) => ({ default: m.OrderDetailPage }))
 );
-const BuyerProfilePage = lazy(() =>
-  import('@/features/buyer/profile').then((m) => ({ default: m.BuyerProfile }))
-);
+
+// Buyer profile components
+import { BuyerProfileLayout, PersonalInfoPage, AddressBookPage, SecurityPage } from '@/features/buyer/profile';
 
 // ═══════════════════════════════════════════════════════════════
 // LAZY IMPORTS — Farmer branch
@@ -416,10 +416,15 @@ export function AppRoutes() {
               path="profile"
               element={(
                 <ProtectedRoute requireAuth>
-                  <BuyerProfilePage />
+                  <BuyerProfileLayout />
                 </ProtectedRoute>
               )}
-            />
+            >
+              <Route index element={<Navigate to="info" replace />} />
+              <Route path="info" element={<PersonalInfoPage />} />
+              <Route path="addresses" element={<AddressBookPage />} />
+              <Route path="security" element={<SecurityPage />} />
+            </Route>
           </Route>
           <Route path="/buyer/*" element={<Navigate to="/marketplace" replace />} />
         </Route>
