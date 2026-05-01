@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@/shared/ui';
+import { Button, Input, Label, RadioGroup, RadioGroupItem, Checkbox } from '@/shared/ui';
 import { Loader2 } from 'lucide-react';
 
 interface AddressFormData {
@@ -97,43 +97,28 @@ export function AddressForm({ mode, initialData, onSave, onCancel }: AddressForm
 
         <div>
           <Label>Loại địa chỉ</Label>
-          <div className="mt-2 flex gap-4">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                id="home"
-                name="address-label"
-                value="HOME"
-                checked={formData.label === 'HOME'}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value as 'HOME' | 'OFFICE' })}
-                disabled={isSubmitting}
-                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
-              />
+          <RadioGroup
+            value={formData.label}
+            onValueChange={(value) => setFormData({ ...formData, label: value as 'HOME' | 'OFFICE' })}
+            disabled={isSubmitting}
+            className="mt-2 flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="HOME" id="home" />
               <Label htmlFor="home" className="cursor-pointer">Nhà riêng</Label>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                id="office"
-                name="address-label"
-                value="OFFICE"
-                checked={formData.label === 'OFFICE'}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value as 'HOME' | 'OFFICE' })}
-                disabled={isSubmitting}
-                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
-              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="OFFICE" id="office" />
               <Label htmlFor="office" className="cursor-pointer">Văn phòng</Label>
-            </label>
-          </div>
+            </div>
+          </RadioGroup>
         </div>
 
         <label className="flex items-center space-x-2 cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={formData.isDefault}
-            onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+            onCheckedChange={(checked) => setFormData({ ...formData, isDefault: !!checked })}
             disabled={isSubmitting}
-            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
           />
           <span className="text-sm font-medium">Đặt làm địa chỉ mặc định</span>
         </label>
