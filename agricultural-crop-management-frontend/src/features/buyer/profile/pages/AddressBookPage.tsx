@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader } from '@/shared/ui';
+import { Button, Card, CardContent, CardHeader, ConfirmDialog } from '@/shared/ui';
 import { AddressCard } from '../components/AddressCard';
 import { AddressForm } from '../components/AddressForm';
 import {
@@ -11,6 +11,19 @@ import {
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import type { MarketplaceAddress, MarketplaceAddressUpsertRequest } from '@/shared/api';
+
+// Type for AddressForm data
+interface AddressFormData {
+  name: string;
+  phone: string;
+  provinceId: number;
+  districtId: number;
+  wardId: number;
+  street: string;
+  detail?: string;
+  label: 'HOME' | 'OFFICE';
+  isDefault: boolean;
+}
 
 // Type for AddressCard component
 interface AddressCardData {
@@ -57,44 +70,81 @@ function toAddressUpsertRequest(address: AddressCardData): MarketplaceAddressUps
   };
 }
 
+// Helper function to convert MarketplaceAddress to MarketplaceAddressUpsertRequest
+function toMarketplaceAddressUpsertRequest(address: MarketplaceAddress): MarketplaceAddressUpsertRequest {
+  return {
+    fullName: address.fullName,
+    phone: address.phone,
+    province: address.province,
+    district: address.district,
+    ward: address.ward,
+    street: address.street,
+    detail: address.detail || undefined,
+    label: address.label,
+    isDefault: address.isDefault,
+  };
+}
+
 export function AddressBookPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<AddressCardData | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<number | null>(null);
 
   const { data: addresses, isLoading } = useMarketplaceAddresses();
   const createMutation = useMarketplaceCreateAddressMutation();
   const updateMutation = useMarketplaceUpdateAddressMutation();
   const deleteMutation = useMarketplaceDeleteAddressMutation();
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: AddressFormData) => {
     try {
+      // Convert AddressForm data (with provinceId/districtId/wardId) to API format (province/district/ward strings)
+      // Note: AddressForm currently returns mock data without actual location names
+      // In production, this should fetch location names from the IDs
+      const request: MarketplaceAddressUpsertRequest = {
+        fullName: data.name,
+        phone: data.phone,
+        province: 'Placeholder Province', // TODO: Fetch from provinceId
+        district: 'Placeholder District', // TODO: Fetch from districtId
+        ward: 'Placeholder Ward', // TODO: Fetch from wardId
+        street: data.street,
+        detail: data.detail,
+        label: data.label === 'HOME' ? 'home' : data.label === 'OFFICE' ? 'office' : 'other',
+        isDefault: data.isDefault,
+      };
+
       if (editingAddress) {
         await updateMutation.mutateAsync({
           addressId: editingAddress.id,
-          request: data,
+          request,
         });
         toast.success('Cập nhật địa chỉ thành công');
         setEditingAddress(null);
       } else {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync(request);
         toast.success('Thêm địa chỉ thành công');
         setShowAddForm(false);
       }
-    } catch (error) {
-      toast.error('Có lỗi xảy ra');
+    } catch (error: any) {
+      toast.error(error?.message || 'Có lỗi xảy ra');
       throw error;
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
-      return;
-    }
+  const handleDeleteClick = (id: number) => {
+    setAddressToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!addressToDelete) return;
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync(addressToDelete);
       toast.success('Xóa địa chỉ thành công');
-    } catch (error) {
-      toast.error('Có lỗi xảy ra khi xóa địa chỉ');
+      setDeleteConfirmOpen(false);
+      setAddressToDelete(null);
+    } catch (error: any) {
+      toast.error(error?.message || 'Có lỗi xảy ra khi xóa địa chỉ');
     }
   };
 
@@ -102,25 +152,26 @@ export function AddressBookPage() {
     const address = addresses?.find((a) => a.id === id);
     if (!address) return;
     try {
-      const request: MarketplaceAddressUpsertRequest = {
-        fullName: address.fullName,
-        phone: address.phone,
-        province: address.province,
-        district: address.district,
-        ward: address.ward,
-        street: address.street,
-        detail: address.detail || undefined,
-        label: address.label,
-        isDefault: true,
-      };
+      const request = toMarketplaceAddressUpsertRequest(address);
+      request.isDefault = true;
       await updateMutation.mutateAsync({
         addressId: address.id,
         request,
       });
       toast.success('Đã đặt làm địa chỉ mặc định');
-    } catch (error) {
-      toast.error('Có lỗi xảy ra');
+    } catch (error: any) {
+      toast.error(error?.message || 'Có lỗi xảy ra');
     }
+  };
+
+  const handleAddClick = () => {
+    setEditingAddress(null); // Close edit form if open
+    setShowAddForm(true);
+  };
+
+  const handleEditClick = (address: AddressCardData) => {
+    setShowAddForm(false); // Close add form if open
+    setEditingAddress(address);
   };
 
   if (isLoading) {
@@ -139,7 +190,7 @@ export function AddressBookPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <h2 className="text-xl font-bold">Sổ địa chỉ</h2>
-          <Button onClick={() => setShowAddForm(true)}>+ Thêm địa chỉ</Button>
+          <Button onClick={handleAddClick}>+ Thêm địa chỉ</Button>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -164,8 +215,8 @@ export function AddressBookPage() {
             <AddressCard
               key={address.id}
               address={address}
-              onEdit={setEditingAddress}
-              onDelete={handleDelete}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
               onSetDefault={handleSetDefault}
             />
           ))}
@@ -177,6 +228,18 @@ export function AddressBookPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Xóa địa chỉ"
+        description="Bạn có chắc chắn muốn xóa địa chỉ này? Hành động này không thể hoàn tác."
+        variant="destructive"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }
