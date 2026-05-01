@@ -16,9 +16,9 @@ import type { MarketplaceAddress, MarketplaceAddressUpsertRequest } from '@/shar
 interface AddressFormData {
   name: string;
   phone: string;
-  provinceId: number;
-  districtId: number;
-  wardId: number;
+  province: string;
+  district: string;
+  ward: string;
   street: string;
   detail?: string;
   label: 'HOME' | 'OFFICE';
@@ -30,9 +30,9 @@ interface AddressCardData {
   id: number;
   name: string;
   phone: string;
-  provinceName: string;
-  districtName: string;
-  wardName: string;
+  province: string;
+  district: string;
+  ward: string;
   street: string;
   detail?: string;
   label: 'HOME' | 'OFFICE';
@@ -45,9 +45,9 @@ function toAddressCardData(address: MarketplaceAddress): AddressCardData {
     id: address.id,
     name: address.fullName,
     phone: address.phone,
-    provinceName: address.province,
-    districtName: address.district,
-    wardName: address.ward,
+    province: address.province,
+    district: address.district,
+    ward: address.ward,
     street: address.street,
     detail: address.detail || undefined,
     label: address.label === 'home' ? 'HOME' : address.label === 'office' ? 'OFFICE' : 'HOME',
@@ -60,9 +60,9 @@ function toAddressUpsertRequest(address: AddressCardData): MarketplaceAddressUps
   return {
     fullName: address.name,
     phone: address.phone,
-    province: address.provinceName,
-    district: address.districtName,
-    ward: address.wardName,
+    province: address.province,
+    district: address.district,
+    ward: address.ward,
     street: address.street,
     detail: address.detail,
     label: address.label === 'HOME' ? 'home' : address.label === 'OFFICE' ? 'office' : 'other',
@@ -98,15 +98,12 @@ export function AddressBookPage() {
 
   const handleSave = async (data: AddressFormData) => {
     try {
-      // Convert AddressForm data (with provinceId/districtId/wardId) to API format (province/district/ward strings)
-      // Note: AddressForm currently returns mock data without actual location names
-      // In production, this should fetch location names from the IDs
       const request: MarketplaceAddressUpsertRequest = {
         fullName: data.name,
         phone: data.phone,
-        province: 'Placeholder Province', // TODO: Fetch from provinceId
-        district: 'Placeholder District', // TODO: Fetch from districtId
-        ward: 'Placeholder Ward', // TODO: Fetch from wardId
+        province: data.province,
+        district: data.district,
+        ward: data.ward,
         street: data.street,
         detail: data.detail,
         label: data.label === 'HOME' ? 'home' : data.label === 'OFFICE' ? 'office' : 'other',

@@ -6,9 +6,9 @@ interface Address {
   id: number;
   name: string;
   phone: string;
-  provinceName: string;
-  districtName: string;
-  wardName: string;
+  province: string;
+  district: string;
+  ward: string;
   street: string;
   detail?: string;
   label: 'HOME' | 'OFFICE';
@@ -30,9 +30,9 @@ const LABEL_TEXT = {
 export function AddressCard({ address, onEdit, onDelete, onSetDefault }: AddressCardProps) {
   const fullAddress = [
     address.street,
-    address.wardName,
-    address.districtName,
-    address.provinceName,
+    address.ward,
+    address.district,
+    address.province,
   ]
     .filter(Boolean)
     .join(', ');

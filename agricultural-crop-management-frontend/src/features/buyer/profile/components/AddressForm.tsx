@@ -5,9 +5,9 @@ import { Loader2 } from 'lucide-react';
 interface AddressFormData {
   name: string;
   phone: string;
-  provinceId: number;
-  districtId: number;
-  wardId: number;
+  province: string;
+  district: string;
+  ward: string;
   street: string;
   detail?: string;
   label: 'HOME' | 'OFFICE';
@@ -25,6 +25,9 @@ export function AddressForm({ mode, initialData, onSave, onCancel }: AddressForm
   const [formData, setFormData] = useState<Partial<AddressFormData>>({
     name: initialData?.name || '',
     phone: initialData?.phone || '',
+    province: initialData?.province || '',
+    district: initialData?.district || '',
+    ward: initialData?.ward || '',
     street: initialData?.street || '',
     detail: initialData?.detail || '',
     label: initialData?.label || 'HOME',
@@ -69,6 +72,42 @@ export function AddressForm({ mode, initialData, onSave, onCancel }: AddressForm
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               required
               disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="province">Tỉnh/Thành phố</Label>
+            <Input
+              id="province"
+              value={formData.province}
+              onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+              required
+              disabled={isSubmitting}
+              placeholder="Ví dụ: Hồ Chí Minh"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="district">Quận/Huyện</Label>
+            <Input
+              id="district"
+              value={formData.district}
+              onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+              required
+              disabled={isSubmitting}
+              placeholder="Ví dụ: Quận 1"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ward">Phường/Xã</Label>
+            <Input
+              id="ward"
+              value={formData.ward}
+              onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
+              required
+              disabled={isSubmitting}
+              placeholder="Ví dụ: Phường Bến Nghé"
             />
           </div>
 
