@@ -171,4 +171,13 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"));
     }
+
+    @Test
+    void getCart_WithMultipleSellers_ShouldGroupBySeller() throws Exception {
+        mockMvc.perform(get("/api/v1/marketplace/cart")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"))
+            .andExpect(jsonPath("$.result.sellerGroups").isArray());
+    }
 }

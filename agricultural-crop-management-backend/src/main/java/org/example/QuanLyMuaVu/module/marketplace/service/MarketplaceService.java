@@ -63,6 +63,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAdminS
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAddressResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartItemResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartSellerGroupResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCreateOrderResultResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerDashboardResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormFarmOptionResponse;
@@ -1366,13 +1367,16 @@ public class MarketplaceService {
         BigDecimal itemCount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
 
+        // Group items by seller (farmerUserId)
+        Map<Long, List<MarketplaceCartItem>> itemsBySeller = new LinkedHashMap<>();
+
         for (MarketplaceCartItem item : items) {
             MarketplaceProduct product = item.getProduct();
             itemCount = itemCount.add(item.getQuantity());
             BigDecimal unitPrice = product.getPrice();
             subtotal = subtotal.add(unitPrice.multiply(item.getQuantity()));
 
-            itemResponses.add(new MarketplaceCartItemResponse(
+            MarketplaceCartItemResponse itemResponse = new MarketplaceCartItemResponse(
                     product.getId(),
                     product.getSlug(),
                     product.getName(),
@@ -1381,19 +1385,70 @@ public class MarketplaceService {
                     item.getQuantity(),
                     currentAvailableQuantity(product),
                     product.getFarmerUser() == null ? null : product.getFarmerUser().getId(),
-                    Boolean.TRUE.equals(product.getTraceable())));
+                    Boolean.TRUE.equals(product.getTraceable()));
+
+            itemResponses.add(itemResponse);
+
+            // Group by seller
+            Long sellerId = product.getFarmerUser() == null ? null : product.getFarmerUser().getId();
+            if (sellerId != null) {
+                itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(item);
+            }
+        }
+
+        // Build seller groups
+        List<MarketplaceCartSellerGroupResponse> sellerGroups = new ArrayList<>();
+        for (Map.Entry<Long, List<MarketplaceCartItem>> entry : itemsBySeller.entrySet()) {
+            Long sellerId = entry.getKey();
+            List<MarketplaceCartItem> sellerItems = entry.getValue();
+
+            // Get farmer and farm info from first item (all items from same seller)
+            MarketplaceCartItem firstItem = sellerItems.get(0);
+            MarketplaceProduct firstProduct = firstItem.getProduct();
+            User farmer = firstProduct.getFarmerUser();
+            Farm farm = firstProduct.getFarm();
+
+            // Build item responses for this seller
+            List<MarketplaceCartItemResponse> sellerItemResponses = new ArrayList<>();
+            BigDecimal sellerSubtotal = BigDecimal.ZERO;
+
+            for (MarketplaceCartItem item : sellerItems) {
+                MarketplaceProduct product = item.getProduct();
+                BigDecimal unitPrice = product.getPrice();
+                sellerSubtotal = sellerSubtotal.add(unitPrice.multiply(item.getQuantity()));
+
+                sellerItemResponses.add(new MarketplaceCartItemResponse(
+                        product.getId(),
+                        product.getSlug(),
+                        product.getName(),
+                        product.getImageUrl(),
+                        unitPrice,
+                        item.getQuantity(),
+                        currentAvailableQuantity(product),
+                        farmer.getId(),
+                        Boolean.TRUE.equals(product.getTraceable())));
+            }
+
+            sellerGroups.add(new MarketplaceCartSellerGroupResponse(
+                    farmer.getId(),
+                    farmer.getFullName(),
+                    farm == null ? null : farm.getId(),
+                    farm == null ? null : farm.getName(),
+                    sellerItemResponses,
+                    sellerSubtotal));
         }
 
         return new MarketplaceCartResponse(
                 userId,
                 itemResponses,
+                sellerGroups,
                 itemCount,
                 subtotal,
                 CURRENCY_VND);
     }
 
     private MarketplaceCartResponse emptyCart(Long userId) {
-        return new MarketplaceCartResponse(userId, Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
+        return new MarketplaceCartResponse(userId, Collections.emptyList(), Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
     }
 
     private MarketplaceProduct getActiveProductOrThrow(Long productId) {
