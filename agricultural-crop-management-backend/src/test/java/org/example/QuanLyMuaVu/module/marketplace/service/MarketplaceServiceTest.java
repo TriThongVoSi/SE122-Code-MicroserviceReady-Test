@@ -297,7 +297,7 @@ class MarketplaceServiceTest {
         void mergeCart_MergeExistingItem_ReturnsMergedCart() {
             when(currentUserService.getCurrentUser()).thenReturn(buyer);
             when(marketplaceCartRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(cart));
-            when(marketplaceProductRepository.findSellableByIdAndStatus(200L, MarketplaceProductStatus.PUBLISHED))
+            when(marketplaceProductRepository.findSellableByIdAndStatus(200L, MarketplaceProductStatus.ACTIVE))
                     .thenReturn(Optional.of(product));
 
             MarketplaceCartItem existing = MarketplaceCartItem.builder()
@@ -335,7 +335,7 @@ class MarketplaceServiceTest {
         void mergeCart_ExceedStock_ThrowsException() {
             when(currentUserService.getCurrentUser()).thenReturn(buyer);
             when(marketplaceCartRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(cart));
-            when(marketplaceProductRepository.findSellableByIdAndStatus(200L, MarketplaceProductStatus.PUBLISHED))
+            when(marketplaceProductRepository.findSellableByIdAndStatus(200L, MarketplaceProductStatus.ACTIVE))
                     .thenReturn(Optional.of(product));
 
             MarketplaceCartItem existing = MarketplaceCartItem.builder()
