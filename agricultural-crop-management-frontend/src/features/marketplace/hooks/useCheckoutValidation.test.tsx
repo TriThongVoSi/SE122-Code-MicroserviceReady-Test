@@ -41,4 +41,30 @@ describe('useCheckoutValidation', () => {
       paymentMethod: 'BANK_TRANSFER',
     })).toEqual({ valid: true });
   });
+
+  it('rejects checkout without recipient name', () => {
+    const { result } = renderHook(() => useCheckoutValidation());
+
+    expect(result.current.validateCheckout({
+      addressMode: 'new',
+      selectedAddress: null,
+      recipientName: '',
+      phone: '0912345678',
+      shippingAddressLine: '1 Nguyen Trai, HCM',
+      paymentMethod: 'COD',
+    })).toEqual({ valid: false, message: 'Vui lòng nhập tên người nhận.' });
+  });
+
+  it('rejects invalid payment method', () => {
+    const { result } = renderHook(() => useCheckoutValidation());
+
+    expect(result.current.validateCheckout({
+      addressMode: 'new',
+      selectedAddress: null,
+      recipientName: 'Nguyen Van A',
+      phone: '0912345678',
+      shippingAddressLine: '1 Nguyen Trai, HCM',
+      paymentMethod: 'INVALID' as any,
+    })).toEqual({ valid: false, message: 'Phương thức thanh toán không hợp lệ.' });
+  });
 });

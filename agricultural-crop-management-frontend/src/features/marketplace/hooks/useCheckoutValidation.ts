@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { z } from 'zod';
 import type { MarketplaceAddress, MarketplacePaymentMethod } from '@/shared/api';
 
-const phoneSchema = z.string().regex(/^(0|\+84)\d{9,10}$/, 'Số điện thoại không hợp lệ.');
+const phoneSchema = z.string().regex(/^(0\d{9}|\+84\d{9})$/, 'Số điện thoại không hợp lệ.');
 
 export type CheckoutValidationInput = {
   addressMode: 'saved' | 'new';

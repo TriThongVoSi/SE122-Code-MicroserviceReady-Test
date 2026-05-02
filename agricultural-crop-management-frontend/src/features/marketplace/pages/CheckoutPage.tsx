@@ -145,7 +145,7 @@ export function CheckoutPage() {
       groups.set(item.farmerUserId, [...(groups.get(item.farmerUserId) ?? []), item]);
     });
     return Array.from(groups.entries()).map(([farmerUserId, items]) => ({ farmerUserId, items }));
-  }, [cart]);
+  }, [cart.items]);
 
   useEffect(() => {
     if (cartFingerprint !== lastCartFingerprintRef.current) {
