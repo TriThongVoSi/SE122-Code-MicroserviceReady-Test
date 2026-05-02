@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, RotateCcw, Search, X } from "lucide-react";
+import { toast } from "sonner";
 import type { MarketplaceProductStatus } from "@/shared/api";
 import { Badge, Button, Input } from "@/shared/ui";
 import {
@@ -170,6 +171,11 @@ export function AdminMarketplaceProductsPage() {
     status: status === "ALL" ? undefined : status,
   });
 
+  // Move mutation hook to component level to fix Rules of Hooks violation
+  const rejectMutation = useMarketplaceUpdateAdminProductStatusMutation(
+    rejectModalState.productId ?? 0
+  );
+
   const openRejectModal = (productId: number, targetStatus: MarketplaceProductStatus) => {
     setRejectModalState({ isOpen: true, productId, targetStatus });
   };
@@ -181,13 +187,16 @@ export function AdminMarketplaceProductsPage() {
   const handleRejectConfirm = async (reason: string) => {
     if (!rejectModalState.productId || !rejectModalState.targetStatus) return;
 
-    const mutation = useMarketplaceUpdateAdminProductStatusMutation(rejectModalState.productId);
-    await mutation.mutateAsync({
-      status: rejectModalState.targetStatus,
-      statusReason: reason,
-    });
-
-    closeRejectModal();
+    try {
+      await rejectMutation.mutateAsync({
+        status: rejectModalState.targetStatus,
+        statusReason: reason,
+      });
+      closeRejectModal();
+    } catch (error) {
+      toast.error("Failed to update product status. Please try again.");
+      // Keep modal open on error so user can retry
+    }
   };
 
   return (
@@ -219,7 +228,10 @@ export function AdminMarketplaceProductsPage() {
                 type="button"
                 variant={status === option.value ? "default" : "outline"}
                 size="sm"
-                onClick={() => setStatus(option.value)}
+                onClick={() => {
+                  setStatus(option.value);
+                  setPage(0); // Reset page to 0 on filter change
+                }}
                 className="rounded-full"
               >
                 {option.label}
@@ -323,6 +335,7 @@ export function AdminMarketplaceProductsPage() {
         isOpen={rejectModalState.isOpen}
         onClose={closeRejectModal}
         onConfirm={handleRejectConfirm}
+        isLoading={rejectMutation.isPending}
         title={rejectModalState.targetStatus === "HIDDEN" ? "Hide Product" : "Reject Product"}
         description={
           rejectModalState.targetStatus === "HIDDEN"
