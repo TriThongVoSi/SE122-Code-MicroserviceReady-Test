@@ -437,6 +437,8 @@ export function createMarketplaceMockAdapter(
       result: MarketplaceCreateOrderResult;
     }
   >();
+  const orderAuditLogs: MarketplaceOrderAuditLog[] = [];
+  let nextAuditLogId = 1;
 
   const addresses = new Map<number, MarketplaceAddress[]>([
     [
@@ -1772,6 +1774,9 @@ export function createMarketplaceMockAdapter(
         );
       }
       product.status = request.status;
+      if (request.statusReason) {
+        product.statusReason = request.statusReason;
+      }
       product.updatedAt = nowIso();
       return okMarketplaceResponse(product, "Product moderation updated.");
     },
@@ -1831,6 +1836,22 @@ export function createMarketplaceMockAdapter(
       order.status = request.status;
       order.canCancel = false;
       order.updatedAt = nowIso();
+
+      // Add audit log entry with reason if provided
+      if (request.reason) {
+        orderAuditLogs.push({
+          id: nextAuditLogId++,
+          entityType: "MARKETPLACE_ORDER",
+          entityId: orderId,
+          operation: `Status changed to ${request.status}`,
+          performedBy: "Admin",
+          performedAt: nowIso(),
+          snapshotDataJson: null,
+          reason: request.reason,
+          ipAddress: null,
+        });
+      }
+
       return okMarketplaceResponse(order, "Order status updated.");
     },
 
@@ -1856,6 +1877,7 @@ export function createMarketplaceMockAdapter(
           reason: "Mock order bootstrap",
           ipAddress: null,
         },
+        ...orderAuditLogs.filter((log) => log.entityId === orderId),
       ];
       return okMarketplaceResponse(auditLogs);
     },
