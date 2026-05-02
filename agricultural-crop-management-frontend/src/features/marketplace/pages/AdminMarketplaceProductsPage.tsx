@@ -7,6 +7,7 @@ import {
   useMarketplaceUpdateAdminProductStatusMutation,
 } from "../hooks";
 import { formatVnd } from "../lib/format";
+import { RejectWithReasonModal, PaginationControls } from "../components";
 
 const statusFilters: Array<{ value: "ALL" | MarketplaceProductStatus; label: string }> = [
   { value: "ALL", label: "All" },
@@ -41,16 +42,24 @@ function statusLabel(status: MarketplaceProductStatus) {
 function ModerationActions({
   productId,
   currentStatus,
+  onOpenRejectModal,
 }: {
   productId: number;
   currentStatus: MarketplaceProductStatus;
+  onOpenRejectModal: (productId: number, targetStatus: MarketplaceProductStatus) => void;
 }) {
   const mutation = useMarketplaceUpdateAdminProductStatusMutation(productId);
+
+  const handleApprove = (status: MarketplaceProductStatus) => {
+    mutation.mutate({ status });
+  };
+
   const actions: Array<{
     status: MarketplaceProductStatus;
     label: string;
     icon: typeof Check;
     className: string;
+    requiresReason: boolean;
   }> =
     currentStatus === "PENDING_REVIEW"
       ? [
@@ -59,12 +68,14 @@ function ModerationActions({
             label: "Approve",
             icon: Check,
             className: "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
+            requiresReason: false,
           },
           {
             status: "HIDDEN",
             label: "Hide",
             icon: X,
             className: "text-red-600 hover:bg-red-50 hover:text-red-700",
+            requiresReason: true,
           },
         ]
       : currentStatus === "PUBLISHED"
@@ -74,6 +85,7 @@ function ModerationActions({
               label: "Hide",
               icon: X,
               className: "text-red-600 hover:bg-red-50 hover:text-red-700",
+              requiresReason: true,
             },
           ]
         : currentStatus === "HIDDEN"
@@ -83,12 +95,14 @@ function ModerationActions({
                 label: "Publish",
                 icon: Check,
                 className: "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
+                requiresReason: false,
               },
               {
                 status: "PENDING_REVIEW",
                 label: "Return to review",
                 icon: RotateCcw,
                 className: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                requiresReason: false,
               },
             ]
           : [
@@ -97,12 +111,14 @@ function ModerationActions({
                 label: "Send to review",
                 icon: RotateCcw,
                 className: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                requiresReason: false,
               },
               {
                 status: "HIDDEN",
                 label: "Hide",
                 icon: X,
                 className: "text-red-600 hover:bg-red-50 hover:text-red-700",
+                requiresReason: true,
               },
             ];
 
@@ -119,7 +135,13 @@ function ModerationActions({
             size="sm"
             className={action.className}
             disabled={mutation.isPending}
-            onClick={() => mutation.mutate({ status: action.status })}
+            onClick={() => {
+              if (action.requiresReason) {
+                onOpenRejectModal(productId, action.status);
+              } else {
+                handleApprove(action.status);
+              }
+            }}
           >
             <Icon size={14} />
             <span className="ml-1">{action.label}</span>
@@ -133,13 +155,40 @@ function ModerationActions({
 export function AdminMarketplaceProductsPage() {
   const [status, setStatus] = useState<"ALL" | MarketplaceProductStatus>("ALL");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [rejectModalState, setRejectModalState] = useState<{
+    isOpen: boolean;
+    productId: number | null;
+    targetStatus: MarketplaceProductStatus | null;
+  }>({ isOpen: false, productId: null, targetStatus: null });
 
   const productsQuery = useMarketplaceAdminProducts({
-    page: 0,
-    size: 100,
+    page,
+    size: pageSize,
     q: search.trim() || undefined,
     status: status === "ALL" ? undefined : status,
   });
+
+  const openRejectModal = (productId: number, targetStatus: MarketplaceProductStatus) => {
+    setRejectModalState({ isOpen: true, productId, targetStatus });
+  };
+
+  const closeRejectModal = () => {
+    setRejectModalState({ isOpen: false, productId: null, targetStatus: null });
+  };
+
+  const handleRejectConfirm = async (reason: string) => {
+    if (!rejectModalState.productId || !rejectModalState.targetStatus) return;
+
+    const mutation = useMarketplaceUpdateAdminProductStatusMutation(rejectModalState.productId);
+    await mutation.mutateAsync({
+      status: rejectModalState.targetStatus,
+      statusReason: reason,
+    });
+
+    closeRejectModal();
+  };
 
   return (
     <div className="space-y-6">
@@ -222,7 +271,11 @@ export function AdminMarketplaceProductsPage() {
                   </td>
                   <td className="p-4 font-medium text-gray-900">{formatVnd(product.price)}</td>
                   <td className="p-4 text-right">
-                    <ModerationActions productId={product.id} currentStatus={product.status} />
+                    <ModerationActions
+                      productId={product.id}
+                      currentStatus={product.status}
+                      onOpenRejectModal={openRejectModal}
+                    />
                   </td>
                 </tr>
               ))}
@@ -251,6 +304,34 @@ export function AdminMarketplaceProductsPage() {
           </table>
         </div>
       </div>
+
+      {productsQuery.data && (
+        <PaginationControls
+          currentPage={page}
+          totalPages={productsQuery.data.totalPages}
+          totalElements={productsQuery.data.totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(0);
+          }}
+        />
+      )}
+
+      <RejectWithReasonModal
+        isOpen={rejectModalState.isOpen}
+        onClose={closeRejectModal}
+        onConfirm={handleRejectConfirm}
+        title={rejectModalState.targetStatus === "HIDDEN" ? "Hide Product" : "Reject Product"}
+        description={
+          rejectModalState.targetStatus === "HIDDEN"
+            ? "This product will be hidden from the marketplace. The farmer will be notified."
+            : "This product will be rejected. The farmer will be notified."
+        }
+        reasonLabel="Reason for action"
+        reasonPlaceholder="Explain why this action is being taken..."
+      />
     </div>
   );
 }
