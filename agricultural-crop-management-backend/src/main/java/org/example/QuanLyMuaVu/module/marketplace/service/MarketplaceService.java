@@ -349,6 +349,18 @@ public class MarketplaceService {
     }
 
     @Transactional
+    public MarketplaceCartResponse clearCart() {
+        Long userId = currentUserService.getCurrentUserId();
+        Optional<MarketplaceCart> cartOpt = marketplaceCartRepository.findByUserIdForUpdate(userId);
+        if (cartOpt.isEmpty()) {
+            return emptyCart(userId);
+        }
+        MarketplaceCart cart = cartOpt.get();
+        marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
+        return emptyCart(userId);
+    }
+
+    @Transactional
     public MarketplaceCartResponse mergeCart(MarketplaceMergeCartRequest request) {
         User currentUser = currentUserService.getCurrentUser();
         MarketplaceCart cart = getOrCreateCartForUpdate(currentUser);

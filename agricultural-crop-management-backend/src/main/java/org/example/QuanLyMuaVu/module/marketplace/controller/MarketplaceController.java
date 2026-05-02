@@ -119,6 +119,11 @@ public class MarketplaceController {
         return ApiResponse.success(marketplaceService.mergeCart(request));
     }
 
+    @DeleteMapping("/cart")
+    public ApiResponse<MarketplaceCartResponse> clearCart() {
+        return ApiResponse.success(marketplaceService.clearCart());
+    }
+
     @PostMapping("/orders")
     public ApiResponse<MarketplaceCreateOrderResultResponse> createOrder(
             @Valid @RequestBody MarketplaceCreateOrderRequest request,
