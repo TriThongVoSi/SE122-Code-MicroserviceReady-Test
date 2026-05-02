@@ -1,9 +1,12 @@
 package org.example.QuanLyMuaVu.module.marketplace.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,6 +30,20 @@ class MarketplaceBuyerCartIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    /**
+     * Test user ID 4L corresponds to the "buyer" test account created by ApplicationInitConfig.
+     * This user has BUYER role and is used consistently across cart tests to ensure proper
+     * cart state isolation and predictable test behavior.
+     */
+    private static final Long TEST_BUYER_USER_ID = 4L;
+
+    @BeforeEach
+    void setUp() {
+        // Tests use @Transactional to ensure clean state between test runs.
+        // TEST_BUYER_USER_ID (4L) is the default "buyer" account from ApplicationInitConfig.
+        // Each test creates its own cart state which is rolled back after test completion.
+    }
 
     @Test
     void getCart_WhenEmpty_ShouldReturnEmptyCart() throws Exception {
@@ -55,9 +72,7 @@ class MarketplaceBuyerCartIntegrationTest {
         JsonNode items = productsNode.path("result").path("items");
 
         // Skip test if no products available
-        if (items.isEmpty()) {
-            return;
-        }
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
 
         Long productId = items.get(0).path("id").asLong();
 
@@ -70,14 +85,14 @@ class MarketplaceBuyerCartIntegrationTest {
             """, productId);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemRequest))
             .andExpect(status().isOk());
 
         // Now remove the item
         mockMvc.perform(delete("/api/v1/marketplace/cart/items/" + productId)
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"));
     }
@@ -96,9 +111,7 @@ class MarketplaceBuyerCartIntegrationTest {
         JsonNode items = productsNode.path("result").path("items");
 
         // Skip test if no products available
-        if (items.isEmpty()) {
-            return;
-        }
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
 
         Long productId = items.get(0).path("id").asLong();
 
@@ -106,12 +119,12 @@ class MarketplaceBuyerCartIntegrationTest {
         String addItemRequest = String.format("""
             {
                 "productId": %d,
-                "quantity": 1
+                "quantity": 1.0
             }
             """, productId);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemRequest))
             .andExpect(status().isOk())
@@ -119,7 +132,7 @@ class MarketplaceBuyerCartIntegrationTest {
 
         // Then clear the cart
         mockMvc.perform(delete("/api/v1/marketplace/cart")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"))
@@ -156,9 +169,7 @@ class MarketplaceBuyerCartIntegrationTest {
         JsonNode items = productsNode.path("result").path("items");
 
         // Skip test if no products available
-        if (items.isEmpty()) {
-            return;
-        }
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
 
         Long productId = items.get(0).path("id").asLong();
 
@@ -171,7 +182,7 @@ class MarketplaceBuyerCartIntegrationTest {
             """, productId);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemRequest))
             .andExpect(status().isOk());
@@ -184,7 +195,7 @@ class MarketplaceBuyerCartIntegrationTest {
             """;
 
         mockMvc.perform(patch("/api/v1/marketplace/cart/items/" + productId)
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(updateRequest))
             .andExpect(status().isOk())
@@ -205,9 +216,7 @@ class MarketplaceBuyerCartIntegrationTest {
         JsonNode items = productsNode.path("result").path("items");
 
         // Skip test if no products available
-        if (items.isEmpty()) {
-            return;
-        }
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
 
         Long productId = items.get(0).path("id").asLong();
 
@@ -219,7 +228,7 @@ class MarketplaceBuyerCartIntegrationTest {
             """, productId);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
             .andExpect(status().isOk())
@@ -240,9 +249,7 @@ class MarketplaceBuyerCartIntegrationTest {
         JsonNode items = productsNode.path("result").path("items");
 
         // Skip test if not enough products available
-        if (items.size() < 2) {
-            return;
-        }
+        Assumptions.assumeTrue(items.size() >= 2, "Need at least 2 products for testing seller grouping");
 
         // Add items from different products (potentially different sellers)
         Long productId1 = items.get(0).path("id").asLong();
@@ -256,7 +263,7 @@ class MarketplaceBuyerCartIntegrationTest {
             """, productId1);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemRequest1))
             .andExpect(status().isOk());
@@ -269,14 +276,14 @@ class MarketplaceBuyerCartIntegrationTest {
             """, productId2);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemRequest2))
             .andExpect(status().isOk());
 
         // Now get the cart and verify seller grouping
         MvcResult cartResult = mockMvc.perform(get("/api/v1/marketplace/cart")
-                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"))
             .andExpect(jsonPath("$.result.sellerGroups").isArray())
@@ -291,21 +298,28 @@ class MarketplaceBuyerCartIntegrationTest {
         // Each seller group should have required fields
         for (JsonNode group : sellerGroups) {
             // Verify farmerUserId is present and not null
-            assert group.has("farmerUserId") && !group.path("farmerUserId").isNull();
+            assertTrue(group.has("farmerUserId"), "Seller group must have farmerUserId field");
+            assertFalse(group.path("farmerUserId").isNull(), "farmerUserId must not be null");
 
             // Verify farmerName is present
-            assert group.has("farmerName") && !group.path("farmerName").asText().isEmpty();
+            assertTrue(group.has("farmerName"), "Seller group must have farmerName field");
+            assertFalse(group.path("farmerName").asText().isEmpty(), "farmerName must not be empty");
 
             // Verify items array exists and is not empty
-            assert group.has("items") && group.path("items").isArray() && !group.path("items").isEmpty();
+            assertTrue(group.has("items"), "Seller group must have items field");
+            assertTrue(group.path("items").isArray(), "items must be an array");
+            assertFalse(group.path("items").isEmpty(), "items array must not be empty");
 
             // Verify subtotal is present and >= 0
-            assert group.has("subtotal") && group.path("subtotal").decimalValue().compareTo(java.math.BigDecimal.ZERO) >= 0;
+            assertTrue(group.has("subtotal"), "Seller group must have subtotal field");
+            assertTrue(group.path("subtotal").decimalValue().compareTo(java.math.BigDecimal.ZERO) >= 0,
+                    "subtotal must be >= 0");
 
             // Verify each item in the group has the same farmerUserId
             Long groupFarmerId = group.path("farmerUserId").asLong();
             for (JsonNode item : group.path("items")) {
-                assert item.path("farmerUserId").asLong() == groupFarmerId;
+                assertEquals(groupFarmerId, item.path("farmerUserId").asLong(),
+                        "All items in a seller group must have the same farmerUserId");
             }
         }
     }
