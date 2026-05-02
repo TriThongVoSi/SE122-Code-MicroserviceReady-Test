@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AdminMarketplaceProductsPage } from "../AdminMarketplaceProductsPage";
 import * as marketplaceHooks from "../../hooks/useMarketplaceQueries";
+import type { MarketplaceProductStatus } from "@/shared/api";
 
 vi.mock("../../hooks/useMarketplaceQueries");
 
@@ -25,22 +26,33 @@ describe("AdminMarketplaceProductsPage", () => {
     );
   };
 
+  const createMockProduct = (overrides?: {
+    id?: number;
+    name?: string;
+    status?: MarketplaceProductStatus;
+    price?: number;
+    imageUrl?: string;
+    farmerDisplayName?: string;
+    farmName?: string;
+    category?: string;
+    traceable?: boolean;
+  }) => ({
+    id: 1,
+    name: "Test Product",
+    status: "PENDING_REVIEW" as MarketplaceProductStatus,
+    price: 50000,
+    imageUrl: "https://example.com/image.jpg",
+    farmerDisplayName: "Farmer Name",
+    farmName: "Farm Name",
+    category: "Vegetables",
+    traceable: true,
+    ...overrides,
+  });
+
   it("renders product list with moderation actions", async () => {
     vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
       data: {
-        items: [
-          {
-            id: 1,
-            name: "Test Product",
-            status: "PENDING_REVIEW",
-            price: 50000,
-            imageUrl: "https://example.com/image.jpg",
-            farmerDisplayName: "Farmer Name",
-            farmName: "Farm Name",
-            category: "Vegetables",
-            traceable: true,
-          },
-        ],
+        items: [createMockProduct()],
         totalPages: 1,
         totalElements: 1,
         page: 0,
@@ -71,19 +83,7 @@ describe("AdminMarketplaceProductsPage", () => {
 
     vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
       data: {
-        items: [
-          {
-            id: 1,
-            name: "Test Product",
-            status: "PENDING_REVIEW",
-            price: 50000,
-            imageUrl: "https://example.com/image.jpg",
-            farmerDisplayName: "Farmer Name",
-            farmName: "Farm Name",
-            category: "Vegetables",
-            traceable: true,
-          },
-        ],
+        items: [createMockProduct()],
         totalPages: 1,
         totalElements: 1,
         page: 0,
@@ -114,19 +114,7 @@ describe("AdminMarketplaceProductsPage", () => {
 
     vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
       data: {
-        items: [
-          {
-            id: 1,
-            name: "Test Product",
-            status: "PENDING_REVIEW",
-            price: 50000,
-            imageUrl: "https://example.com/image.jpg",
-            farmerDisplayName: "Farmer Name",
-            farmName: "Farm Name",
-            category: "Vegetables",
-            traceable: true,
-          },
-        ],
+        items: [createMockProduct()],
         totalPages: 1,
         totalElements: 1,
         page: 0,
@@ -165,5 +153,70 @@ describe("AdminMarketplaceProductsPage", () => {
         statusReason: "Product images do not match description",
       });
     });
+  });
+
+  it("shows loading state when products are being fetched", () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminProductStatusMutation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    renderPage();
+
+    expect(screen.getByText("Loading products...")).toBeInTheDocument();
+  });
+
+  it("shows error message when products fail to load", () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminProductStatusMutation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    renderPage();
+
+    expect(screen.getByText("Failed to load admin marketplace products.")).toBeInTheDocument();
+  });
+
+  it("shows only Hide button for PUBLISHED products", async () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminProducts).mockReturnValue({
+      data: {
+        items: [createMockProduct({ status: "PUBLISHED" })],
+        totalPages: 1,
+        totalElements: 1,
+        page: 0,
+        size: 25,
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminProductStatusMutation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Test Product")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("button", { name: /approve/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hide/i })).toBeInTheDocument();
   });
 });
