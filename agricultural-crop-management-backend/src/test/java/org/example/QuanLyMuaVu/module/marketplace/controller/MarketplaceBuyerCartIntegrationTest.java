@@ -324,6 +324,16 @@ class MarketplaceBuyerCartIntegrationTest {
         }
     }
 
+    /**
+     * Tests that products with INACTIVE status cannot be added to cart.
+     * <p>
+     * Note: The API treats all non-ACTIVE products (INACTIVE, SOLD_OUT, REJECTED)
+     * as "not found" from a buyer's perspective, returning 404 with
+     * ERR_MARKETPLACE_PRODUCT_NOT_FOUND. This test uses a non-existent product ID
+     * which produces the same result as an INACTIVE product would - both are filtered
+     * out by the getActiveProductOrThrow() method which only queries for ACTIVE status.
+     * </p>
+     */
     @Test
     void addCartItem_InactiveProduct_ShouldFail() throws Exception {
         String requestBody = """
@@ -341,6 +351,16 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_PRODUCT_NOT_FOUND"));
     }
 
+    /**
+     * Tests that products with SOLD_OUT status cannot be added to cart.
+     * <p>
+     * Note: The API treats all non-ACTIVE products (INACTIVE, SOLD_OUT, REJECTED)
+     * as "not found" from a buyer's perspective, returning 404 with
+     * ERR_MARKETPLACE_PRODUCT_NOT_FOUND. This test uses a non-existent product ID
+     * which produces the same result as a SOLD_OUT product would - both are filtered
+     * out by the getActiveProductOrThrow() method which only queries for ACTIVE status.
+     * </p>
+     */
     @Test
     void addCartItem_SoldOutProduct_ShouldFail() throws Exception {
         String requestBody = """
@@ -358,6 +378,16 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_PRODUCT_NOT_FOUND"));
     }
 
+    /**
+     * Tests that products with REJECTED status cannot be added to cart.
+     * <p>
+     * Note: The API treats all non-ACTIVE products (INACTIVE, SOLD_OUT, REJECTED)
+     * as "not found" from a buyer's perspective, returning 404 with
+     * ERR_MARKETPLACE_PRODUCT_NOT_FOUND. This test uses a non-existent product ID
+     * which produces the same result as a REJECTED product would - both are filtered
+     * out by the getActiveProductOrThrow() method which only queries for ACTIVE status.
+     * </p>
+     */
     @Test
     void addCartItem_RejectedProduct_ShouldFail() throws Exception {
         String requestBody = """
@@ -391,14 +421,19 @@ class MarketplaceBuyerCartIntegrationTest {
         // Skip test if no products available
         Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
 
-        Long productId = items.get(0).path("id").asLong();
+        JsonNode product = items.get(0);
+        Long productId = product.path("id").asLong();
+        double maxQuantity = product.path("quantity").asDouble();
+
+        // Request quantity that exceeds available stock by a significant margin
+        double excessiveQuantity = maxQuantity + 1000.0;
 
         String requestBody = String.format("""
             {
                 "productId": %d,
-                "quantity": 999999.0
+                "quantity": %.1f
             }
-            """, productId);
+            """, productId, excessiveQuantity);
 
         mockMvc.perform(post("/api/v1/marketplace/cart/items")
                 .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
@@ -437,6 +472,7 @@ class MarketplaceBuyerCartIntegrationTest {
                 .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("ERR_INVALID_REQUEST"));
     }
 }
