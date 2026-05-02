@@ -23,10 +23,11 @@ export function useMarketplaceAddToCart() {
       await queryClient.invalidateQueries({
         queryKey: marketplaceQueryKeys.cart(),
       });
+      toast.success("Đã thêm sản phẩm vào giỏ hàng.");
     },
     onError: (error) => {
       console.error("Failed to add marketplace cart item", error);
-      toast.error("Khong the them vao gio hang luc nay.");
+      toast.error("Không thể thêm vào giỏ hàng lúc này.");
     },
   });
 
