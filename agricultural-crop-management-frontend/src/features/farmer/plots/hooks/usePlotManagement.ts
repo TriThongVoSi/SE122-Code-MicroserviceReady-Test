@@ -226,14 +226,14 @@ export const usePlotManagement = (): UsePlotManagementReturn => {
   const handleMarkDormant = useCallback((plot: Plot) => {
     const plotId = parseInt(plot.id, 10);
     if (!isNaN(plotId)) {
-        updateMutation.mutate({
-          id: plotId,
-          data: {
-            plotName: plot.name,
-            area: plot.area,
-            status: "IDLE",
-          },
-        });
+      updateMutation.mutate({
+        id: plotId,
+        data: {
+          plotName: plot.name,
+          area: plot.area,
+          status: "IDLE",
+        },
+      });
     }
   }, [updateMutation]);
 

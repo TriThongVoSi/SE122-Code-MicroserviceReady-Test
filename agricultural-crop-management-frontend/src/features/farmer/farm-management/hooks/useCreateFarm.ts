@@ -70,7 +70,7 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
 
     const handleSubmit = form.handleSubmit((data: FarmCreateRequest) => {
         console.log('[useCreateFarm] Submitting farm data:', data);
-        mutation.mutate(data);
+        mutation.mutate(data as FarmCreateRequest);
     });
 
     return {

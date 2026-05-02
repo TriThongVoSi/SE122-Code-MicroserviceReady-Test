@@ -290,7 +290,7 @@ export function FarmsPlotsPage() {
             />
           </div>
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted/50"
           >
             <Search className="h-4 w-4" />

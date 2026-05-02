@@ -88,7 +88,7 @@ export function FarmFormDialog({
 
                                 return (
                                     <AddressSelector
-                                    value={{
+                                        value={{
                                             provinceId: provinceField.value ?? null,
                                             wardId: wardId ?? null,
                                         }}
@@ -187,7 +187,7 @@ export function FarmFormDialog({
 
                             return (
                                 <AddressSelector
-                                value={{
+                                    value={{
                                         provinceId: provinceField.value ?? null,
                                         wardId: wardId ?? null,
                                     }}
