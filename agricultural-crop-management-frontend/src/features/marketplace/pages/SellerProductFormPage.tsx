@@ -142,6 +142,8 @@ export function SellerProductFormPage() {
     Boolean(selectedLot) &&
     Number(form.stockQuantity) <= Number(selectedLot?.availableQuantity ?? 0);
 
+  const productModerationReason = product?.rejectionReason ?? product?.statusReason ?? null;
+
   function updateForm(patch: Partial<ProductFormState>) {
     setForm((current) => ({ ...current, ...patch }));
   }
@@ -618,6 +620,12 @@ export function SellerProductFormPage() {
                   </span>
                 </div>
               </div>
+
+              {productModerationReason ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Admin reason: {productModerationReason}
+                </div>
+              ) : null}
 
               {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 
