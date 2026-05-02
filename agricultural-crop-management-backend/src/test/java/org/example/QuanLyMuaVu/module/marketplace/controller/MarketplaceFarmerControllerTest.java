@@ -1,6 +1,9 @@
 package org.example.QuanLyMuaVu.module.marketplace.controller;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,7 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormFarmOptionResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormLotOptionResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormOptionsResponse;
@@ -108,4 +113,51 @@ class MarketplaceFarmerControllerTest {
                 .andExpect(jsonPath("$.result.availableQuantity").value(8.0))
                 .andExpect(jsonPath("$.result.status").value("DRAFT"));
     }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void productStatus_ShouldIncludeAllRequiredStatuses() {
+        MarketplaceProductStatus[] statuses = MarketplaceProductStatus.values();
+
+        // Verify all 8 statuses exist (6 new + 2 deprecated)
+        assertEquals(8, statuses.length,
+            "Expected 8 total statuses (6 active + 2 deprecated)");
+
+        // Verify new statuses
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.DRAFT),
+            "DRAFT status should exist");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.PENDING_REVIEW),
+            "PENDING_REVIEW status should exist");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.ACTIVE),
+            "ACTIVE status should exist");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.REJECTED),
+            "REJECTED status should exist");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.INACTIVE),
+            "INACTIVE status should exist");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.SOLD_OUT),
+            "SOLD_OUT status should exist");
+
+        // Verify deprecated statuses still exist for backward compatibility
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.PUBLISHED),
+            "PUBLISHED status should exist (deprecated)");
+        assertTrue(
+            Arrays.asList(statuses).contains(MarketplaceProductStatus.HIDDEN),
+            "HIDDEN status should exist (deprecated)");
+    }
+
+    // Note: Status transition validation tests are covered by integration tests in Task 3
+    // The following placeholder tests have been removed as they don't provide real test coverage:
+    // - farmerStatusTransition_DraftToPendingReview_ShouldBeAllowed
+    // - farmerStatusTransition_DraftToActive_ShouldBeForbidden
+    // - farmerStatusTransition_ActiveToInactive_ShouldBeAllowed
+    // - farmerStatusTransition_InactiveToActive_ShouldBeAllowed
+    // - farmerStatusTransition_ActiveToSoldOut_ShouldBeAllowed
+    // - farmerStatusTransition_SameStatus_ShouldBeNoOp
 }
