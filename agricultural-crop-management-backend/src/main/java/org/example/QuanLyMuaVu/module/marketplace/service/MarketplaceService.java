@@ -971,8 +971,10 @@ public class MarketplaceService {
             if (product.getPublishedAt() == null) {
                 product.setPublishedAt(LocalDateTime.now());
             }
-        } else if (targetStatus != MarketplaceProductStatus.ACTIVE && targetStatus != MarketplaceProductStatus.PUBLISHED) {
-            // Clear publishedAt for non-active statuses
+        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
+            // Preserve publishedAt for sold out products (they were previously ACTIVE)
+        } else {
+            // Clear publishedAt for other non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -1094,8 +1096,10 @@ public class MarketplaceService {
             if (product.getPublishedAt() == null) {
                 product.setPublishedAt(LocalDateTime.now());
             }
-        } else if (targetStatus != MarketplaceProductStatus.ACTIVE && targetStatus != MarketplaceProductStatus.PUBLISHED) {
-            // Clear publishedAt for non-active statuses
+        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
+            // Preserve publishedAt for sold out products (they were previously ACTIVE)
+        } else {
+            // Clear publishedAt for other non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -2171,9 +2175,9 @@ public class MarketplaceService {
             case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW;
             case ACTIVE -> target == MarketplaceProductStatus.INACTIVE || target == MarketplaceProductStatus.SOLD_OUT;
             case INACTIVE -> target == MarketplaceProductStatus.ACTIVE;
-            case PENDING_REVIEW -> target == MarketplaceProductStatus.DRAFT;
-            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN; // Legacy support
-            case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW; // Legacy support
+            // Legacy support for backward compatibility with existing data
+            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
+            case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW;
             default -> false;
         };
 

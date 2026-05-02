@@ -152,66 +152,12 @@ class MarketplaceFarmerControllerTest {
             "HIDDEN status should exist (deprecated)");
     }
 
-    @Test
-    void farmerStatusTransition_DraftToPendingReview_ShouldBeAllowed() {
-        // This test will pass once we implement the new validation logic
-        // For now, it documents the expected behavior
-        MarketplaceProductStatus current = MarketplaceProductStatus.DRAFT;
-        MarketplaceProductStatus target = MarketplaceProductStatus.PENDING_REVIEW;
-
-        // Expected: no exception thrown
-        // This will be validated by the service layer
-        assertTrue(true, "DRAFT -> PENDING_REVIEW should be allowed for farmers");
-    }
-
-    @Test
-    void farmerStatusTransition_DraftToActive_ShouldBeForbidden() {
-        // This test documents that farmers cannot directly publish products
-        MarketplaceProductStatus current = MarketplaceProductStatus.DRAFT;
-        MarketplaceProductStatus target = MarketplaceProductStatus.ACTIVE;
-
-        // Expected: AppException with BAD_REQUEST
-        // Farmers cannot transition DRAFT -> ACTIVE directly
-        assertTrue(true, "DRAFT -> ACTIVE should be forbidden for farmers");
-    }
-
-    @Test
-    void farmerStatusTransition_ActiveToInactive_ShouldBeAllowed() {
-        // Farmers can temporarily hide their active products
-        MarketplaceProductStatus current = MarketplaceProductStatus.ACTIVE;
-        MarketplaceProductStatus target = MarketplaceProductStatus.INACTIVE;
-
-        // Expected: no exception thrown
-        assertTrue(true, "ACTIVE -> INACTIVE should be allowed for farmers");
-    }
-
-    @Test
-    void farmerStatusTransition_InactiveToActive_ShouldBeAllowed() {
-        // Farmers can reactivate their hidden products
-        MarketplaceProductStatus current = MarketplaceProductStatus.INACTIVE;
-        MarketplaceProductStatus target = MarketplaceProductStatus.ACTIVE;
-
-        // Expected: no exception thrown
-        assertTrue(true, "INACTIVE -> ACTIVE should be allowed for farmers");
-    }
-
-    @Test
-    void farmerStatusTransition_ActiveToSoldOut_ShouldBeAllowed() {
-        // Farmers can mark products as sold out
-        MarketplaceProductStatus current = MarketplaceProductStatus.ACTIVE;
-        MarketplaceProductStatus target = MarketplaceProductStatus.SOLD_OUT;
-
-        // Expected: no exception thrown
-        assertTrue(true, "ACTIVE -> SOLD_OUT should be allowed for farmers");
-    }
-
-    @Test
-    void farmerStatusTransition_SameStatus_ShouldBeNoOp() {
-        // Transitioning to the same status should be a no-op
-        MarketplaceProductStatus current = MarketplaceProductStatus.DRAFT;
-        MarketplaceProductStatus target = MarketplaceProductStatus.DRAFT;
-
-        // Expected: no exception thrown, no-op
-        assertTrue(true, "Same status transition should be a no-op");
-    }
+    // Note: Status transition validation tests are covered by integration tests in Task 3
+    // The following placeholder tests have been removed as they don't provide real test coverage:
+    // - farmerStatusTransition_DraftToPendingReview_ShouldBeAllowed
+    // - farmerStatusTransition_DraftToActive_ShouldBeForbidden
+    // - farmerStatusTransition_ActiveToInactive_ShouldBeAllowed
+    // - farmerStatusTransition_InactiveToActive_ShouldBeAllowed
+    // - farmerStatusTransition_ActiveToSoldOut_ShouldBeAllowed
+    // - farmerStatusTransition_SameStatus_ShouldBeNoOp
 }
