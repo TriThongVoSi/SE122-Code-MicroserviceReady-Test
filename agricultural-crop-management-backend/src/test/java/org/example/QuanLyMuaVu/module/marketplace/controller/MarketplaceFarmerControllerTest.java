@@ -108,4 +108,41 @@ class MarketplaceFarmerControllerTest {
                 .andExpect(jsonPath("$.result.availableQuantity").value(8.0))
                 .andExpect(jsonPath("$.result.status").value("DRAFT"));
     }
+
+    @Test
+    void productStatus_ShouldIncludeAllRequiredStatuses() {
+        MarketplaceProductStatus[] statuses = MarketplaceProductStatus.values();
+
+        // Verify all 8 statuses exist (6 new + 2 deprecated)
+        org.junit.jupiter.api.Assertions.assertEquals(8, statuses.length,
+            "Expected 8 total statuses (6 active + 2 deprecated)");
+
+        // Verify new statuses
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.DRAFT),
+            "DRAFT status should exist");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.PENDING_REVIEW),
+            "PENDING_REVIEW status should exist");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.ACTIVE),
+            "ACTIVE status should exist");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.REJECTED),
+            "REJECTED status should exist");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.INACTIVE),
+            "INACTIVE status should exist");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.SOLD_OUT),
+            "SOLD_OUT status should exist");
+
+        // Verify deprecated statuses still exist for backward compatibility
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.PUBLISHED),
+            "PUBLISHED status should exist (deprecated)");
+        org.junit.jupiter.api.Assertions.assertTrue(
+            java.util.Arrays.asList(statuses).contains(MarketplaceProductStatus.HIDDEN),
+            "HIDDEN status should exist (deprecated)");
+    }
 }
