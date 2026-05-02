@@ -341,10 +341,12 @@ export type MarketplaceFarmerProductFormOptions = {
 
 export type MarketplaceUpdateProductStatusRequest = {
   status: MarketplaceProductStatus;
+  statusReason?: string;
 };
 
 export type MarketplaceUpdateOrderStatusRequest = {
   status: MarketplaceOrderStatus;
+  reason?: string;
 };
 
 export type MarketplaceUpdatePaymentVerificationRequest = {
