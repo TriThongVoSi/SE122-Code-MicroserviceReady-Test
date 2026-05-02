@@ -112,7 +112,7 @@ export function MarketHomePage() {
                   referrerPolicy="no-referrer"
                 />
                 <div className="fb-hero-overlay" aria-hidden="true" />
-                <div className="absolute bottom-6 left-6 right-6 z-10 text-white">
+                <div className="absolute bottom-6 left-1 right-6 z-10 text-white">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className="fb-frosted-pill">Có truy xuất</span>
                     <span className="fb-frosted-pill">Kết nối dữ liệu thật</span>
@@ -121,10 +121,6 @@ export function MarketHomePage() {
                     Thu hoạch minh bạch, giao dịch trực tiếp từ nông trại địa phương
                   </p>
                 </div>
-                <aside className="fb-floating-card" aria-hidden="true">
-                  <span className="fb-pulse-dot" />
-                  <span>Đang giao dịch trực tiếp</span>
-                </aside>
               </div>
             </div>
           </div>

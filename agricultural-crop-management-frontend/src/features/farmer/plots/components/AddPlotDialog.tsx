@@ -102,7 +102,6 @@ export function AddPlotDialog({
               ? "IN_USE"
               : "AVAILABLE";
 
-    // Build request matching PlotRequest schema
     const formData: PlotRequest = {
       plotName: plotName.trim(),
       area: parseFloat(areaValue),

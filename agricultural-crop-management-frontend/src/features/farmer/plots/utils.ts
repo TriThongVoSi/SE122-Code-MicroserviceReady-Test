@@ -41,7 +41,6 @@ export const mapPlotStatusToApiStatus = (status: PlotStatus): PlotRequest["statu
     planned: "AVAILABLE",
     "at-risk": "MAINTENANCE",
   };
-
   return statusMap[status];
 };
 
