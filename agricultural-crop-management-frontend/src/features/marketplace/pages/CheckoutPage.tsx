@@ -145,7 +145,7 @@ export function CheckoutPage() {
       groups.set(item.farmerUserId, [...(groups.get(item.farmerUserId) ?? []), item]);
     });
     return Array.from(groups.entries()).map(([farmerUserId, items]) => ({ farmerUserId, items }));
-  }, [cart.items]);
+  }, [cart?.items]);
 
   useEffect(() => {
     if (cartFingerprint !== lastCartFingerprintRef.current) {
@@ -721,7 +721,7 @@ export function CheckoutPage() {
                     selectedAddress,
                     recipientName: effectiveRecipientName,
                     phone: effectivePhone,
-                    shippingAddressLine: effectiveShippingAddressLine,
+                    shippingAddressLine: effectiveShippingAddressLine ?? '',
                     paymentMethod,
                   });
                   if (!validation.valid) {
@@ -735,7 +735,7 @@ export function CheckoutPage() {
                       addressId: addressMode === "saved" ? selectedAddress?.id : undefined,
                       shippingRecipientName: effectiveRecipientName,
                       shippingPhone: effectivePhone,
-                      shippingAddressLine: effectiveShippingAddressLine,
+                      shippingAddressLine: effectiveShippingAddressLine ?? '',
                       note: note.trim() || undefined,
                       idempotencyKey: checkoutIdempotencyKey,
                     });
