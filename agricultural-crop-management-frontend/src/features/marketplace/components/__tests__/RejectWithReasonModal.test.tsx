@@ -106,4 +106,27 @@ describe("RejectWithReasonModal", () => {
 
     expect(screen.getByText("4 / 500")).toBeInTheDocument();
   });
+
+  it("trims whitespace from reason before calling onConfirm", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <RejectWithReasonModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+        title="Hide Product"
+        description="Warning text"
+        reasonLabel="Reason"
+      />
+    );
+
+    const textarea = screen.getByLabelText("Reason");
+    await user.type(textarea, "  Valid reason text  ");
+
+    const confirmButton = screen.getByRole("button", { name: /confirm/i });
+    await user.click(confirmButton);
+
+    expect(onConfirm).toHaveBeenCalledWith("Valid reason text");
+  });
 });

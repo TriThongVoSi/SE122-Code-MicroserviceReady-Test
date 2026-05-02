@@ -10,6 +10,7 @@ import {
 } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
 import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
 
 type RejectWithReasonModalProps = {
   isOpen: boolean;
@@ -69,18 +70,19 @@ export function RejectWithReasonModal({
 
         <div className="space-y-2">
           <Label htmlFor="reason">{reasonLabel}</Label>
-          <textarea
+          <Textarea
             id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={reasonPlaceholder}
-            className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             rows={5}
             disabled={isLoading}
             maxLength={MAX_REASON_LENGTH}
+            aria-invalid={showError}
+            aria-describedby={showError ? "reason-error" : undefined}
           />
           <div className="flex items-center justify-between text-xs">
-            <span className={showError ? "text-red-600" : "text-gray-500"}>
+            <span id="reason-error" className={showError ? "text-red-600" : "text-gray-500"}>
               {showError && "Please provide a reason (at least 10 characters)"}
             </span>
             <span className="text-gray-400">
