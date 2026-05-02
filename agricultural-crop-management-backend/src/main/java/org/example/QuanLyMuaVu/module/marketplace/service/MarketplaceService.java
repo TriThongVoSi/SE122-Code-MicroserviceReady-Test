@@ -1363,12 +1363,12 @@ public class MarketplaceService {
 
     private MarketplaceCartResponse buildCartResponse(Long userId, MarketplaceCart cart) {
         List<MarketplaceCartItem> items = marketplaceCartItemRepository.findByCartIdWithProduct(cart.getId());
-        List<MarketplaceCartItemResponse> itemResponses = new ArrayList<>();
         BigDecimal itemCount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        // Group items by seller (farmerUserId)
+        // Group items by seller (farmerUserId) and build item responses once
         Map<Long, List<MarketplaceCartItem>> itemsBySeller = new LinkedHashMap<>();
+        Map<Long, MarketplaceCartItemResponse> itemResponseMap = new LinkedHashMap<>();
 
         for (MarketplaceCartItem item : items) {
             MarketplaceProduct product = item.getProduct();
@@ -1376,6 +1376,7 @@ public class MarketplaceService {
             BigDecimal unitPrice = product.getPrice();
             subtotal = subtotal.add(unitPrice.multiply(item.getQuantity()));
 
+            // Build item response once and cache it
             MarketplaceCartItemResponse itemResponse = new MarketplaceCartItemResponse(
                     product.getId(),
                     product.getSlug(),
@@ -1387,7 +1388,7 @@ public class MarketplaceService {
                     product.getFarmerUser() == null ? null : product.getFarmerUser().getId(),
                     Boolean.TRUE.equals(product.getTraceable()));
 
-            itemResponses.add(itemResponse);
+            itemResponseMap.put(product.getId(), itemResponse);
 
             // Group by seller
             Long sellerId = product.getFarmerUser() == null ? null : product.getFarmerUser().getId();
@@ -1395,6 +1396,9 @@ public class MarketplaceService {
                 itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(item);
             }
         }
+
+        // Build flat items list (for backward compatibility - items appear in both flat list and seller groups)
+        List<MarketplaceCartItemResponse> itemResponses = new ArrayList<>(itemResponseMap.values());
 
         // Build seller groups
         List<MarketplaceCartSellerGroupResponse> sellerGroups = new ArrayList<>();
@@ -1406,9 +1410,16 @@ public class MarketplaceService {
             MarketplaceCartItem firstItem = sellerItems.get(0);
             MarketplaceProduct firstProduct = firstItem.getProduct();
             User farmer = firstProduct.getFarmerUser();
+
+            // Null safety: farmer should never be null here due to sellerId filter above,
+            // but add defensive check to prevent NPE
+            if (farmer == null) {
+                continue; // Skip this group if farmer is unexpectedly null
+            }
+
             Farm farm = firstProduct.getFarm();
 
-            // Build item responses for this seller
+            // Reuse pre-built item responses for this seller
             List<MarketplaceCartItemResponse> sellerItemResponses = new ArrayList<>();
             BigDecimal sellerSubtotal = BigDecimal.ZERO;
 
@@ -1417,16 +1428,9 @@ public class MarketplaceService {
                 BigDecimal unitPrice = product.getPrice();
                 sellerSubtotal = sellerSubtotal.add(unitPrice.multiply(item.getQuantity()));
 
-                sellerItemResponses.add(new MarketplaceCartItemResponse(
-                        product.getId(),
-                        product.getSlug(),
-                        product.getName(),
-                        product.getImageUrl(),
-                        unitPrice,
-                        item.getQuantity(),
-                        currentAvailableQuantity(product),
-                        farmer.getId(),
-                        Boolean.TRUE.equals(product.getTraceable())));
+                // Reuse the cached item response
+                MarketplaceCartItemResponse cachedResponse = itemResponseMap.get(product.getId());
+                sellerItemResponses.add(cachedResponse);
             }
 
             sellerGroups.add(new MarketplaceCartSellerGroupResponse(

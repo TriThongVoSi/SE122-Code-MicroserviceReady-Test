@@ -174,10 +174,85 @@ class MarketplaceBuyerCartIntegrationTest {
 
     @Test
     void getCart_WithMultipleSellers_ShouldGroupBySeller() throws Exception {
-        mockMvc.perform(get("/api/v1/marketplace/cart")
+        // First, get multiple products from different sellers
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "10"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if not enough products available
+        if (items.size() < 2) {
+            return;
+        }
+
+        // Add items from different products (potentially different sellers)
+        Long productId1 = items.get(0).path("id").asLong();
+        Long productId2 = items.get(1).path("id").asLong();
+
+        String addItemRequest1 = String.format("""
+            {
+                "productId": %d,
+                "quantity": 2.0
+            }
+            """, productId1);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest1))
+            .andExpect(status().isOk());
+
+        String addItemRequest2 = String.format("""
+            {
+                "productId": %d,
+                "quantity": 3.0
+            }
+            """, productId2);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest2))
+            .andExpect(status().isOk());
+
+        // Now get the cart and verify seller grouping
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/marketplace/cart")
                 .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"))
-            .andExpect(jsonPath("$.result.sellerGroups").isArray());
+            .andExpect(jsonPath("$.result.sellerGroups").isArray())
+            .andExpect(jsonPath("$.result.sellerGroups").isNotEmpty())
+            .andReturn();
+
+        // Validate seller group structure
+        String cartJson = cartResult.getResponse().getContentAsString();
+        JsonNode cartNode = objectMapper.readTree(cartJson);
+        JsonNode sellerGroups = cartNode.path("result").path("sellerGroups");
+
+        // Each seller group should have required fields
+        for (JsonNode group : sellerGroups) {
+            // Verify farmerUserId is present and not null
+            assert group.has("farmerUserId") && !group.path("farmerUserId").isNull();
+
+            // Verify farmerName is present
+            assert group.has("farmerName") && !group.path("farmerName").asText().isEmpty();
+
+            // Verify items array exists and is not empty
+            assert group.has("items") && group.path("items").isArray() && !group.path("items").isEmpty();
+
+            // Verify subtotal is present and >= 0
+            assert group.has("subtotal") && group.path("subtotal").decimalValue().compareTo(java.math.BigDecimal.ZERO) >= 0;
+
+            // Verify each item in the group has the same farmerUserId
+            Long groupFarmerId = group.path("farmerUserId").asLong();
+            for (JsonNode item : group.path("items")) {
+                assert item.path("farmerUserId").asLong() == groupFarmerId;
+            }
+        }
     }
 }
