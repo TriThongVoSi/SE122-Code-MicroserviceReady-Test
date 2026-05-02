@@ -45,6 +45,8 @@ export type MarketplaceProductSummary = {
   ratingAverage: number;
   ratingCount: number;
   status: MarketplaceProductStatus;
+  statusReason?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
   updatedAt: string;
 };
