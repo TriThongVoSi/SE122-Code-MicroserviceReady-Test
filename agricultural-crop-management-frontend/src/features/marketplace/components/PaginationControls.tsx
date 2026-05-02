@@ -9,32 +9,35 @@ import {
 } from '@/shared/ui/select';
 
 interface PaginationControlsProps {
-  currentPage: number;
+  currentPage: number; // 0-indexed
+  totalPages: number;
+  totalElements: number;
   pageSize: number;
-  totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  pageSizeOptions?: number[];
 }
 
 export function PaginationControls({
   currentPage,
+  totalPages,
+  totalElements,
   pageSize,
-  totalItems,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = [10, 25, 50, 100],
 }: PaginationControlsProps) {
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const startItem = currentPage * pageSize + 1;
+  const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
 
-  const isFirstPage = currentPage === 1;
-  const isLastPage = currentPage >= totalPages;
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage === totalPages - 1;
 
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex items-center gap-4">
         <p className="text-sm text-muted-foreground">
-          Showing {startItem} to {endItem} of {totalItems}
+          Showing {startItem} to {endItem} of {totalElements}
         </p>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Items per page:</span>
@@ -46,10 +49,11 @@ export function PaginationControls({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
+              {pageSizeOptions.map((option) => (
+                <SelectItem key={option} value={option.toString()}>
+                  {option}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -60,6 +64,7 @@ export function PaginationControls({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={isFirstPage}
+          aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
@@ -69,6 +74,7 @@ export function PaginationControls({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={isLastPage}
+          aria-label="Next page"
         >
           Next
           <ChevronRight className="h-4 w-4" />

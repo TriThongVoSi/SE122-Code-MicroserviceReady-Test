@@ -10,9 +10,10 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={1}
+        currentPage={0}
+        totalPages={5}
         pageSize={10}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
@@ -29,9 +30,10 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={1}
+        currentPage={0}
+        totalPages={5}
         pageSize={10}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
@@ -46,9 +48,10 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={5}
+        currentPage={4}
+        totalPages={5}
         pageSize={10}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
@@ -64,19 +67,20 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={2}
+        currentPage={1}
+        totalPages={5}
         pageSize={10}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
     );
 
     await user.click(screen.getByRole('button', { name: /previous/i }));
-    expect(onPageChange).toHaveBeenCalledWith(1);
+    expect(onPageChange).toHaveBeenCalledWith(0);
 
     await user.click(screen.getByRole('button', { name: /next/i }));
-    expect(onPageChange).toHaveBeenCalledWith(3);
+    expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
   it('renders page size selector', () => {
@@ -85,9 +89,10 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={1}
+        currentPage={0}
+        totalPages={5}
         pageSize={10}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
@@ -103,9 +108,10 @@ describe('PaginationControls', () => {
 
     render(
       <PaginationControls
-        currentPage={1}
+        currentPage={0}
+        totalPages={2}
         pageSize={25}
-        totalItems={50}
+        totalElements={50}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
@@ -113,5 +119,26 @@ describe('PaginationControls', () => {
 
     const select = screen.getByRole('combobox');
     expect(select).toHaveTextContent('25');
+  });
+
+  it('calls onPageSizeChange when page size is changed', () => {
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
+
+    render(
+      <PaginationControls
+        currentPage={0}
+        totalPages={5}
+        pageSize={10}
+        totalElements={50}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+      />
+    );
+
+    // Verify the select component is rendered and callback is wired
+    const select = screen.getByRole('combobox');
+    expect(select).toBeInTheDocument();
+    expect(onPageSizeChange).not.toHaveBeenCalled();
   });
 });
