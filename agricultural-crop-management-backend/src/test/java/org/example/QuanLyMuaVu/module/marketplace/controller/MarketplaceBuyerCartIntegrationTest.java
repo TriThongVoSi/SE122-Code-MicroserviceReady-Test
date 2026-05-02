@@ -323,4 +323,120 @@ class MarketplaceBuyerCartIntegrationTest {
             }
         }
     }
+
+    @Test
+    void addCartItem_InactiveProduct_ShouldFail() throws Exception {
+        String requestBody = """
+            {
+                "productId": 999,
+                "quantity": 1.0
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_PRODUCT_NOT_FOUND"));
+    }
+
+    @Test
+    void addCartItem_SoldOutProduct_ShouldFail() throws Exception {
+        String requestBody = """
+            {
+                "productId": 998,
+                "quantity": 1.0
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_PRODUCT_NOT_FOUND"));
+    }
+
+    @Test
+    void addCartItem_RejectedProduct_ShouldFail() throws Exception {
+        String requestBody = """
+            {
+                "productId": 997,
+                "quantity": 1.0
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_PRODUCT_NOT_FOUND"));
+    }
+
+    @Test
+    void addCartItem_QuantityExceedsStock_ShouldFail() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
+
+        Long productId = items.get(0).path("id").asLong();
+
+        String requestBody = String.format("""
+            {
+                "productId": %d,
+                "quantity": 999999.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("ERR_MARKETPLACE_STOCK_CONFLICT"));
+    }
+
+    @Test
+    void addCartItem_NegativeQuantity_ShouldFail() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
+
+        Long productId = items.get(0).path("id").asLong();
+
+        String requestBody = String.format("""
+            {
+                "productId": %d,
+                "quantity": -1.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isBadRequest());
+    }
 }
