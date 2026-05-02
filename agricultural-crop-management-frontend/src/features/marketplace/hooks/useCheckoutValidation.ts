@@ -26,7 +26,6 @@ export function useCheckoutValidation() {
       const phone = input.phone?.trim() ?? '';
       const phoneResult = phoneSchema.safeParse(phone);
       if (!phoneResult.success) return { valid: false, message: phoneResult.error.issues[0]?.message ?? 'Số điện thoại không hợp lệ.' };
-      if (!input.shippingAddressLine.trim()) return { valid: false, message: 'Vui lòng nhập địa chỉ giao hàng.' };
       if (input.paymentMethod !== 'COD' && input.paymentMethod !== 'BANK_TRANSFER') return { valid: false, message: 'Phương thức thanh toán không hợp lệ.' };
       return { valid: true };
     },
