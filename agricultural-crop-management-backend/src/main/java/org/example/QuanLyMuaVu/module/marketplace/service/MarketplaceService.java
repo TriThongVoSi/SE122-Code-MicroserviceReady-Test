@@ -1397,7 +1397,7 @@ public class MarketplaceService {
     }
 
     private MarketplaceProduct getPublishedProductOrThrow(Long productId) {
-        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
+        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
         return product;
     }

@@ -136,4 +136,39 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"));
     }
+
+    @Test
+    void addCartItem_WithActiveProduct_ShouldSucceed() throws Exception {
+        // First, get an active product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        if (items.isEmpty()) {
+            return;
+        }
+
+        Long productId = items.get(0).path("id").asLong();
+
+        String requestBody = String.format("""
+            {
+                "productId": %d,
+                "quantity": 2.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"));
+    }
 }
