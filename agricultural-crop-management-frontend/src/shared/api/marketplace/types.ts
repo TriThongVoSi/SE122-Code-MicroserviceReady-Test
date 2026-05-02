@@ -45,6 +45,8 @@ export type MarketplaceProductSummary = {
   ratingAverage: number;
   ratingCount: number;
   status: MarketplaceProductStatus;
+  statusReason?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -339,10 +341,12 @@ export type MarketplaceFarmerProductFormOptions = {
 
 export type MarketplaceUpdateProductStatusRequest = {
   status: MarketplaceProductStatus;
+  statusReason?: string;
 };
 
 export type MarketplaceUpdateOrderStatusRequest = {
   status: MarketplaceOrderStatus;
+  reason?: string;
 };
 
 export type MarketplaceUpdatePaymentVerificationRequest = {

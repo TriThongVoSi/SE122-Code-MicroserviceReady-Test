@@ -142,6 +142,8 @@ export function SellerProductFormPage() {
     Boolean(selectedLot) &&
     Number(form.stockQuantity) <= Number(selectedLot?.availableQuantity ?? 0);
 
+  const productModerationReason = product?.rejectionReason ?? product?.statusReason ?? null;
+
   function updateForm(patch: Partial<ProductFormState>) {
     setForm((current) => ({ ...current, ...patch }));
   }
@@ -471,9 +473,9 @@ export function SellerProductFormPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Farm</Label>
+                <Label id="product-farm-label">Farm</Label>
                 <Select value={form.selectedFarmId} onValueChange={handleFarmChange}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-labelledby="product-farm-label">
                     <SelectValue placeholder="Choose your farm" />
                   </SelectTrigger>
                   <SelectContent>
@@ -487,13 +489,13 @@ export function SellerProductFormPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Season</Label>
+                <Label id="product-season-label">Season</Label>
                 <Select
                   value={form.selectedSeasonId}
                   onValueChange={handleSeasonChange}
                   disabled={!form.selectedFarmId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-labelledby="product-season-label">
                     <SelectValue placeholder={form.selectedFarmId ? "Choose a season" : "Pick a farm first"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -507,13 +509,13 @@ export function SellerProductFormPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Harvested lot</Label>
+                <Label id="product-lot-label">Harvested lot</Label>
                 <Select
                   value={form.selectedLotId}
                   onValueChange={handleLotChange}
                   disabled={!form.selectedFarmId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-labelledby="product-lot-label">
                     <SelectValue placeholder={form.selectedFarmId ? "Choose a harvested lot" : "Pick a farm first"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -618,6 +620,12 @@ export function SellerProductFormPage() {
                   </span>
                 </div>
               </div>
+
+              {productModerationReason ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  Admin reason: {productModerationReason}
+                </div>
+              ) : null}
 
               {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
 

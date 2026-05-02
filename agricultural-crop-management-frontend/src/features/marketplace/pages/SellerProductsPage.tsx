@@ -32,14 +32,18 @@ function statusLabel(status: MarketplaceProductStatus) {
     case "DRAFT":
       return "Draft";
     case "PENDING_REVIEW":
-      return "Pending review";
+      return "Pending approval";
     case "PUBLISHED":
-      return "Published";
+      return "Approved";
     case "HIDDEN":
-      return "Hidden";
+      return "Rejected / Hidden";
     default:
       return status;
   }
+}
+
+function moderationReason(product: MarketplaceProductSummary) {
+  return product.rejectionReason ?? product.statusReason ?? null;
 }
 
 function ProductActions({ product }: { product: MarketplaceProductSummary }) {
@@ -167,6 +171,11 @@ export function SellerProductsPage() {
                           {product.name}
                         </Link>
                         <p className="truncate text-xs text-gray-500">{product.shortDescription}</p>
+                        {moderationReason(product) ? (
+                          <p className="mt-1 text-xs font-medium text-red-600">
+                            Admin reason: {moderationReason(product)}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </td>
