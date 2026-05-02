@@ -475,4 +475,64 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("ERR_INVALID_REQUEST"));
     }
+
+    @Test
+    void updateCartItem_ConcurrentUpdates_ShouldHandleGracefully() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        Assumptions.assumeTrue(!items.isEmpty(), "No products available for testing");
+
+        Long productId = items.get(0).path("id").asLong();
+
+        // Add an item to the cart first
+        String addItemRequest = String.format("""
+            {
+                "productId": %d,
+                "quantity": 2.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest))
+            .andExpect(status().isOk());
+
+        // Perform first update
+        String requestBody1 = """
+            {
+                "quantity": 5.0
+            }
+            """;
+
+        mockMvc.perform(patch("/api/v1/marketplace/cart/items/" + productId)
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody1))
+            .andExpect(status().isOk());
+
+        // Perform second update
+        String requestBody2 = """
+            {
+                "quantity": 3.0
+            }
+            """;
+
+        mockMvc.perform(patch("/api/v1/marketplace/cart/items/" + productId)
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", TEST_BUYER_USER_ID).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody2))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.result.items[0].quantity").value(3.0));
+    }
 }
