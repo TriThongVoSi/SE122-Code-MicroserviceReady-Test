@@ -965,9 +965,14 @@ public class MarketplaceService {
             ensureListingHasStock(product);
         }
         product.setStatus(targetStatus);
-        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            product.setPublishedAt(LocalDateTime.now());
-        } else if (targetStatus != MarketplaceProductStatus.PUBLISHED) {
+
+        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
+        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            if (product.getPublishedAt() == null) {
+                product.setPublishedAt(LocalDateTime.now());
+            }
+        } else if (targetStatus != MarketplaceProductStatus.ACTIVE && targetStatus != MarketplaceProductStatus.PUBLISHED) {
+            // Clear publishedAt for non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -1072,10 +1077,25 @@ public class MarketplaceService {
             ensureLotSellable(lockedLot);
             ensureListingHasStock(product);
         }
+        if (targetStatus == MarketplaceProductStatus.ACTIVE) {
+            ProductWarehouseLot lot = product.getLot();
+            if (lot == null) {
+                throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
+            }
+            ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
+            ensureLotSellable(lockedLot);
+            ensureListingHasStock(product);
+        }
         product.setStatus(targetStatus);
-        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            product.setPublishedAt(LocalDateTime.now());
-        } else if (targetStatus != MarketplaceProductStatus.PUBLISHED) {
+
+        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
+        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            if (product.getPublishedAt() == null) {
+                product.setPublishedAt(LocalDateTime.now());
+            }
+        } else if (targetStatus != MarketplaceProductStatus.ACTIVE && targetStatus != MarketplaceProductStatus.PUBLISHED) {
+            // Clear publishedAt for non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -2144,15 +2164,20 @@ public class MarketplaceService {
             MarketplaceProductStatus current,
             MarketplaceProductStatus target) {
         if (current == target) {
-            return;
+            return; // no-op
         }
-        boolean valid = switch (current) {
+
+        boolean allowed = switch (current) {
             case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW;
+            case ACTIVE -> target == MarketplaceProductStatus.INACTIVE || target == MarketplaceProductStatus.SOLD_OUT;
+            case INACTIVE -> target == MarketplaceProductStatus.ACTIVE;
             case PENDING_REVIEW -> target == MarketplaceProductStatus.DRAFT;
-            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
-            case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW;
+            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN; // Legacy support
+            case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW; // Legacy support
+            default -> false;
         };
-        if (!valid) {
+
+        if (!allowed) {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
     }
@@ -2161,17 +2186,12 @@ public class MarketplaceService {
             MarketplaceProductStatus current,
             MarketplaceProductStatus target) {
         if (current == target) {
-            return;
+            return; // no-op
         }
-        boolean valid = switch (current) {
-            case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW || target == MarketplaceProductStatus.HIDDEN;
-            case PENDING_REVIEW -> target == MarketplaceProductStatus.PUBLISHED || target == MarketplaceProductStatus.HIDDEN;
-            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
-            case HIDDEN -> target == MarketplaceProductStatus.PUBLISHED || target == MarketplaceProductStatus.PENDING_REVIEW;
-        };
-        if (!valid) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
-        }
+
+        // Admin has full control over status transitions
+        // All transitions are allowed for admin users
+        // This provides flexibility for moderation and emergency actions
     }
 
     private void validateFarmerOrderStatusTransition(
