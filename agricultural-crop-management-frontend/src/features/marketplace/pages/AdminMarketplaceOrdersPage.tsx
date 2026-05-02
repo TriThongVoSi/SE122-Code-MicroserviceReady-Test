@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import type { MarketplaceOrderStatus } from "@/shared/api";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 import {
@@ -66,7 +67,7 @@ export function AdminMarketplaceOrdersPage() {
 
   const selectedOrderId = Number(searchParams.get("orderId") ?? 0);
   const selectedOrderQuery = useMarketplaceAdminOrderDetail(selectedOrderId);
-  const selectedOrder = useMemo(() => selectedOrderQuery.data, [selectedOrderQuery.data]);
+  const selectedOrder = selectedOrderQuery.data;
   const auditLogsQuery = useMarketplaceAdminOrderAuditLogs(selectedOrderId);
   const verifyMutation = useMarketplaceUpdateAdminOrderPaymentVerificationMutation(selectedOrderId || 0);
   const cancelMutation = useMarketplaceUpdateAdminOrderStatusMutation(selectedOrderId || 0);
@@ -82,13 +83,17 @@ export function AdminMarketplaceOrdersPage() {
   const handleRejectPaymentConfirm = async (reason: string) => {
     if (!rejectPaymentModalState.orderId) return;
 
-    await verifyMutation.mutateAsync({
-      verificationStatus: "REJECTED",
-      verificationNote: reason,
-    });
-    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-
-    closeRejectPaymentModal();
+    try {
+      await verifyMutation.mutateAsync({
+        verificationStatus: "REJECTED",
+        verificationNote: reason,
+      });
+      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+      closeRejectPaymentModal();
+    } catch (error) {
+      toast.error("Failed to reject payment proof. Please try again.");
+      // Keep modal open on error so user can retry
+    }
   };
 
   const openCancelOrderModal = (orderId: number) => {
@@ -102,10 +107,14 @@ export function AdminMarketplaceOrdersPage() {
   const handleCancelOrderConfirm = async (reason: string) => {
     if (!cancelOrderModalState.orderId) return;
 
-    await cancelMutation.mutateAsync({ status: "CANCELLED", reason });
-    await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-
-    closeCancelOrderModal();
+    try {
+      await cancelMutation.mutateAsync({ status: "CANCELLED", reason });
+      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+      closeCancelOrderModal();
+    } catch (error) {
+      toast.error("Failed to cancel order. Please try again.");
+      // Keep modal open on error so user can retry
+    }
   };
 
   return (
@@ -114,7 +123,7 @@ export function AdminMarketplaceOrdersPage() {
         <p className="text-sm font-medium text-emerald-600">FarmTrace Admin</p>
         <h1 className="mt-1 text-3xl font-bold text-gray-900">Manage marketplace orders</h1>
         <p className="mt-2 max-w-2xl text-sm text-gray-500">
-          Keep the live order verification controls, but return the screen to a simpler card-and-list structure.
+          Review and manage marketplace orders, verify payment proofs, and track order status changes.
         </p>
       </div>
 
@@ -125,7 +134,10 @@ export function AdminMarketplaceOrdersPage() {
             type="button"
             variant={status === option.value ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatus(option.value)}
+            onClick={() => {
+              setStatus(option.value);
+              setPage(0);
+            }}
             className="rounded-full"
           >
             {option.label}
@@ -218,11 +230,15 @@ export function AdminMarketplaceOrdersPage() {
                     <Button
                       disabled={verifyMutation.isPending}
                       onClick={async () => {
-                        await verifyMutation.mutateAsync({
-                          verificationStatus: "VERIFIED",
-                          verificationNote: "",
-                        });
-                        await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                        try {
+                          await verifyMutation.mutateAsync({
+                            verificationStatus: "VERIFIED",
+                            verificationNote: "",
+                          });
+                          await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                        } catch (error) {
+                          toast.error("Failed to verify payment. Please try again.");
+                        }
                       }}
                     >
                       Mark verified
