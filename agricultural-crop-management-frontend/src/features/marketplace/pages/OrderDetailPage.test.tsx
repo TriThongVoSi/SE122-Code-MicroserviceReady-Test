@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { MarketplaceOrder } from '@/shared/api';
 import { marketplaceApi } from '@/shared/api';
 import { OrderDetailPage } from './OrderDetailPage';
@@ -12,6 +12,14 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: '3rdParty', init: vi.fn() },
 }));
+
+vi.mock('sonner', () => ({
+  toast: {
+    error: vi.fn(),
+    success: vi.fn(),
+  },
+}));
+
 vi.mock('@/shared/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/shared/api')>();
   return {
@@ -83,6 +91,10 @@ function renderPage() {
 }
 
 describe('OrderDetailPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('shows order items, address, rejected payment status, upload, and review form', async () => {
     vi.mocked(marketplaceApi.getOrderDetail).mockResolvedValue({ result: orderFixture() } as never);
 
@@ -97,15 +109,66 @@ describe('OrderDetailPage', () => {
   });
 
   it('blocks invalid payment proof file types', async () => {
+    const { toast } = await import('sonner');
     vi.mocked(marketplaceApi.getOrderDetail).mockResolvedValue({ result: orderFixture() } as never);
-    const user = userEvent.setup();
 
     renderPage();
 
     const input = await screen.findByLabelText(/payment proof/i, { selector: 'input' }).catch(() => screen.getByTestId('payment-proof-input'));
     const file = new File(['bad'], 'bad.txt', { type: 'text/plain' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith('Chỉ hỗ trợ JPG, PNG, WEBP hoặc PDF.');
+    });
+    expect(vi.mocked(marketplaceApi.uploadOrderPaymentProof)).not.toHaveBeenCalled();
+  });
+
+  it('uploads valid payment proof file', async () => {
+    const { toast } = await import('sonner');
+    vi.mocked(marketplaceApi.getOrderDetail).mockResolvedValue({ result: orderFixture() } as never);
+    vi.mocked(marketplaceApi.uploadOrderPaymentProof).mockResolvedValue({ result: null } as never);
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const input = await screen.findByLabelText(/payment proof/i, { selector: 'input' }).catch(() => screen.getByTestId('payment-proof-input'));
+    const file = new File(['image'], 'proof.jpg', { type: 'image/jpeg' });
     await user.upload(input, file);
 
-    expect(vi.mocked(marketplaceApi.uploadOrderPaymentProof)).not.toHaveBeenCalled();
+    const uploadButton = screen.getByRole('button', { name: /marketplaceBuyer.orderDetail.uploadProof/i });
+    await user.click(uploadButton);
+
+    expect(vi.mocked(marketplaceApi.uploadOrderPaymentProof)).toHaveBeenCalledWith(55, file);
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith('Tải lên xác nhận thanh toán thành công.');
+  });
+
+  it('submits product review', async () => {
+    const { toast } = await import('sonner');
+    vi.mocked(marketplaceApi.getOrderDetail).mockResolvedValue({ result: orderFixture() } as never);
+    vi.mocked(marketplaceApi.createReview).mockResolvedValue({ result: null } as never);
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findByText('ORD-55');
+
+    const stars = screen.getAllByRole('button').filter(btn => btn.textContent === '★');
+    await user.click(stars[4]);
+
+    const commentInput = screen.getByPlaceholderText('marketplaceBuyer.orderDetail.reviewPlaceholder');
+    await user.type(commentInput, 'Great product!');
+
+    const submitButton = screen.getByRole('button', { name: /marketplaceBuyer.orderDetail.submitReview/i });
+    await user.click(submitButton);
+
+    expect(vi.mocked(marketplaceApi.createReview)).toHaveBeenCalledWith({
+      orderId: 55,
+      productId: 10,
+      rating: 5,
+      comment: 'Great product!',
+    });
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith('Đánh giá đã được gửi thành công.');
   });
 });
