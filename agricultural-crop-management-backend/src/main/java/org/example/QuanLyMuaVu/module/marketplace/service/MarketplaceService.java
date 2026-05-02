@@ -287,7 +287,7 @@ public class MarketplaceService {
     public MarketplaceCartResponse addCartItem(MarketplaceAddCartItemRequest request) {
         User currentUser = currentUserService.getCurrentUser();
         MarketplaceCart cart = getOrCreateCartForUpdate(currentUser);
-        MarketplaceProduct product = getPublishedProductOrThrow(request.productId());
+        MarketplaceProduct product = getActiveProductOrThrow(request.productId());
         validatePositiveQuantity(request.quantity());
 
         MarketplaceCartItem item = marketplaceCartItemRepository
@@ -321,7 +321,7 @@ public class MarketplaceService {
         Long userId = currentUserService.getCurrentUserId();
         MarketplaceCart cart = marketplaceCartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_CART_ITEM_NOT_FOUND));
-        MarketplaceProduct product = getPublishedProductOrThrow(productId);
+        MarketplaceProduct product = getActiveProductOrThrow(productId);
 
         validatePositiveQuantity(request.quantity());
         ensureStockAvailable(product, request.quantity());
@@ -372,7 +372,7 @@ public class MarketplaceService {
         }
 
         for (Map.Entry<Long, BigDecimal> entry : incomingByProductId.entrySet()) {
-            MarketplaceProduct product = getPublishedProductOrThrow(entry.getKey());
+            MarketplaceProduct product = getActiveProductOrThrow(entry.getKey());
             MarketplaceCartItem existing = marketplaceCartItemRepository
                     .findByCart_IdAndProduct_Id(cart.getId(), product.getId())
                     .orElse(null);
@@ -1396,7 +1396,7 @@ public class MarketplaceService {
         return new MarketplaceCartResponse(userId, Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
     }
 
-    private MarketplaceProduct getPublishedProductOrThrow(Long productId) {
+    private MarketplaceProduct getActiveProductOrThrow(Long productId) {
         MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
         return product;
