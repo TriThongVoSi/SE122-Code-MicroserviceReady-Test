@@ -16,45 +16,8 @@ describe("AdminMarketplaceOrdersPage", () => {
       defaultOptions: { queries: { retry: false } },
     });
     vi.clearAllMocks();
-  });
 
-  const renderPage = () => {
-    return render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <AdminMarketplaceOrdersPage />
-        </QueryClientProvider>
-      </MemoryRouter>
-    );
-  };
-
-  it("renders order list", async () => {
-    vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
-      data: {
-        items: [
-          {
-            id: 1,
-            orderCode: "ORD-001",
-            status: "PENDING",
-            totalAmount: 100000,
-            buyerUserId: 1,
-            farmerUserId: 2,
-            payment: {
-              method: "BANK_TRANSFER",
-              verificationStatus: "SUBMITTED",
-            },
-            createdAt: "2026-05-01T10:00:00Z",
-          },
-        ],
-        totalPages: 1,
-        totalElements: 1,
-        page: 0,
-        size: 25,
-      },
-      isLoading: false,
-      isError: false,
-    } as any);
-
+    // Common mocks that are the same across most tests
     vi.mocked(marketplaceHooks.useMarketplaceAdminOrderDetail).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -67,13 +30,52 @@ describe("AdminMarketplaceOrdersPage", () => {
       isError: false,
     } as any);
 
-    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderStatusMutation).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
       isPending: false,
     } as any);
+  });
 
-    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderStatusMutation).mockReturnValue({
+  const renderPage = () => {
+    return render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <AdminMarketplaceOrdersPage />
+        </QueryClientProvider>
+      </MemoryRouter>
+    );
+  };
+
+  const createMockOrder = (overrides = {}) => ({
+    id: 1,
+    orderCode: "ORD-001",
+    status: "PENDING",
+    totalAmount: 100000,
+    buyerUserId: 1,
+    farmerUserId: 2,
+    payment: {
+      method: "BANK_TRANSFER",
+      verificationStatus: "SUBMITTED",
+    },
+    createdAt: "2026-05-01T10:00:00Z",
+    ...overrides,
+  });
+
+  it("renders order list", async () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
+      data: {
+        items: [createMockOrder()],
+        totalPages: 1,
+        totalElements: 1,
+        page: 0,
+        size: 25,
+      },
+      isLoading: false,
+      isError: false,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
       isPending: false,
@@ -93,21 +95,7 @@ describe("AdminMarketplaceOrdersPage", () => {
 
     vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
       data: {
-        items: [
-          {
-            id: 1,
-            orderCode: "ORD-001",
-            status: "PENDING",
-            totalAmount: 100000,
-            buyerUserId: 1,
-            farmerUserId: 2,
-            payment: {
-              method: "BANK_TRANSFER",
-              verificationStatus: "SUBMITTED",
-            },
-            createdAt: "2026-05-01T10:00:00Z",
-          },
-        ],
+        items: [createMockOrder()],
         totalPages: 1,
         totalElements: 1,
         page: 0,
@@ -147,12 +135,6 @@ describe("AdminMarketplaceOrdersPage", () => {
     vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync,
-      isPending: false,
-    } as any);
-
-    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderStatusMutation).mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
       isPending: false,
     } as any);
 
@@ -182,21 +164,7 @@ describe("AdminMarketplaceOrdersPage", () => {
 
     vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
       data: {
-        items: [
-          {
-            id: 1,
-            orderCode: "ORD-001",
-            status: "PENDING",
-            totalAmount: 100000,
-            buyerUserId: 1,
-            farmerUserId: 2,
-            payment: {
-              method: "BANK_TRANSFER",
-              verificationStatus: "SUBMITTED",
-            },
-            createdAt: "2026-05-01T10:00:00Z",
-          },
-        ],
+        items: [createMockOrder()],
         totalPages: 1,
         totalElements: 1,
         page: 0,
@@ -236,12 +204,6 @@ describe("AdminMarketplaceOrdersPage", () => {
     vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync,
-      isPending: false,
-    } as any);
-
-    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderStatusMutation).mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
       isPending: false,
     } as any);
 
@@ -275,5 +237,41 @@ describe("AdminMarketplaceOrdersPage", () => {
         verificationNote: "Payment proof is unclear",
       });
     });
+  });
+
+  it("shows loading state when orders are being fetched", () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    renderPage();
+
+    expect(screen.getByText("Loading orders...")).toBeInTheDocument();
+  });
+
+  it("shows error message when orders fail to load", () => {
+    vi.mocked(marketplaceHooks.useMarketplaceAdminOrders).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as any);
+
+    vi.mocked(marketplaceHooks.useMarketplaceUpdateAdminOrderPaymentVerificationMutation).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    renderPage();
+
+    expect(screen.getByText("Failed to load admin orders.")).toBeInTheDocument();
   });
 });
