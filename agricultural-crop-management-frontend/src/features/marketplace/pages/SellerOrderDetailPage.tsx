@@ -25,20 +25,39 @@ function nextStatusOptions(status: MarketplaceOrderStatus): MarketplaceOrderStat
   }
 }
 
+function sellerOrderStatusLabel(status: MarketplaceOrderStatus) {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "CONFIRMED":
+      return "Confirmed";
+    case "PREPARING":
+      return "Preparing";
+    case "DELIVERING":
+      return "Shipped";
+    case "COMPLETED":
+      return "Delivered";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status;
+  }
+}
+
 function statusBadge(status: MarketplaceOrderStatus) {
   switch (status) {
     case "PENDING":
-      return <Badge variant="warning">Pending</Badge>;
+      return <Badge variant="warning">{sellerOrderStatusLabel(status)}</Badge>;
     case "CONFIRMED":
-      return <Badge variant="secondary">Confirmed</Badge>;
+      return <Badge variant="secondary">{sellerOrderStatusLabel(status)}</Badge>;
     case "PREPARING":
-      return <Badge variant="secondary">Preparing</Badge>;
+      return <Badge variant="secondary">{sellerOrderStatusLabel(status)}</Badge>;
     case "DELIVERING":
-      return <Badge variant="default">Delivering</Badge>;
+      return <Badge variant="default">{sellerOrderStatusLabel(status)}</Badge>;
     case "COMPLETED":
-      return <Badge variant="success">Completed</Badge>;
+      return <Badge variant="success">{sellerOrderStatusLabel(status)}</Badge>;
     case "CANCELLED":
-      return <Badge variant="destructive">Cancelled</Badge>;
+      return <Badge variant="destructive">{sellerOrderStatusLabel(status)}</Badge>;
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
@@ -111,7 +130,7 @@ export function SellerOrderDetailPage() {
               onClick={() => statusMutation.mutate({ status: action })}
               disabled={statusMutation.isPending}
             >
-              {action}
+              {sellerOrderStatusLabel(action)}
             </Button>
           ))}
         </div>
@@ -210,7 +229,7 @@ export function SellerOrderDetailPage() {
                 <Truck size={16} className="shrink-0 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Shipping status</p>
-                  <p className="text-xs text-gray-500">{order.status}</p>
+                  <p className="text-xs text-gray-500">{sellerOrderStatusLabel(order.status)}</p>
                 </div>
               </div>
               {order.note ? (
