@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, CreditCard, FileCheck, MapPin, Phone, Upload } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import {
   useMarketplaceCancelOrderMutation,
@@ -10,6 +11,15 @@ import {
   useMarketplaceUploadPaymentProofMutation,
 } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
+
+const MAX_PAYMENT_PROOF_BYTES = 5 * 1024 * 1024;
+const PAYMENT_PROOF_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+function validatePaymentProof(file: File): string | null {
+  if (!PAYMENT_PROOF_TYPES.includes(file.type)) return 'Chỉ hỗ trợ JPG, PNG, WEBP hoặc PDF.';
+  if (file.size > MAX_PAYMENT_PROOF_BYTES) return 'Tệp xác nhận thanh toán không được vượt quá 5MB.';
+  return null;
+}
 
 type ReviewDraft = {
   rating: number;
@@ -168,13 +178,18 @@ export function OrderDetailPage() {
                           <Button
                             disabled={!draft.comment.trim() || reviewMutation.isPending}
                             onClick={async () => {
-                              await reviewMutation.mutateAsync({
-                                orderId: order.id,
-                                productId: item.productId,
-                                rating: draft.rating,
-                                comment: draft.comment,
-                              });
-                              await orderQuery.refetch();
+                              try {
+                                await reviewMutation.mutateAsync({
+                                  orderId: order.id,
+                                  productId: item.productId,
+                                  rating: draft.rating,
+                                  comment: draft.comment,
+                                });
+                                await orderQuery.refetch();
+                                toast.success('Đánh giá đã được gửi thành công.');
+                              } catch (error) {
+                                toast.error(error instanceof Error ? error.message : 'Không thể hoàn tất thao tác.');
+                              }
                             }}
                           >
                             {t("marketplaceBuyer.orderDetail.submitReview")}
@@ -262,14 +277,39 @@ export function OrderDetailPage() {
               {order.payment.method === "BANK_TRANSFER" ? (
                 <div className="space-y-3 rounded-lg border border-gray-200 p-3">
                   <p className="text-sm font-medium text-gray-900">{t("marketplaceBuyer.orderDetail.transferProofTitle")}</p>
-                  <Input type="file" onChange={(event) => setPaymentFile(event.target.files?.[0] ?? null)} />
+                  <Input
+                    aria-label="payment proof"
+                    data-testid="payment-proof-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      if (!file) {
+                        setPaymentFile(null);
+                        return;
+                      }
+                      const message = validatePaymentProof(file);
+                      if (message) {
+                        toast.error(message);
+                        event.currentTarget.value = '';
+                        setPaymentFile(null);
+                        return;
+                      }
+                      setPaymentFile(file);
+                    }}
+                  />
                   <Button
                     disabled={!paymentFile || paymentProofMutation.isPending}
                     onClick={async () => {
                       if (!paymentFile) return;
-                      await paymentProofMutation.mutateAsync(paymentFile);
-                      setPaymentFile(null);
-                      await orderQuery.refetch();
+                      try {
+                        await paymentProofMutation.mutateAsync(paymentFile);
+                        setPaymentFile(null);
+                        await orderQuery.refetch();
+                        toast.success('Tải lên xác nhận thanh toán thành công.');
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : 'Không thể hoàn tất thao tác.');
+                      }
                     }}
                   >
                     <Upload size={14} className="mr-2" />
@@ -286,7 +326,12 @@ export function OrderDetailPage() {
                   variant="destructive"
                   disabled={cancelMutation.isPending}
                   onClick={async () => {
-                    await cancelMutation.mutateAsync();
+                    try {
+                      await cancelMutation.mutateAsync();
+                      toast.success('Đơn hàng đã được hủy thành công.');
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : 'Không thể hoàn tất thao tác.');
+                    }
                   }}
                 >
                   {cancelMutation.isPending

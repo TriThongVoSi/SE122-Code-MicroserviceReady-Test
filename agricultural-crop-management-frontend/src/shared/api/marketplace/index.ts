@@ -7,7 +7,6 @@ export {
   type MarketplaceApiResponse,
   type MarketplacePage,
 } from './contracts';
-export { createMarketplaceMockAdapter } from './mock-adapter';
 export { createMarketplaceRealAdapter } from './real-adapter';
 export type {
   MarketplaceAddress,

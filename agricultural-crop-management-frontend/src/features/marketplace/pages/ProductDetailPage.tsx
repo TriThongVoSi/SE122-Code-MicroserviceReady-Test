@@ -29,10 +29,12 @@ export function ProductDetailPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [quantity, setQuantity] = useState(1);
+  const [imageFailed, setImageFailed] = useState(false);
   const { addToCart, isAdding } = useMarketplaceAddToCart();
 
   const productQuery = useMarketplaceProductDetail(slug);
   const product = productQuery.data;
+  const primaryImage = product ? (product.imageUrls[0] ?? product.imageUrl) : null;
 
   const reviewsQuery = useMarketplaceProductReviews(product?.id, { page: 0, size: 5 });
   const traceabilityQuery = useMarketplaceTraceability(product?.traceable ? product.id : null);
@@ -84,28 +86,13 @@ export function ProductDetailPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
             <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-              {product.imageUrls[0] || product.imageUrl ? (
+              {primaryImage && !imageFailed ? (
                 <img
-                  src={product.imageUrls[0] ?? product.imageUrl}
+                  src={primaryImage}
                   alt={product.name}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="flex h-full w-full items-center justify-center">
-                          <div class="text-center">
-                            <svg class="mx-auto h-24 w-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-400">Không có hình ảnh</p>
-                          </div>
-                        </div>
-                      `;
-                    }
-                  }}
+                  onError={() => setImageFailed(true)}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">

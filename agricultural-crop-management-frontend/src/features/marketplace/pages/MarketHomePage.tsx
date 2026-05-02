@@ -43,7 +43,7 @@ export function MarketHomePage() {
   const heroImage =
     featuredFarms[0]?.coverImageUrl ??
     featuredProducts[0]?.imageUrl ??
-    "https://picsum.photos/seed/farm_hero/1200/800";
+    null;
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -106,21 +106,29 @@ export function MarketHomePage() {
 
             <div className="fb-hero-right">
               <div className="fb-hero-image-wrap">
-                <img
-                  src={heroImage}
-                  alt="Nông trại xanh tươi"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="fb-hero-overlay" aria-hidden="true" />
-                <div className="absolute bottom-6 left-1 right-6 z-10 text-white">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="fb-frosted-pill">Có truy xuất</span>
-                    <span className="fb-frosted-pill">Kết nối dữ liệu thật</span>
+                {heroImage ? (
+                  <>
+                    <img
+                      src={heroImage}
+                      alt="Nông trại xanh tươi"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="fb-hero-overlay" aria-hidden="true" />
+                    <div className="absolute bottom-6 left-1 right-6 z-10 text-white">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="fb-frosted-pill">Có truy xuất</span>
+                        <span className="fb-frosted-pill">Kết nối dữ liệu thật</span>
+                      </div>
+                      <p className="text-lg font-medium text-white/90">
+                        Thu hoạch minh bạch, giao dịch trực tiếp từ nông trại địa phương
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full min-h-[320px] items-center justify-center bg-emerald-50 text-sm font-medium text-emerald-700">
+                    Dữ liệu hình ảnh sẽ hiển thị khi có sản phẩm hoặc nông trại công khai.
                   </div>
-                  <p className="text-lg font-medium text-white/90">
-                    Thu hoạch minh bạch, giao dịch trực tiếp từ nông trại địa phương
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -196,6 +204,10 @@ export function MarketHomePage() {
             <div className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-600">
               Không thể tải danh sách sản phẩm nổi bật.
             </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+              Chưa có sản phẩm công khai. Vui lòng quay lại sau.
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {featuredProducts.map((product) => (
@@ -247,17 +259,27 @@ export function MarketHomePage() {
             <div className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-600">
               Không thể tải danh sách nông trại.
             </div>
+          ) : featuredFarms.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
+              Chưa có nông trại công khai trên marketplace.
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
               {featuredFarms.map((farm) => (
                 <Card key={farm.id} className="overflow-hidden sm:flex">
                   <div className="aspect-video w-full sm:w-1/3 sm:aspect-square">
-                    <img
-                      src={farm.coverImageUrl ?? "https://picsum.photos/seed/farm_card/800/800"}
-                      alt={farm.name}
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
+                    {farm.coverImageUrl ? (
+                      <img
+                        src={farm.coverImageUrl}
+                        alt={farm.name}
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                        Chưa có ảnh
+                      </div>
+                    )}
                   </div>
                   <CardContent className="flex flex-1 flex-col justify-center p-6">
                     <h3 className="mb-2 text-xl font-bold">{farm.name}</h3>

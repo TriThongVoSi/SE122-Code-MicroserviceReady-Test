@@ -23,10 +23,11 @@ export function useMarketplaceAddToCart() {
       await queryClient.invalidateQueries({
         queryKey: marketplaceQueryKeys.cart(),
       });
+      toast.success("Đã thêm sản phẩm vào giỏ hàng.");
     },
     onError: (error) => {
       console.error("Failed to add marketplace cart item", error);
-      toast.error("Khong the them vao gio hang luc nay.");
+      toast.error("Không thể thêm vào giỏ hàng lúc này.");
     },
   });
 
@@ -40,8 +41,8 @@ export function useMarketplaceAddToCart() {
       return "server";
     }
 
-    toast.info("Khach chi duoc xem san pham.", {
-      description: "Vui long tao tai khoan hoac dang nhap de mua hang.",
+    toast.info("Khách chỉ được xem sản phẩm.", {
+      description: "Vui lòng tạo tài khoản hoặc đăng nhập để mua hàng.",
     });
 
     if (options.redirectToSignUp ?? options.redirectToSignIn) {

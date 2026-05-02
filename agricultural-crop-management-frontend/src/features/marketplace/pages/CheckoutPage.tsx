@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Banknote, Building2, MapPin, Pencil, Phone, Plus, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { cn } from "@/shared/lib";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import type {
@@ -10,6 +11,7 @@ import type {
   MarketplacePaymentMethod,
 } from "@/shared/api";
 import {
+  useCheckoutValidation,
   useMarketplaceAddresses,
   useMarketplaceCart,
   useMarketplaceCreateAddressMutation,
@@ -116,6 +118,7 @@ export function CheckoutPage() {
   const updateAddressMutation = useMarketplaceUpdateAddressMutation();
   const deleteAddressMutation = useMarketplaceDeleteAddressMutation();
   const createOrderMutation = useMarketplaceCreateOrderMutation();
+  const { validateCheckout } = useCheckoutValidation();
 
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
   const [recipientName, setRecipientName] = useState("");
@@ -134,6 +137,15 @@ export function CheckoutPage() {
   const cart = cartQuery.data;
   const cartFingerprint = useMemo(() => buildCartFingerprint(cart), [cart]);
   const lastCartFingerprintRef = useRef<string>("");
+
+  const splitOrderGroups = useMemo(() => {
+    if (!cart) return [];
+    const groups = new Map<number, typeof cart.items>();
+    cart.items.forEach((item) => {
+      groups.set(item.farmerUserId, [...(groups.get(item.farmerUserId) ?? []), item]);
+    });
+    return Array.from(groups.entries()).map(([farmerUserId, items]) => ({ farmerUserId, items }));
+  }, [cart?.items]);
 
   useEffect(() => {
     if (cartFingerprint !== lastCartFingerprintRef.current) {
@@ -244,18 +256,23 @@ export function CheckoutPage() {
       detail: addressForm.detail?.trim() || undefined,
     };
 
-    const saved =
-      editingAddressId == null
-        ? await createAddressMutation.mutateAsync(payload)
-        : await updateAddressMutation.mutateAsync({
-            addressId: editingAddressId,
-            request: payload,
-          });
+    try {
+      const saved =
+        editingAddressId == null
+          ? await createAddressMutation.mutateAsync(payload)
+          : await updateAddressMutation.mutateAsync({
+              addressId: editingAddressId,
+              request: payload,
+            });
 
-    setSelectedAddressId(saved.id);
-    setAddressMode("saved");
-    setEditingAddressId(null);
-    setAddressForm(emptyAddressForm());
+      toast.success('Đã lưu địa chỉ giao hàng.');
+      setSelectedAddressId(saved.id);
+      setAddressMode("saved");
+      setEditingAddressId(null);
+      setAddressForm(emptyAddressForm());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể hoàn tất thao tác.');
+    }
   }
 
   return (
@@ -670,6 +687,20 @@ export function CheckoutPage() {
                 </div>
               ) : null}
 
+              {splitOrderGroups.length > 1 ? (
+                <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                  <p className="text-sm font-semibold text-emerald-900">Đơn hàng sẽ được tách theo người bán</p>
+                  <div className="mt-3 space-y-2">
+                    {splitOrderGroups.map((group, index) => (
+                      <div key={group.farmerUserId} className="rounded-lg bg-white p-3 text-sm text-gray-700">
+                        <div className="font-medium text-gray-900">Đơn {index + 1}</div>
+                        <div>{group.items.length} sản phẩm · {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {submitErrorMessage ? (
                 <p className="mb-4 text-sm text-red-600">{submitErrorMessage}</p>
               ) : null}
@@ -685,22 +716,40 @@ export function CheckoutPage() {
                   !effectiveShippingAddressLine
                 }
                 onClick={async () => {
-                  const result = await createOrderMutation.mutateAsync({
+                  const validation = validateCheckout({
+                    addressMode,
+                    selectedAddress,
+                    recipientName: effectiveRecipientName,
+                    phone: effectivePhone,
+                    shippingAddressLine: effectiveShippingAddressLine ?? '',
                     paymentMethod,
-                    addressId: addressMode === "saved" ? selectedAddress?.id : undefined,
-                    shippingRecipientName: effectiveRecipientName,
-                    shippingPhone: effectivePhone,
-                    shippingAddressLine: effectiveShippingAddressLine,
-                    note: note.trim() || undefined,
-                    idempotencyKey: checkoutIdempotencyKey,
                   });
-
-                  const firstOrderId = result.orders[0]?.id;
-                  if (firstOrderId) {
-                    navigate(`/marketplace/orders/${firstOrderId}`);
+                  if (!validation.valid) {
+                    toast.error(validation.message);
                     return;
                   }
-                  navigate("/marketplace/orders");
+
+                  try {
+                    const result = await createOrderMutation.mutateAsync({
+                      paymentMethod,
+                      addressId: addressMode === "saved" ? selectedAddress?.id : undefined,
+                      shippingRecipientName: effectiveRecipientName,
+                      shippingPhone: effectivePhone,
+                      shippingAddressLine: effectiveShippingAddressLine ?? '',
+                      note: note.trim() || undefined,
+                      idempotencyKey: checkoutIdempotencyKey,
+                    });
+
+                    toast.success('Đặt hàng thành công.');
+                    const firstOrderId = result.orders[0]?.id;
+                    if (firstOrderId) {
+                      navigate(`/marketplace/orders/${firstOrderId}`);
+                      return;
+                    }
+                    navigate("/marketplace/orders");
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : 'Không thể hoàn tất thao tác.');
+                  }
                 }}
               >
                 {createOrderMutation.isPending

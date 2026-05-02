@@ -394,7 +394,7 @@ export function AppRoutes() {
             <Route
               path="cart"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <CartPage />
                 </ProtectedRoute>
               )}
@@ -402,7 +402,7 @@ export function AppRoutes() {
             <Route
               path="checkout"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <CheckoutPage />
                 </ProtectedRoute>
               )}
@@ -410,7 +410,7 @@ export function AppRoutes() {
             <Route
               path="orders"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <MarketplaceMyOrdersPage />
                 </ProtectedRoute>
               )}
@@ -418,7 +418,7 @@ export function AppRoutes() {
             <Route
               path="orders/:id"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <MarketplaceOrderDetailPage />
                 </ProtectedRoute>
               )}
@@ -426,7 +426,7 @@ export function AppRoutes() {
             <Route
               path="profile"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <BuyerProfileLayout />
                 </ProtectedRoute>
               )}
