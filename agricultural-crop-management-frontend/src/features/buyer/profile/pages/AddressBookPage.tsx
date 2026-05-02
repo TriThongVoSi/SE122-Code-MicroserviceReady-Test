@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import type { MarketplaceAddress, MarketplaceAddressUpsertRequest } from '@/shared/api';
 
-// Type for AddressForm data
 interface AddressFormData {
   name: string;
   phone: string;
@@ -25,7 +24,6 @@ interface AddressFormData {
   isDefault: boolean;
 }
 
-// Type for AddressCard component
 interface AddressCardData {
   id: number;
   name: string;
@@ -39,7 +37,6 @@ interface AddressCardData {
   isDefault: boolean;
 }
 
-// Convert MarketplaceAddress to AddressCardData
 function toAddressCardData(address: MarketplaceAddress): AddressCardData {
   return {
     id: address.id,
@@ -55,7 +52,6 @@ function toAddressCardData(address: MarketplaceAddress): AddressCardData {
   };
 }
 
-// Convert AddressCardData to MarketplaceAddressUpsertRequest
 function toAddressUpsertRequest(address: AddressCardData): MarketplaceAddressUpsertRequest {
   return {
     fullName: address.name,
@@ -70,7 +66,6 @@ function toAddressUpsertRequest(address: AddressCardData): MarketplaceAddressUps
   };
 }
 
-// Helper function to convert MarketplaceAddress to MarketplaceAddressUpsertRequest
 function toMarketplaceAddressUpsertRequest(address: MarketplaceAddress): MarketplaceAddressUpsertRequest {
   return {
     fullName: address.fullName,
@@ -91,7 +86,7 @@ export function AddressBookPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<number | null>(null);
 
-  const { data: addresses, isLoading } = useMarketplaceAddresses();
+  const { data: addresses, isLoading, isError } = useMarketplaceAddresses();
   const createMutation = useMarketplaceCreateAddressMutation();
   const updateMutation = useMarketplaceUpdateAddressMutation();
   const deleteMutation = useMarketplaceDeleteAddressMutation();
@@ -122,8 +117,8 @@ export function AddressBookPage() {
         toast.success('Thêm địa chỉ thành công');
         setShowAddForm(false);
       }
-    } catch (error: any) {
-      toast.error(error?.message || 'Có lỗi xảy ra');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Có lỗi xảy ra');
       throw error;
     }
   };
@@ -140,8 +135,9 @@ export function AddressBookPage() {
       toast.success('Xóa địa chỉ thành công');
       setDeleteConfirmOpen(false);
       setAddressToDelete(null);
-    } catch (error: any) {
-      toast.error(error?.message || 'Có lỗi xảy ra khi xóa địa chỉ');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Có lỗi xảy ra');
+      throw error;
     }
   };
 
@@ -156,8 +152,9 @@ export function AddressBookPage() {
         request,
       });
       toast.success('Đã đặt làm địa chỉ mặc định');
-    } catch (error: any) {
-      toast.error(error?.message || 'Có lỗi xảy ra');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Có lỗi xảy ra');
+      throw error;
     }
   };
 
@@ -179,7 +176,10 @@ export function AddressBookPage() {
     );
   }
 
-  // Convert marketplace addresses to AddressCard format
+  if (isError) {
+    return <div className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-600">Không thể tải sổ địa chỉ.</div>;
+  }
+
   const addressCardData = addresses?.map(toAddressCardData) || [];
 
   return (
