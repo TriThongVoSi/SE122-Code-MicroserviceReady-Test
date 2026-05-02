@@ -87,4 +87,53 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(jsonPath("$.result.itemCount").value(0))
             .andExpect(jsonPath("$.result.subtotal").value(0));
     }
+
+    @Test
+    void updateCartItemQuantity_UsingPatch_ShouldSucceed() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        if (items.isEmpty()) {
+            return;
+        }
+
+        Long productId = items.get(0).path("id").asLong();
+
+        // Add an item to the cart first
+        String addItemRequest = String.format("""
+            {
+                "productId": %d,
+                "quantity": 2.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest))
+            .andExpect(status().isOk());
+
+        // Now update the quantity using PATCH
+        String updateRequest = """
+            {
+                "quantity": 5.0
+            }
+            """;
+
+        mockMvc.perform(patch("/api/v1/marketplace/cart/items/" + productId)
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateRequest))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"));
+    }
 }

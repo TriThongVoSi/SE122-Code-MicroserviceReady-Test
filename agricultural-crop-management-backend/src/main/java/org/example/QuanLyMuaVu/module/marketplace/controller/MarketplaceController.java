@@ -28,6 +28,7 @@ import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.service.MarketplaceService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -104,6 +105,13 @@ public class MarketplaceController {
 
     @PutMapping("/cart/items/{productId}")
     public ApiResponse<MarketplaceCartResponse> updateCartItem(
+            @PathVariable Long productId,
+            @Valid @RequestBody MarketplaceUpdateCartItemRequest request) {
+        return ApiResponse.success(marketplaceService.updateCartItem(productId, request));
+    }
+
+    @PatchMapping("/cart/items/{productId}")
+    public ApiResponse<MarketplaceCartResponse> patchCartItem(
             @PathVariable Long productId,
             @Valid @RequestBody MarketplaceUpdateCartItemRequest request) {
         return ApiResponse.success(marketplaceService.updateCartItem(productId, request));
