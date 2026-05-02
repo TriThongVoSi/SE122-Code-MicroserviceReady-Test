@@ -29,6 +29,60 @@ class MarketplaceBuyerCartIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void getCart_WhenEmpty_ShouldReturnEmptyCart() throws Exception {
+        // Use a user ID that has never created a cart
+        mockMvc.perform(get("/api/v1/marketplace/cart")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 888L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"))
+            .andExpect(jsonPath("$.result.items").isEmpty())
+            .andExpect(jsonPath("$.result.sellerGroups").isEmpty())
+            .andExpect(jsonPath("$.result.itemCount").value(0))
+            .andExpect(jsonPath("$.result.subtotal").value(0));
+    }
+
+    @Test
+    void removeCartItem_ExistingItem_ShouldRemoveFromCart() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        if (items.isEmpty()) {
+            return;
+        }
+
+        Long productId = items.get(0).path("id").asLong();
+
+        // Add an item to the cart first
+        String addItemRequest = String.format("""
+            {
+                "productId": %d,
+                "quantity": 2.0
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest))
+            .andExpect(status().isOk());
+
+        // Now remove the item
+        mockMvc.perform(delete("/api/v1/marketplace/cart/items/" + productId)
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"));
+    }
+
+    @Test
     void clearCart_WithItems_ShouldRemoveAllItems() throws Exception {
         // First, get a published product ID from the marketplace
         MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
