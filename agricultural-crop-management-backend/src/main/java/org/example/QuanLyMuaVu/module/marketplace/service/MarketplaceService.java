@@ -357,7 +357,7 @@ public class MarketplaceService {
         }
         MarketplaceCart cart = cartOpt.get();
         marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
-        return emptyCart(userId);
+        return buildCartResponse(userId, cart);
     }
 
     @Transactional

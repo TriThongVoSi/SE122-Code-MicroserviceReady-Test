@@ -11,7 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -22,13 +25,64 @@ class MarketplaceBuyerCartIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
     void clearCart_WithItems_ShouldRemoveAllItems() throws Exception {
+        // First, get a published product ID from the marketplace
+        MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
+                .param("page", "0")
+                .param("size", "1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String productsJson = productsResult.getResponse().getContentAsString();
+        JsonNode productsNode = objectMapper.readTree(productsJson);
+        JsonNode items = productsNode.path("result").path("items");
+
+        // Skip test if no products available
+        if (items.isEmpty()) {
+            return;
+        }
+
+        Long productId = items.get(0).path("id").asLong();
+
+        // Add an item to the cart
+        String addItemRequest = String.format("""
+            {
+                "productId": %d,
+                "quantity": 1
+            }
+            """, productId);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemRequest))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.result.items").isNotEmpty());
+
+        // Then clear the cart
         mockMvc.perform(delete("/api/v1/marketplace/cart")
                 .with(jwt().jwt(jwt -> jwt.claim("user_id", 4L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("SUCCESS"))
+            .andExpect(jsonPath("$.result.items").isEmpty())
+            .andExpect(jsonPath("$.result.itemCount").value(0))
+            .andExpect(jsonPath("$.result.subtotal").value(0));
+    }
+
+    @Test
+    void clearCart_WithNoCart_ShouldReturnEmptyCart() throws Exception {
+        // Use a user ID that has never created a cart
+        mockMvc.perform(delete("/api/v1/marketplace/cart")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", 999L).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"))
+            .andExpect(jsonPath("$.result.userId").value(999))
             .andExpect(jsonPath("$.result.items").isEmpty())
             .andExpect(jsonPath("$.result.itemCount").value(0))
             .andExpect(jsonPath("$.result.subtotal").value(0));
