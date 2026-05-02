@@ -87,7 +87,8 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               {children}
             </pre>
           ),
-          code: ({ inline, className, children, ...props }) => {
+          code: ({ className, children, ...props }) => {
+            const inline = !className;
             if (inline) {
               return (
                 <code

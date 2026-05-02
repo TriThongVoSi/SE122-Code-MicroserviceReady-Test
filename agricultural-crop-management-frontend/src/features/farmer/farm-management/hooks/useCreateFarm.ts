@@ -11,8 +11,6 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
         resolver: zodResolver(FarmCreateRequestSchema),
         defaultValues: {
             name: '',
-            provinceId: null,
-            wardId: null,
             area: null,
         },
     });
@@ -23,8 +21,6 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
             toast.success('Farm created successfully');
             form.reset({
                 name: '',
-                provinceId: null,
-                wardId: null,
                 area: null,
             }, {
                 keepErrors: false,
@@ -70,7 +66,7 @@ export function useCreateFarm(onSuccessCallback?: (farm: FarmDetailResponse) => 
 
     const handleSubmit = form.handleSubmit((data) => {
         console.log('[useCreateFarm] Submitting farm data:', data);
-        mutation.mutate(data);
+        mutation.mutate(data as FarmCreateRequest);
     });
 
     return {

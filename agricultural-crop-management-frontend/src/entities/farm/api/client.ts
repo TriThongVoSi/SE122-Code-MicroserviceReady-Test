@@ -24,7 +24,7 @@ import type {
  * Extract the result from backend's ApiResponse wrapper
  * Handles both wrapped and unwrapped responses
  */
-const extractApiResult = <T>(response: any): T => {
+const extractApiResult = <T = unknown>(response: any): T => {
     // Backend wraps response in { status, code, message, result }
     // But sometimes might return data directly
     return response?.result ?? response;
@@ -49,6 +49,7 @@ const transformFarmResponse = (data: any): any => ({
     wardName: data.wardName,
     area: data.area,
     active: data.active,
+    ownerUsername: data.ownerUsername ?? data.owner?.username,
 });
 
 /**
@@ -86,7 +87,7 @@ export const farmApi = {
         console.log('[Farm API Client] Raw response:', response.data);
 
         // Extract result from ApiResponse wrapper
-        const rawResult = extractApiResult(response.data);
+        const rawResult = extractApiResult<any>(response.data);
         console.log('[Farm API Client] Extracted result:', rawResult);
 
         // Handle array payloads or 'content'/'items' formats from backend

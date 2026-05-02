@@ -295,7 +295,7 @@ export function UsersRolesPage() {
             {t('admin.users.addUser')}
           </button>
           <button
-            onClick={fetchUsers}
+            onClick={() => fetchUsers()}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-lg text-sm hover:bg-muted/50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -343,7 +343,7 @@ export function UsersRolesPage() {
                     <AlertCircle className="h-6 w-6" />
                     {error}
                     <button
-                      onClick={fetchUsers}
+                      onClick={() => fetchUsers()}
                       className="text-sm text-primary hover:underline"
                     >
                       {t('admin.users.tryAgain')}

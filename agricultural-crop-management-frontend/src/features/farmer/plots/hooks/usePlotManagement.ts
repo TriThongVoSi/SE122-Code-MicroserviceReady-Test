@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { usePlots, useCreatePlot, useDeletePlot, useUpdatePlot, type PlotRequest } from "@/entities/plot";
 import type { Plot, PlotStatus, ViewMode } from "../types";
-import { transformApiToFeature, mapPlotStatusToId } from "../utils";
+import { transformApiToFeature, mapPlotStatusToApiStatus } from "../utils";
 import { usePlotFilters } from "./usePlotFilters";
 
 /**
@@ -231,7 +231,7 @@ export const usePlotManagement = (): UsePlotManagementReturn => {
         data: {
           plotName: plot.name,
           area: plot.area,
-          plotStatusId: 2, // Dormant
+          status: 'IDLE',
         },
       });
     }
@@ -307,7 +307,7 @@ export const usePlotManagement = (): UsePlotManagementReturn => {
           data: {
             plotName: plot.name,
             area: plot.area,
-            plotStatusId: mapPlotStatusToId(status),
+            status: mapPlotStatusToApiStatus(status),
           },
         });
       }

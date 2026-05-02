@@ -9,7 +9,7 @@ import type { Plot, PlotStatus } from "./types";
  * Map backend status string to PlotStatus type
  * Handles both English and Vietnamese status names
  */
-export const mapStatusToPlotStatus = (status?: string): PlotStatus => {
+export const mapStatusToPlotStatus = (status?: string | null): PlotStatus => {
   if (!status) return "planned";
   const normalized = status.toLowerCase();
   if (normalized === "active" || normalized === "đang hoạt động") return "active";
@@ -21,14 +21,14 @@ export const mapStatusToPlotStatus = (status?: string): PlotStatus => {
 /**
  * Map PlotStatus to backend statusId
  */
-export const mapPlotStatusToId = (status: PlotStatus): number => {
-  const statusIdMap: Record<PlotStatus, number> = {
-    active: 1,
-    dormant: 2,
-    planned: 3,
-    "at-risk": 4,
+export const mapPlotStatusToApiStatus = (status: PlotStatus): "IN_USE" | "IDLE" | "AVAILABLE" | "FALLOW" | "MAINTENANCE" => {
+  const statusMap: Record<PlotStatus, "IN_USE" | "IDLE" | "AVAILABLE" | "FALLOW" | "MAINTENANCE"> = {
+    active: "IN_USE",
+    dormant: "IDLE",
+    planned: "AVAILABLE",
+    "at-risk": "MAINTENANCE",
   };
-  return statusIdMap[status];
+  return statusMap[status];
 };
 
 // ═══════════════════════════════════════════════════════════════

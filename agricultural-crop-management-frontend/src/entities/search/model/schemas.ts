@@ -12,7 +12,7 @@ export const SearchEntityTypeSchema = z.enum([
 
 export const SearchResultItemSchema = z.object({
   type: SearchEntityTypeSchema,
-  id: z.union([z.string(), z.number()]).nullable().optional(),
+  id: z.union([z.string(), z.number()]).nullable().optional().default(null),
   title: z.string(),
   subtitle: z.string().nullable().optional(),
   route: z.string().nullable().optional(),

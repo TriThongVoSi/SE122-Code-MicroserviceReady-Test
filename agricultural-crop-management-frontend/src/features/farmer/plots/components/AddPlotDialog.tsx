@@ -87,12 +87,14 @@ export function AddPlotDialog({
       return;
     }
 
-    // Build request matching backend structure
+    const selectedSoilType = soilTypes?.find((soil) => String(soil.id) === soilTypeId);
+    const selectedPlotStatus = plotStatuses?.find((status) => String(status.id) === plotStatusId);
+
     const formData: PlotRequest = {
       plotName: plotName.trim(),
       area: parseFloat(areaValue),
-      soilTypeId: parseInt(soilTypeId, 10),
-      plotStatusId: parseInt(plotStatusId, 10),
+      soilType: selectedSoilType?.soilName,
+      status: selectedPlotStatus?.statusName as PlotRequest['status'],
     };
 
     onSubmit(formData);

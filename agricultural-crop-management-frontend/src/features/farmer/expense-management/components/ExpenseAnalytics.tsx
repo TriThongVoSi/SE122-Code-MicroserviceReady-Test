@@ -31,13 +31,14 @@ export function ExpenseAnalytics() {
     const seasonId = seasonContext?.selectedSeasonId ?? null;
     const hasSeason = !!seasonId;
 
-    const baseParams = hasSeason ? { seasonId } : undefined;
+    const baseParams = hasSeason ? { seasonId, page: 0, size: 20 } : undefined;
+    const timeSeriesParams = hasSeason ? { seasonId, page: 0, size: 20, granularity: "MONTH" as const } : undefined;
 
     const { data: categoryData = [] } = useExpenseAnalyticsByCategory(baseParams, { enabled: hasSeason });
     const { data: taskData = [] } = useExpenseAnalyticsByTask(baseParams, { enabled: hasSeason });
     const { data: vendorData = [] } = useExpenseAnalyticsByVendor(baseParams, { enabled: hasSeason });
     const { data: timeSeries = [] } = useExpenseAnalyticsTimeSeries(
-        { ...baseParams, granularity: "MONTH" },
+        timeSeriesParams,
         { enabled: hasSeason }
     );
 

@@ -177,7 +177,7 @@ export function useAppShell(props: AppShellProps) {
      * Handler: Toggle Sidebar
      */
     const handleToggleSidebar = () => {
-        setSidebarCollapsed((prev) => !prev);
+        setSidebarCollapsed((prev: boolean) => !prev);
     };
 
     /**

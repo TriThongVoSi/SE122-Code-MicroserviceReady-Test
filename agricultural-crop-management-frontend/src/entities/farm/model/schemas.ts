@@ -27,6 +27,7 @@ export const FarmSchema = z.object({
     wardName: z.string().nullable().optional(),
     area: z.union([z.string(), z.number()]).nullable().optional(),
     active: z.boolean(),
+    ownerUsername: z.string().default(''),
 });
 
 export type Farm = z.infer<typeof FarmSchema>;

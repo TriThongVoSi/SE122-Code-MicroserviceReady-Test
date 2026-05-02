@@ -91,7 +91,7 @@ export const useCreateFarm = (
                 throw error;
             }
         },
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             console.log('[useCreateFarm Entity Hook] onSuccess called, invalidating queries');
             // Always invalidate cache first
             queryClient.invalidateQueries({
@@ -101,12 +101,12 @@ export const useCreateFarm = (
             });
             console.log('[useCreateFarm Entity Hook] Queries invalidated, calling feature callback');
             // Then call the feature layer's callback if provided
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
-        onError: (error, variables, context) => {
+        onError: (error, variables, onMutateResult, context) => {
             console.error('[useCreateFarm Entity Hook] onError called:', error);
             // Call the feature layer's error callback if provided
-            options?.onError?.(error, variables, context);
+            options?.onError?.(error, variables, onMutateResult, context);
         },
     });
 };
@@ -121,7 +121,7 @@ export const useUpdateFarm = (
     return useMutation({
         ...options,
         mutationFn: ({ id, data }) => farmApi.update(id, data),
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({ queryKey: farmKeys.detail(variables.id) });
             // Invalidate all farm list queries regardless of parameters
             queryClient.invalidateQueries({
@@ -130,7 +130,7 @@ export const useUpdateFarm = (
                 refetchType: 'active'
             });
             // Then call the feature layer's callback if provided
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -149,7 +149,7 @@ export const useDeleteFarm = (
             console.log('[useDeleteFarm Entity] Farm ID:', params.id);
             return farmApi.delete(params.id);
         },
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             // Always invalidate cache first
             queryClient.invalidateQueries({
                 queryKey: farmKeys.lists(),
@@ -158,7 +158,7 @@ export const useDeleteFarm = (
             });
             // Then call the feature layer's callback if provided
             // variables contains { id, name } passed to mutate()
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };

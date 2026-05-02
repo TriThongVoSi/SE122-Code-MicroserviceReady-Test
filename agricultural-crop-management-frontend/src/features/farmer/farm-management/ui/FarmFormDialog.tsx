@@ -87,12 +87,12 @@ export function FarmFormDialog({
                                 return (
                                     <AddressSelector
                                         value={{
-                                            provinceId: provinceField.value,
+                                            provinceId: provinceField.value ?? null,
                                             wardId: wardId ?? null,
                                         }}
                                         onChange={(address: AddressValue) => {
                                             provinceField.onChange(address.provinceId);
-                                            form.setValue('wardId', address.wardId);
+                                            form.setValue('wardId', address.wardId ?? 0);
                                         }}
                                         error={combinedError}
                                         disabled={isSubmitting}
@@ -182,7 +182,7 @@ export function FarmFormDialog({
                             return (
                                 <AddressSelector
                                     value={{
-                                        provinceId: provinceField.value,
+                                        provinceId: provinceField.value ?? null,
                                         wardId: wardId ?? null,
                                     }}
                                     onChange={(address: AddressValue) => {

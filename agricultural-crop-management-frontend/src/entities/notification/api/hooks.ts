@@ -19,12 +19,12 @@ export const useMarkNotificationRead = (
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => notificationApi.markRead(id),
-    onSuccess: (updated, variables, context) => {
+    onSuccess: (updated, variables, onMutateResult, context) => {
       queryClient.setQueryData(notificationKeys.list(), (old: Notification[] | undefined) => {
         if (!old) return old;
         return old.map((item) => (item.id === updated.id ? updated : item));
       });
-      options?.onSuccess?.(updated, variables, context);
+      options?.onSuccess?.(updated, variables, onMutateResult, context);
     },
     ...options,
   });

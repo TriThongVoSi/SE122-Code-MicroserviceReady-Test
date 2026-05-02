@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 export interface UseI18nReturn {
     /** Translation function */
-    t: (key: string, options?: Record<string, unknown>) => string;
+    t: (key: string, options?: Record<string, unknown> | string) => string;
     /** Current locale (e.g., 'en-US', 'vi-VN') */
     locale: SupportedLocale;
     /** Current language code (e.g., 'en', 'vi') */
@@ -58,7 +58,7 @@ export function useI18n(): UseI18nReturn {
     }, []);
     
     return {
-        t: t as (key: string, options?: Record<string, unknown>) => string,
+        t: t as (key: string, options?: Record<string, unknown> | string) => string,
         locale,
         languageCode: i18n.language,
         setLocale,
