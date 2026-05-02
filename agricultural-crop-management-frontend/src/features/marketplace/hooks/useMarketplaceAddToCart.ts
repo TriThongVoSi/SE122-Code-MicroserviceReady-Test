@@ -41,8 +41,8 @@ export function useMarketplaceAddToCart() {
       return "server";
     }
 
-    toast.info("Khach chi duoc xem san pham.", {
-      description: "Vui long tao tai khoan hoac dang nhap de mua hang.",
+    toast.info("Khách chỉ được xem sản phẩm.", {
+      description: "Vui lòng tạo tài khoản hoặc đăng nhập để mua hàng.",
     });
 
     if (options.redirectToSignUp ?? options.redirectToSignIn) {
