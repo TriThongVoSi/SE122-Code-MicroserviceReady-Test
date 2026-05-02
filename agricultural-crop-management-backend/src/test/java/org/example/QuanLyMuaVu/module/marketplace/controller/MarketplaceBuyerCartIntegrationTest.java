@@ -476,8 +476,28 @@ class MarketplaceBuyerCartIntegrationTest {
             .andExpect(jsonPath("$.code").value("ERR_INVALID_REQUEST"));
     }
 
+    /**
+     * Tests that multiple sequential cart item updates work correctly.
+     * <p>
+     * This test performs two PATCH requests sequentially (not concurrently) to verify
+     * that the cart update logic handles multiple updates correctly. The test validates
+     * that the final quantity reflects the last update operation.
+     * </p>
+     * <p>
+     * <strong>Note:</strong> This is NOT a true concurrency test. It executes requests
+     * sequentially in a single thread. True concurrent testing would require multi-threading
+     * (e.g., ExecutorService, CountDownLatch) to create actual race conditions, which is
+     * complex with MockMvc and Spring's test transaction management.
+     * </p>
+     * <p>
+     * The pessimistic locking mechanism ({@code @Lock(LockModeType.PESSIMISTIC_WRITE)})
+     * in the repository layer is verified indirectly by the fact that sequential updates
+     * work correctly without data corruption. For production validation of concurrent
+     * behavior, consider load testing or integration tests with actual concurrent requests.
+     * </p>
+     */
     @Test
-    void updateCartItem_ConcurrentUpdates_ShouldHandleGracefully() throws Exception {
+    void updateCartItem_MultipleSequentialUpdates_ShouldSucceed() throws Exception {
         // First, get a published product ID from the marketplace
         MvcResult productsResult = mockMvc.perform(get("/api/v1/marketplace/products")
                 .param("page", "0")
