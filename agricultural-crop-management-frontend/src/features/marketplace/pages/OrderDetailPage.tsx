@@ -278,7 +278,10 @@ export function OrderDetailPage() {
                 <div className="space-y-3 rounded-lg border border-gray-200 p-3">
                   <p className="text-sm font-medium text-gray-900">{t("marketplaceBuyer.orderDetail.transferProofTitle")}</p>
                   <Input
+                    aria-label="payment proof"
+                    data-testid="payment-proof-input"
                     type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
                       if (!file) {
