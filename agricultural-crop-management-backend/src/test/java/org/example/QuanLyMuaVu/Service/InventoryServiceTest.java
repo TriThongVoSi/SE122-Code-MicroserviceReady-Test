@@ -6,6 +6,7 @@ import org.example.QuanLyMuaVu.module.farm.service.FarmAccessService;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.inventory.entity.StockLocation;
 import org.example.QuanLyMuaVu.module.inventory.entity.StockMovement;
+import org.example.QuanLyMuaVu.module.inventory.entity.InventoryBalance;
 import org.example.QuanLyMuaVu.module.inventory.entity.SupplyItem;
 import org.example.QuanLyMuaVu.module.inventory.entity.SupplyLot;
 import org.example.QuanLyMuaVu.module.inventory.entity.Warehouse;
@@ -18,7 +19,9 @@ import org.example.QuanLyMuaVu.module.inventory.dto.response.WarehouseResponse;
 import org.example.QuanLyMuaVu.Enums.StockMovementType;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
+import org.example.QuanLyMuaVu.module.inventory.repository.InventoryBalanceRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.StockLocationRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.StockMovementRepository;
 import org.example.QuanLyMuaVu.module.inventory.repository.SupplyLotRepository;
@@ -73,6 +76,9 @@ public class InventoryServiceTest {
         private StockMovementRepository stockMovementRepository;
 
         @Mock
+        private InventoryBalanceRepository inventoryBalanceRepository;
+
+        @Mock
         private FarmQueryPort farmQueryPort;
 
         @Mock
@@ -83,6 +89,9 @@ public class InventoryServiceTest {
 
         @Mock
         private FarmAccessService farmAccessService;
+
+        @Mock
+        private AuditLogService auditLogService;
 
         @InjectMocks
         private InventoryService inventoryService;
@@ -163,6 +172,24 @@ public class InventoryServiceTest {
                                 .title("Apply Fertilizer")
                                 .season(testSeason)
                                 .build();
+
+                lenient().when(farmAccessService.getAccessibleFarmIdsForCurrentUser()).thenReturn(List.of(1));
+                lenient().when(inventoryBalanceRepository.existsBySupplyLot_IdAndWarehouse_Farm_IdIn(anyInt(), anyList()))
+                                .thenReturn(true);
+                lenient().when(inventoryBalanceRepository.existsBySupplyLot_Id(anyInt())).thenReturn(true);
+                lenient().when(inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(any(), any(), any()))
+                                .thenReturn(Optional.empty());
+                lenient().when(inventoryBalanceRepository.findAllByLotAndWarehouseWithLock(any(), any()))
+                                .thenReturn(new java.util.ArrayList<>());
+                lenient().when(inventoryBalanceRepository.save(any(InventoryBalance.class)))
+                                .thenAnswer(invocation -> invocation.getArgument(0));
+                lenient().when(inventoryBalanceRepository.sumQuantityByLotAndWarehouse(any(), any()))
+                                .thenReturn(BigDecimal.ZERO);
+                lenient().when(inventoryBalanceRepository.getCurrentQuantity(any(), any(), any()))
+                                .thenReturn(BigDecimal.ZERO);
+                lenient().when(stockMovementRepository.existsBySupplyLot_Id(anyInt())).thenReturn(true);
+                lenient().when(stockMovementRepository.existsBySupplyLot_IdAndWarehouse_Farm_IdIn(anyInt(), anyList()))
+                                .thenReturn(true);
         }
 
         // =========================================================================
@@ -519,12 +546,22 @@ public class InventoryServiceTest {
                                 m.setId(1);
                                 return m;
                         });
+                        when(farmAccessService.getCurrentUser()).thenReturn(testUser);
 
                         // Act
                         StockMovementResponse response = inventoryService.recordMovement(request);
 
                         // Assert
                         assertNotNull(response);
+                        verify(auditLogService).logModuleOperation(
+                                        eq("INVENTORY"),
+                                        eq("STOCK_MOVEMENT"),
+                                        eq(1),
+                                        eq("INVENTORY_ADJUSTED"),
+                                        eq("farmer"),
+                                        any(),
+                                        eq("Inventory reconciliation - found extra items"),
+                                        isNull());
                 }
 
                 @Test
@@ -725,6 +762,131 @@ public class InventoryServiceTest {
         }
 
         // =========================================================================
+        // INVENTORY BALANCE CONSISTENCY TESTS
+        // =========================================================================
+
+        @Nested
+        @DisplayName("recordMovement() - Inventory Balance Consistency")
+        class RecordMovementBalanceConsistencyTests {
+
+                @Test
+                @DisplayName("IN movement updates inventory balance by location")
+                void recordMovement_InMovement_updatesInventoryBalance() {
+                        RecordStockMovementRequest request = RecordStockMovementRequest.builder()
+                                        .warehouseId(1)
+                                        .supplyLotId(1)
+                                        .locationId(1)
+                                        .movementType("IN")
+                                        .quantity(BigDecimal.valueOf(10))
+                                        .note("Receive supply")
+                                        .build();
+
+                        InventoryBalance currentBalance = InventoryBalance.builder()
+                                        .id(10L)
+                                        .supplyLot(testLot)
+                                        .warehouse(testWarehouse)
+                                        .location(testLocation)
+                                        .quantity(BigDecimal.valueOf(5))
+                                        .build();
+
+                        when(warehouseRepository.findById(1)).thenReturn(Optional.of(testWarehouse));
+                        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(testFarm);
+                        when(supplyLotRepository.findById(1)).thenReturn(Optional.of(testLot));
+                        when(stockLocationRepository.findById(1)).thenReturn(Optional.of(testLocation));
+                        when(inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(testLot, testWarehouse, testLocation))
+                                        .thenReturn(Optional.of(currentBalance));
+                        when(stockMovementRepository.save(any())).thenAnswer(invocation -> {
+                                StockMovement movement = invocation.getArgument(0);
+                                movement.setId(111);
+                                return movement;
+                        });
+
+                        inventoryService.recordMovement(request);
+
+                        ArgumentCaptor<InventoryBalance> balanceCaptor = ArgumentCaptor.forClass(InventoryBalance.class);
+                        verify(inventoryBalanceRepository).save(balanceCaptor.capture());
+                        assertEquals(BigDecimal.valueOf(15), balanceCaptor.getValue().getQuantity());
+                }
+
+                @Test
+                @DisplayName("OUT movement deducts balance and keeps stock consistent")
+                void recordMovement_OutMovement_deductsInventoryBalance() {
+                        RecordStockMovementRequest request = RecordStockMovementRequest.builder()
+                                        .warehouseId(1)
+                                        .supplyLotId(1)
+                                        .locationId(1)
+                                        .movementType("OUT")
+                                        .quantity(BigDecimal.valueOf(3))
+                                        .seasonId(1)
+                                        .note("Use in task")
+                                        .build();
+
+                        InventoryBalance currentBalance = InventoryBalance.builder()
+                                        .id(11L)
+                                        .supplyLot(testLot)
+                                        .warehouse(testWarehouse)
+                                        .location(testLocation)
+                                        .quantity(BigDecimal.valueOf(8))
+                                        .build();
+
+                        when(warehouseRepository.findById(1)).thenReturn(Optional.of(testWarehouse));
+                        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(testFarm);
+                        when(supplyLotRepository.findById(1)).thenReturn(Optional.of(testLot));
+                        when(stockLocationRepository.findById(1)).thenReturn(Optional.of(testLocation));
+                        when(seasonQueryPort.findSeasonById(1)).thenReturn(Optional.of(testSeason));
+                        when(inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(testLot, testWarehouse, testLocation))
+                                        .thenReturn(Optional.of(currentBalance));
+                        when(stockMovementRepository.save(any())).thenAnswer(invocation -> {
+                                StockMovement movement = invocation.getArgument(0);
+                                movement.setId(112);
+                                return movement;
+                        });
+
+                        inventoryService.recordMovement(request);
+
+                        ArgumentCaptor<InventoryBalance> balanceCaptor = ArgumentCaptor.forClass(InventoryBalance.class);
+                        verify(inventoryBalanceRepository).save(balanceCaptor.capture());
+                        assertEquals(BigDecimal.valueOf(5), balanceCaptor.getValue().getQuantity());
+                }
+
+                @Test
+                @DisplayName("OUT movement cannot exceed inventory balance")
+                void recordMovement_OutMovement_exceedingBalance_throwsInsufficientStock() {
+                        RecordStockMovementRequest request = RecordStockMovementRequest.builder()
+                                        .warehouseId(1)
+                                        .supplyLotId(1)
+                                        .locationId(1)
+                                        .movementType("OUT")
+                                        .quantity(BigDecimal.valueOf(9))
+                                        .seasonId(1)
+                                        .note("Use in task")
+                                        .build();
+
+                        InventoryBalance currentBalance = InventoryBalance.builder()
+                                        .id(12L)
+                                        .supplyLot(testLot)
+                                        .warehouse(testWarehouse)
+                                        .location(testLocation)
+                                        .quantity(BigDecimal.valueOf(4))
+                                        .build();
+
+                        when(warehouseRepository.findById(1)).thenReturn(Optional.of(testWarehouse));
+                        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(testFarm);
+                        when(supplyLotRepository.findById(1)).thenReturn(Optional.of(testLot));
+                        when(stockLocationRepository.findById(1)).thenReturn(Optional.of(testLocation));
+                        when(seasonQueryPort.findSeasonById(1)).thenReturn(Optional.of(testSeason));
+                        when(inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(testLot, testWarehouse, testLocation))
+                                        .thenReturn(Optional.of(currentBalance));
+
+                        AppException exception = assertThrows(AppException.class,
+                                        () -> inventoryService.recordMovement(request));
+
+                        assertEquals(ErrorCode.INSUFFICIENT_STOCK, exception.getErrorCode());
+                        verify(stockMovementRepository, never()).save(any());
+                }
+        }
+
+        // =========================================================================
         // GET ON-HAND QUANTITY TESTS
         // =========================================================================
 
@@ -844,6 +1006,37 @@ public class InventoryServiceTest {
                                         () -> inventoryService.recordMovement(request));
 
                         assertEquals(ErrorCode.FORBIDDEN, exception.getErrorCode());
+                }
+        }
+
+        @Nested
+        @DisplayName("Supply Lot Ownership Tests")
+        class SupplyLotOwnershipTests {
+
+                @Test
+                @DisplayName("Throws FORBIDDEN when adjusting a lot outside accessible farms")
+                void recordMovement_WhenSupplyLotNotOwned_ThrowsForbidden() {
+                        RecordStockMovementRequest request = RecordStockMovementRequest.builder()
+                                        .warehouseId(1)
+                                        .supplyLotId(1)
+                                        .movementType("ADJUST")
+                                        .quantity(BigDecimal.valueOf(5))
+                                        .note("Cycle count")
+                                        .build();
+
+                        when(warehouseRepository.findById(1)).thenReturn(Optional.of(testWarehouse));
+                        doNothing().when(farmAccessService).assertCurrentUserCanAccessFarm(testFarm);
+                        when(supplyLotRepository.findById(1)).thenReturn(Optional.of(testLot));
+                        when(farmAccessService.getAccessibleFarmIdsForCurrentUser()).thenReturn(List.of(1));
+                        when(inventoryBalanceRepository.existsBySupplyLot_IdAndWarehouse_Farm_IdIn(1, List.of(1)))
+                                        .thenReturn(false);
+                        when(inventoryBalanceRepository.existsBySupplyLot_Id(1)).thenReturn(true);
+
+                        AppException exception = assertThrows(AppException.class,
+                                        () -> inventoryService.recordMovement(request));
+
+                        assertEquals(ErrorCode.FORBIDDEN, exception.getErrorCode());
+                        verify(stockMovementRepository, never()).save(any());
                 }
         }
 }

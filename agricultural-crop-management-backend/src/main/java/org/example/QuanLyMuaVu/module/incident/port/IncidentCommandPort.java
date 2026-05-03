@@ -10,4 +10,6 @@ public interface IncidentCommandPort {
     Incident saveIncident(Incident incident);
 
     void createNotification(Long userId, String title, String message, String link);
+
+    void createNotificationFromEvent(Long userId, String title, String message, String link);
 }

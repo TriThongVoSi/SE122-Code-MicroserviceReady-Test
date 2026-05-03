@@ -63,6 +63,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAdminS
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAddressResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartItemResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCartSellerGroupResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCreateOrderResultResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerDashboardResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceFarmerProductFormFarmOptionResponse;
@@ -287,7 +288,7 @@ public class MarketplaceService {
     public MarketplaceCartResponse addCartItem(MarketplaceAddCartItemRequest request) {
         User currentUser = currentUserService.getCurrentUser();
         MarketplaceCart cart = getOrCreateCartForUpdate(currentUser);
-        MarketplaceProduct product = getPublishedProductOrThrow(request.productId());
+        MarketplaceProduct product = getActiveProductOrThrow(request.productId());
         validatePositiveQuantity(request.quantity());
 
         MarketplaceCartItem item = marketplaceCartItemRepository
@@ -321,7 +322,7 @@ public class MarketplaceService {
         Long userId = currentUserService.getCurrentUserId();
         MarketplaceCart cart = marketplaceCartRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_CART_ITEM_NOT_FOUND));
-        MarketplaceProduct product = getPublishedProductOrThrow(productId);
+        MarketplaceProduct product = getActiveProductOrThrow(productId);
 
         validatePositiveQuantity(request.quantity());
         ensureStockAvailable(product, request.quantity());
@@ -349,6 +350,18 @@ public class MarketplaceService {
     }
 
     @Transactional
+    public MarketplaceCartResponse clearCart() {
+        Long userId = currentUserService.getCurrentUserId();
+        Optional<MarketplaceCart> cartOpt = marketplaceCartRepository.findByUserIdForUpdate(userId);
+        if (cartOpt.isEmpty()) {
+            return emptyCart(userId);
+        }
+        MarketplaceCart cart = cartOpt.get();
+        marketplaceCartItemRepository.deleteAllByCartId(cart.getId());
+        return buildCartResponse(userId, cart);
+    }
+
+    @Transactional
     public MarketplaceCartResponse mergeCart(MarketplaceMergeCartRequest request) {
         User currentUser = currentUserService.getCurrentUser();
         MarketplaceCart cart = getOrCreateCartForUpdate(currentUser);
@@ -360,7 +373,7 @@ public class MarketplaceService {
         }
 
         for (Map.Entry<Long, BigDecimal> entry : incomingByProductId.entrySet()) {
-            MarketplaceProduct product = getPublishedProductOrThrow(entry.getKey());
+            MarketplaceProduct product = getActiveProductOrThrow(entry.getKey());
             MarketplaceCartItem existing = marketplaceCartItemRepository
                     .findByCart_IdAndProduct_Id(cart.getId(), product.getId())
                     .orElse(null);
@@ -965,9 +978,16 @@ public class MarketplaceService {
             ensureListingHasStock(product);
         }
         product.setStatus(targetStatus);
-        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            product.setPublishedAt(LocalDateTime.now());
-        } else if (targetStatus != MarketplaceProductStatus.PUBLISHED) {
+
+        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
+        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            if (product.getPublishedAt() == null) {
+                product.setPublishedAt(LocalDateTime.now());
+            }
+        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
+            // Preserve publishedAt for sold out products (they were previously ACTIVE)
+        } else {
+            // Clear publishedAt for other non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -1072,10 +1092,27 @@ public class MarketplaceService {
             ensureLotSellable(lockedLot);
             ensureListingHasStock(product);
         }
+        if (targetStatus == MarketplaceProductStatus.ACTIVE) {
+            ProductWarehouseLot lot = product.getLot();
+            if (lot == null) {
+                throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
+            }
+            ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
+            ensureLotSellable(lockedLot);
+            ensureListingHasStock(product);
+        }
         product.setStatus(targetStatus);
-        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            product.setPublishedAt(LocalDateTime.now());
-        } else if (targetStatus != MarketplaceProductStatus.PUBLISHED) {
+
+        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
+        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            if (product.getPublishedAt() == null) {
+                product.setPublishedAt(LocalDateTime.now());
+            }
+        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
+            // Preserve publishedAt for sold out products (they were previously ACTIVE)
+        } else {
+            // Clear publishedAt for other non-active statuses
             product.setPublishedAt(null);
         }
 
@@ -1326,9 +1363,12 @@ public class MarketplaceService {
 
     private MarketplaceCartResponse buildCartResponse(Long userId, MarketplaceCart cart) {
         List<MarketplaceCartItem> items = marketplaceCartItemRepository.findByCartIdWithProduct(cart.getId());
-        List<MarketplaceCartItemResponse> itemResponses = new ArrayList<>();
         BigDecimal itemCount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
+
+        // Group items by seller (farmerUserId) and build item responses once
+        Map<Long, List<MarketplaceCartItem>> itemsBySeller = new LinkedHashMap<>();
+        Map<Long, MarketplaceCartItemResponse> itemResponseMap = new LinkedHashMap<>();
 
         for (MarketplaceCartItem item : items) {
             MarketplaceProduct product = item.getProduct();
@@ -1336,7 +1376,8 @@ public class MarketplaceService {
             BigDecimal unitPrice = product.getPrice();
             subtotal = subtotal.add(unitPrice.multiply(item.getQuantity()));
 
-            itemResponses.add(new MarketplaceCartItemResponse(
+            // Build item response once and cache it
+            MarketplaceCartItemResponse itemResponse = new MarketplaceCartItemResponse(
                     product.getId(),
                     product.getSlug(),
                     product.getName(),
@@ -1345,23 +1386,77 @@ public class MarketplaceService {
                     item.getQuantity(),
                     currentAvailableQuantity(product),
                     product.getFarmerUser() == null ? null : product.getFarmerUser().getId(),
-                    Boolean.TRUE.equals(product.getTraceable())));
+                    Boolean.TRUE.equals(product.getTraceable()));
+
+            itemResponseMap.put(product.getId(), itemResponse);
+
+            // Group by seller
+            Long sellerId = product.getFarmerUser() == null ? null : product.getFarmerUser().getId();
+            if (sellerId != null) {
+                itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(item);
+            }
+        }
+
+        // Build flat items list (for backward compatibility - items appear in both flat list and seller groups)
+        List<MarketplaceCartItemResponse> itemResponses = new ArrayList<>(itemResponseMap.values());
+
+        // Build seller groups
+        List<MarketplaceCartSellerGroupResponse> sellerGroups = new ArrayList<>();
+        for (Map.Entry<Long, List<MarketplaceCartItem>> entry : itemsBySeller.entrySet()) {
+            Long sellerId = entry.getKey();
+            List<MarketplaceCartItem> sellerItems = entry.getValue();
+
+            // Get farmer and farm info from first item (all items from same seller)
+            MarketplaceCartItem firstItem = sellerItems.get(0);
+            MarketplaceProduct firstProduct = firstItem.getProduct();
+            User farmer = firstProduct.getFarmerUser();
+
+            // Null safety: farmer should never be null here due to sellerId filter above,
+            // but add defensive check to prevent NPE
+            if (farmer == null) {
+                continue; // Skip this group if farmer is unexpectedly null
+            }
+
+            Farm farm = firstProduct.getFarm();
+
+            // Reuse pre-built item responses for this seller
+            List<MarketplaceCartItemResponse> sellerItemResponses = new ArrayList<>();
+            BigDecimal sellerSubtotal = BigDecimal.ZERO;
+
+            for (MarketplaceCartItem item : sellerItems) {
+                MarketplaceProduct product = item.getProduct();
+                BigDecimal unitPrice = product.getPrice();
+                sellerSubtotal = sellerSubtotal.add(unitPrice.multiply(item.getQuantity()));
+
+                // Reuse the cached item response
+                MarketplaceCartItemResponse cachedResponse = itemResponseMap.get(product.getId());
+                sellerItemResponses.add(cachedResponse);
+            }
+
+            sellerGroups.add(new MarketplaceCartSellerGroupResponse(
+                    farmer.getId(),
+                    farmer.getFullName(),
+                    farm == null ? null : farm.getId(),
+                    farm == null ? null : farm.getName(),
+                    sellerItemResponses,
+                    sellerSubtotal));
         }
 
         return new MarketplaceCartResponse(
                 userId,
                 itemResponses,
+                sellerGroups,
                 itemCount,
                 subtotal,
                 CURRENCY_VND);
     }
 
     private MarketplaceCartResponse emptyCart(Long userId) {
-        return new MarketplaceCartResponse(userId, Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
+        return new MarketplaceCartResponse(userId, Collections.emptyList(), Collections.emptyList(), BigDecimal.ZERO, BigDecimal.ZERO, CURRENCY_VND);
     }
 
-    private MarketplaceProduct getPublishedProductOrThrow(Long productId) {
-        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
+    private MarketplaceProduct getActiveProductOrThrow(Long productId) {
+        MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
         return product;
     }
@@ -2144,15 +2239,20 @@ public class MarketplaceService {
             MarketplaceProductStatus current,
             MarketplaceProductStatus target) {
         if (current == target) {
-            return;
+            return; // no-op
         }
-        boolean valid = switch (current) {
+
+        boolean allowed = switch (current) {
             case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW;
-            case PENDING_REVIEW -> target == MarketplaceProductStatus.DRAFT;
+            case ACTIVE -> target == MarketplaceProductStatus.INACTIVE || target == MarketplaceProductStatus.SOLD_OUT;
+            case INACTIVE -> target == MarketplaceProductStatus.ACTIVE;
+            // Legacy support for backward compatibility with existing data
             case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
             case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW;
+            default -> false;
         };
-        if (!valid) {
+
+        if (!allowed) {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
     }
@@ -2161,17 +2261,12 @@ public class MarketplaceService {
             MarketplaceProductStatus current,
             MarketplaceProductStatus target) {
         if (current == target) {
-            return;
+            return; // no-op
         }
-        boolean valid = switch (current) {
-            case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW || target == MarketplaceProductStatus.HIDDEN;
-            case PENDING_REVIEW -> target == MarketplaceProductStatus.PUBLISHED || target == MarketplaceProductStatus.HIDDEN;
-            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
-            case HIDDEN -> target == MarketplaceProductStatus.PUBLISHED || target == MarketplaceProductStatus.PENDING_REVIEW;
-        };
-        if (!valid) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
-        }
+
+        // Admin has full control over status transitions
+        // All transitions are allowed for admin users
+        // This provides flexibility for moderation and emergency actions
     }
 
     private void validateFarmerOrderStatusTransition(

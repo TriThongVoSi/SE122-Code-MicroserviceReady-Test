@@ -14,6 +14,7 @@ import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
 import org.example.QuanLyMuaVu.Enums.StockMovementType;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.port.FarmAccessPort;
 import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
 import org.example.QuanLyMuaVu.module.inventory.dto.request.CreateWarehouseRequest;
@@ -23,6 +24,7 @@ import org.example.QuanLyMuaVu.module.inventory.dto.response.OnHandRowResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.StockLocationResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.StockMovementResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.WarehouseResponse;
+import org.example.QuanLyMuaVu.module.inventory.entity.InventoryBalance;
 import org.example.QuanLyMuaVu.module.inventory.entity.StockLocation;
 import org.example.QuanLyMuaVu.module.inventory.entity.StockMovement;
 import org.example.QuanLyMuaVu.module.inventory.entity.SupplyLot;
@@ -59,6 +61,7 @@ public class InventoryService {
     SeasonQueryPort seasonQueryPort;
     TaskQueryPort taskQueryPort;
     FarmAccessPort farmAccessService;
+    AuditLogService auditLogService;
 
     // ============================================
     // GET MY WAREHOUSES
@@ -327,6 +330,7 @@ public class InventoryService {
         if (type == null) {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
+        ensureSupplyLotOwnership(lot, type);
 
         BigDecimal quantity = request.getQuantity();
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
@@ -382,13 +386,8 @@ public class InventoryService {
             }
         }
 
-        // ========== VALIDATION: Sufficient on-hand for OUT ==========
-        if (type == StockMovementType.OUT) {
-            BigDecimal onHand = stockMovementRepository.calculateOnHandQuantity(lot, warehouse, location);
-            if (onHand.compareTo(quantity) < 0) {
-                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
-            }
-        }
+        // Keep movement log and inventory balance update in the same transaction boundary.
+        applyInventoryBalance(lot, warehouse, location, type, quantity);
 
         StockMovement movement = StockMovement.builder()
                 .supplyLot(lot)
@@ -403,6 +402,25 @@ public class InventoryService {
                 .build();
 
         StockMovement saved = stockMovementRepository.save(movement);
+        if (type == StockMovementType.ADJUST) {
+            java.util.Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+            snapshot.put("movementId", saved.getId());
+            snapshot.put("warehouseId", warehouse.getId());
+            snapshot.put("supplyLotId", lot.getId());
+            snapshot.put("quantity", quantity);
+            snapshot.put("movementType", type.name());
+            snapshot.put("note", request.getNote());
+
+            auditLogService.logModuleOperation(
+                    "INVENTORY",
+                    "STOCK_MOVEMENT",
+                    saved.getId(),
+                    "INVENTORY_ADJUSTED",
+                    resolveAuditActor(),
+                    snapshot,
+                    request.getNote(),
+                    null);
+        }
         return toResponse(saved);
     }
 
@@ -423,6 +441,10 @@ public class InventoryService {
                     .orElseThrow(() -> new AppException(ErrorCode.LOCATION_NOT_FOUND));
         }
 
+        BigDecimal fromBalance = calculateOnHandFromBalance(lot, warehouse, location);
+        if (fromBalance.compareTo(BigDecimal.ZERO) > 0) {
+            return fromBalance;
+        }
         return stockMovementRepository.calculateOnHandQuantity(lot, warehouse, location);
     }
 
@@ -481,6 +503,189 @@ public class InventoryService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
         farmAccessService.assertCurrentUserCanAccessFarm(farm);
+    }
+
+    private void ensureSupplyLotOwnership(SupplyLot lot, StockMovementType type) {
+        if (lot == null || lot.getId() == null) {
+            throw new AppException(ErrorCode.SUPPLY_LOT_NOT_FOUND);
+        }
+
+        List<Integer> accessibleFarmIds = farmAccessService.getAccessibleFarmIdsForCurrentUser();
+        if (accessibleFarmIds.isEmpty()) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        boolean hasBalanceInCurrentFarms = inventoryBalanceRepository
+                .existsBySupplyLot_IdAndWarehouse_Farm_IdIn(lot.getId(), accessibleFarmIds);
+        if (hasBalanceInCurrentFarms) {
+            return;
+        }
+
+        boolean hasAnyBalance = inventoryBalanceRepository.existsBySupplyLot_Id(lot.getId());
+        if (!hasAnyBalance) {
+            boolean hasMovementInCurrentFarms = stockMovementRepository
+                    .existsBySupplyLot_IdAndWarehouse_Farm_IdIn(lot.getId(), accessibleFarmIds);
+            if (hasMovementInCurrentFarms) {
+                return;
+            }
+
+            boolean hasAnyMovement = stockMovementRepository.existsBySupplyLot_Id(lot.getId());
+            if (!hasAnyMovement && type == StockMovementType.IN) {
+                return;
+            }
+        }
+
+        throw new AppException(ErrorCode.FORBIDDEN);
+    }
+
+    private void applyInventoryBalance(
+            SupplyLot lot,
+            Warehouse warehouse,
+            StockLocation location,
+            StockMovementType type,
+            BigDecimal quantity) {
+        if (type == StockMovementType.IN || type == StockMovementType.ADJUST) {
+            upsertBalance(lot, warehouse, location, quantity);
+            return;
+        }
+
+        if (type == StockMovementType.OUT) {
+            if (location != null) {
+                deductFromSpecificLocation(lot, warehouse, location, quantity);
+                return;
+            }
+            deductAcrossWarehouse(lot, warehouse, quantity);
+        }
+    }
+
+    private void upsertBalance(
+            SupplyLot lot,
+            Warehouse warehouse,
+            StockLocation location,
+            BigDecimal quantity) {
+        InventoryBalance balance = inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(lot, warehouse, location)
+                .orElseGet(() -> InventoryBalance.builder()
+                        .supplyLot(lot)
+                        .warehouse(warehouse)
+                        .location(location)
+                        .quantity(BigDecimal.ZERO)
+                        .build());
+
+        BigDecimal current = balance.getQuantity() != null ? balance.getQuantity() : BigDecimal.ZERO;
+        balance.setQuantity(current.add(quantity));
+        inventoryBalanceRepository.save(balance);
+    }
+
+    private void deductFromSpecificLocation(
+            SupplyLot lot,
+            Warehouse warehouse,
+            StockLocation location,
+            BigDecimal quantity) {
+        InventoryBalance balance = inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(lot, warehouse, location)
+                .orElseGet(() -> bootstrapBalanceFromMovements(lot, warehouse, location));
+
+        BigDecimal current = balance.getQuantity() != null ? balance.getQuantity() : BigDecimal.ZERO;
+        if (current.compareTo(quantity) < 0) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+
+        balance.setQuantity(current.subtract(quantity));
+        inventoryBalanceRepository.save(balance);
+    }
+
+    private void deductAcrossWarehouse(
+            SupplyLot lot,
+            Warehouse warehouse,
+            BigDecimal quantity) {
+        List<InventoryBalance> balances = new ArrayList<>(inventoryBalanceRepository.findAllByLotAndWarehouseWithLock(lot, warehouse));
+
+        BigDecimal available = balances.stream()
+                .map(InventoryBalance::getQuantity)
+                .filter(value -> value != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (available.compareTo(quantity) < 0) {
+            BigDecimal fallback = stockMovementRepository.calculateOnHandQuantity(lot, warehouse, null);
+            fallback = fallback != null ? fallback : BigDecimal.ZERO;
+            if (fallback.compareTo(quantity) < 0) {
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+
+            BigDecimal delta = fallback.subtract(available);
+            if (delta.compareTo(BigDecimal.ZERO) > 0) {
+                InventoryBalance recoveryBalance = upsertRecoveryBalance(lot, warehouse, delta);
+                balances.add(recoveryBalance);
+            }
+        }
+
+        BigDecimal remaining = quantity;
+        for (InventoryBalance balance : balances) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+
+            BigDecimal current = balance.getQuantity() != null ? balance.getQuantity() : BigDecimal.ZERO;
+            if (current.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            BigDecimal deducted = current.min(remaining);
+            balance.setQuantity(current.subtract(deducted));
+            inventoryBalanceRepository.save(balance);
+            remaining = remaining.subtract(deducted);
+        }
+
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+    }
+
+    private InventoryBalance bootstrapBalanceFromMovements(
+            SupplyLot lot,
+            Warehouse warehouse,
+            StockLocation location) {
+        BigDecimal fallback = stockMovementRepository.calculateOnHandQuantity(lot, warehouse, location);
+        fallback = fallback != null ? fallback : BigDecimal.ZERO;
+        if (fallback.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+
+        InventoryBalance balance = InventoryBalance.builder()
+                .supplyLot(lot)
+                .warehouse(warehouse)
+                .location(location)
+                .quantity(fallback)
+                .build();
+        return inventoryBalanceRepository.save(balance);
+    }
+
+    private InventoryBalance upsertRecoveryBalance(
+            SupplyLot lot,
+            Warehouse warehouse,
+            BigDecimal quantity) {
+        InventoryBalance recovery = inventoryBalanceRepository.findByLotAndWarehouseAndLocationWithLock(lot, warehouse, null)
+                .orElseGet(() -> InventoryBalance.builder()
+                        .supplyLot(lot)
+                        .warehouse(warehouse)
+                        .location(null)
+                        .quantity(BigDecimal.ZERO)
+                        .build());
+
+        BigDecimal current = recovery.getQuantity() != null ? recovery.getQuantity() : BigDecimal.ZERO;
+        recovery.setQuantity(current.add(quantity));
+        return inventoryBalanceRepository.save(recovery);
+    }
+
+    private BigDecimal calculateOnHandFromBalance(
+            SupplyLot lot,
+            Warehouse warehouse,
+            StockLocation location) {
+        if (location != null) {
+            BigDecimal quantity = inventoryBalanceRepository.getCurrentQuantity(lot, warehouse, location);
+            return quantity != null ? quantity : BigDecimal.ZERO;
+        }
+        BigDecimal quantity = inventoryBalanceRepository.sumQuantityByLotAndWarehouse(lot, warehouse);
+        return quantity != null ? quantity : BigDecimal.ZERO;
     }
 
     private String buildLocationLabel(StockLocation location) {
@@ -563,5 +768,17 @@ public class InventoryService {
         response.setTotalElements(0);
         response.setTotalPages(0);
         return response;
+    }
+
+    private String resolveAuditActor() {
+        try {
+            org.example.QuanLyMuaVu.module.identity.entity.User actor = farmAccessService.getCurrentUser();
+            if (actor != null && actor.getUsername() != null && !actor.getUsername().isBlank()) {
+                return actor.getUsername();
+            }
+        } catch (Exception ignored) {
+            // Fallback handled below.
+        }
+        return "system";
     }
 }

@@ -8,6 +8,7 @@ import org.example.QuanLyMuaVu.module.sustainability.entity.IrrigationWaterAnaly
 import org.example.QuanLyMuaVu.module.farm.entity.Plot;
 import org.example.QuanLyMuaVu.module.season.entity.Season;
 import org.example.QuanLyMuaVu.Enums.NutrientInputSourceType;
+import org.example.QuanLyMuaVu.Enums.SeasonStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.module.sustainability.repository.IrrigationWaterAnalysisRepository;
 import org.example.QuanLyMuaVu.module.sustainability.service.IrrigationWaterAnalysisService;
@@ -63,6 +64,7 @@ class IrrigationWaterAnalysisServiceTest {
                 .id(33)
                 .seasonName("Season 33")
                 .plot(plot)
+                .status(SeasonStatus.PLANNED)
                 .build();
     }
 

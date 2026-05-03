@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   marketplaceApi,
   type MarketplaceAddCartItemRequest,
   type MarketplaceAdminOrderQuery,
   type MarketplaceAdminProductQuery,
   type MarketplaceAddressUpsertRequest,
+  type MarketplaceCart,
   type MarketplaceCreateOrderRequest,
   type MarketplaceCreateReviewRequest,
   type MarketplaceFarmerOrderQuery,
@@ -75,6 +77,48 @@ async function invalidateMarketplaceCheckoutQueries(
   ]);
 }
 
+type CartMutationContext = {
+  previousCart?: ReturnType<QueryClient["getQueryData"]>;
+};
+
+function recalculateCart(cart: MarketplaceCart): MarketplaceCart {
+  return {
+    ...cart,
+    itemCount: cart.items.reduce((total, item) => total + item.quantity, 0),
+    subtotal: cart.items.reduce(
+      (total, item) => total + item.unitPrice * item.quantity,
+      0,
+    ),
+  };
+}
+
+function updateCartItemInCache(
+  cart: MarketplaceCart | undefined,
+  productId: number,
+  quantity: number,
+): MarketplaceCart | undefined {
+  if (!cart) {
+    return cart;
+  }
+
+  const items = cart.items.map((item) =>
+    item.productId === productId ? { ...item, quantity } : item,
+  );
+  return recalculateCart({ ...cart, items });
+}
+
+function removeCartItemFromCache(
+  cart: MarketplaceCart | undefined,
+  productId: number,
+): MarketplaceCart | undefined {
+  if (!cart) {
+    return cart;
+  }
+
+  const items = cart.items.filter((item) => item.productId !== productId);
+  return recalculateCart({ ...cart, items });
+}
+
 export function useMarketplaceProducts(query?: MarketplaceProductQuery) {
   return useQuery({
     queryKey: marketplaceQueryKeys.products(query),
@@ -82,6 +126,20 @@ export function useMarketplaceProducts(query?: MarketplaceProductQuery) {
       const response = await marketplaceApi.listProducts(query);
       return response.result;
     },
+  });
+}
+
+export function useMarketplaceCategories(enabled: boolean) {
+  return useQuery({
+    queryKey: [...marketplaceQueryKeys.productsBase(), "categories"] as const,
+    enabled,
+    queryFn: async () => {
+      const response = await marketplaceApi.listProducts({ size: 100 });
+      return response.result;
+    },
+    select: (data) =>
+      Array.from(new Set(data.items.map((p) => p.category).filter(Boolean))).sort(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -176,8 +234,25 @@ export function useMarketplaceUpdateCartItemMutation() {
       const response = await marketplaceApi.updateCartItem(productId, request);
       return response.result;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.cart() });
+    onMutate: async ({ productId, request }): Promise<CartMutationContext> => {
+      await queryClient.cancelQueries({ queryKey: marketplaceQueryKeys.cart() });
+      const previousCart = queryClient.getQueryData(marketplaceQueryKeys.cart());
+      queryClient.setQueryData<MarketplaceCart>(marketplaceQueryKeys.cart(), (cart) =>
+        updateCartItemInCache(cart, productId, request.quantity),
+      );
+      return { previousCart };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(marketplaceQueryKeys.cart(), context.previousCart);
+      }
+      toast.error("Không thể cập nhật giỏ hàng. Vui lòng thử lại.");
+    },
+    onSuccess: () => {
+      toast.success("Đã cập nhật giỏ hàng.");
+    },
+    onSettled: async () => {
+      await invalidateMarketplaceCheckoutQueries(queryClient);
     },
   });
 }
@@ -189,8 +264,25 @@ export function useMarketplaceRemoveCartItemMutation() {
       const response = await marketplaceApi.removeCartItem(productId);
       return response.result;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.cart() });
+    onMutate: async (productId): Promise<CartMutationContext> => {
+      await queryClient.cancelQueries({ queryKey: marketplaceQueryKeys.cart() });
+      const previousCart = queryClient.getQueryData(marketplaceQueryKeys.cart());
+      queryClient.setQueryData<MarketplaceCart>(marketplaceQueryKeys.cart(), (cart) =>
+        removeCartItemFromCache(cart, productId),
+      );
+      return { previousCart };
+    },
+    onError: (_error, _productId, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(marketplaceQueryKeys.cart(), context.previousCart);
+      }
+      toast.error("Không thể xoá sản phẩm khỏi giỏ hàng lúc này.");
+    },
+    onSuccess: () => {
+      toast.success("Đã xoá sản phẩm khỏi giỏ hàng.");
+    },
+    onSettled: async () => {
+      await invalidateMarketplaceCheckoutQueries(queryClient);
     },
   });
 }

@@ -14,6 +14,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PayrollRecordRepository extends JpaRepository<PayrollRecord, Integer> {
 
+    Optional<PayrollRecord> findByIdAndSeason_Id(Integer id, Integer seasonId);
+
+    Optional<PayrollRecord> findByIdAndEmployee_Id(Integer id, Long employeeId);
+
     Optional<PayrollRecord> findByEmployee_IdAndSeason_IdAndPeriodStartAndPeriodEnd(
             Long employeeId,
             Integer seasonId,
@@ -36,4 +40,3 @@ public interface PayrollRecordRepository extends JpaRepository<PayrollRecord, In
             @Param("seasonId") Integer seasonId,
             Pageable pageable);
 }
-

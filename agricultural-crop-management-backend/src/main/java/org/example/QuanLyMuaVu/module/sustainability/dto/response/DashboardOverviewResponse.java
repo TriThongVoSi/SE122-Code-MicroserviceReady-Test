@@ -27,6 +27,10 @@ public class DashboardOverviewResponse {
     Expenses expenses;
     Harvest harvest;
     Alerts alerts;
+    TaskStatusSummary taskStatus;
+    InventoryRisk inventoryRisk;
+    LotStatus lotStatus;
+    SustainabilityAlerts sustainabilityAlerts;
 
     @Data
     @Builder
@@ -93,5 +97,60 @@ public class DashboardOverviewResponse {
         Integer openIncidents;
         Integer expiringLots;
         Integer lowStockItems;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class TaskStatusSummary {
+        Integer totalTasks;
+        Integer pendingTasks;
+        Integer inProgressTasks;
+        Integer completedTasks;
+        Integer overdueTasks;
+        Integer cancelledTasks;
+        Map<String, Integer> byStatus;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class InventoryRisk {
+        Integer atRiskLots;
+        Integer lowStockLots;
+        Integer criticalLowStockLots;
+        Integer expiringSoonLots;
+        Integer expiredLots;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class LotStatus {
+        Integer totalLotsWithStock;
+        Integer activeLots;
+        Integer expiringSoonLots;
+        Integer expiredLots;
+        Integer unknownExpiryLots;
+        Map<String, Integer> byStatus;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class SustainabilityAlerts {
+        Integer totalFields;
+        Integer highRiskFields;
+        Integer mediumRiskFields;
+        Integer lowRiskFields;
+        Integer fieldsMissingInputs;
     }
 }

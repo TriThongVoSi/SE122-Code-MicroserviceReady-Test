@@ -22,13 +22,13 @@ public class PreferencesController {
 
     PreferencesService preferencesService;
 
-    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER')")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
     @GetMapping("/me")
     public ApiResponse<PreferencesResponse> getMyPreferences() {
         return ApiResponse.success(preferencesService.getMyPreferences());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER')")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
     @PutMapping("/me")
     public ApiResponse<PreferencesResponse> updateMyPreferences(@RequestBody PreferencesUpdateRequest request) {
         return ApiResponse.success(preferencesService.updateMyPreferences(request));

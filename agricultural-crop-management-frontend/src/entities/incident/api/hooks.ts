@@ -77,11 +77,11 @@ export const useCreateIncident = (
     return useMutation({
         mutationFn: (data) => incidentApi.create(data),
         ...options,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             // Invalidate all incident lists for this season
             queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
             queryClient.invalidateQueries({ queryKey: incidentKeys.summary(variables.seasonId) });
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -93,10 +93,10 @@ export const useUpdateIncident = (
     return useMutation({
         mutationFn: ({ id, data }) => incidentApi.update(id, data),
         ...options,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
             queryClient.invalidateQueries({ queryKey: incidentKeys.detail(variables.id) });
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -108,11 +108,11 @@ export const useUpdateIncidentStatus = (
     return useMutation({
         mutationFn: ({ id, data }) => incidentApi.updateStatus(id, data),
         ...options,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
             queryClient.invalidateQueries({ queryKey: incidentKeys.detail(variables.id) });
             queryClient.invalidateQueries({ queryKey: incidentKeys.summary(variables.seasonId) });
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };
@@ -124,10 +124,10 @@ export const useDeleteIncident = (
     return useMutation({
         mutationFn: ({ id }) => incidentApi.delete(id),
         ...options,
-        onSuccess: (data, variables, context) => {
+        onSuccess: (data, variables, onMutateResult, context) => {
             queryClient.invalidateQueries({ queryKey: incidentKeys.lists() });
             queryClient.invalidateQueries({ queryKey: incidentKeys.summary(variables.seasonId) });
-            options?.onSuccess?.(data, variables, context);
+            options?.onSuccess?.(data, variables, onMutateResult, context);
         },
     });
 };

@@ -4,6 +4,7 @@ package org.example.QuanLyMuaVu.module.admin.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -55,15 +57,35 @@ public class AdminInventoryService {
                 .sorted()
                 .toList();
 
+        List<AdminInventoryOptionsResponse.ItemOption> items = inventoryQueryPort.findAllSupplyLots()
+                .stream()
+                .filter(lot -> lot.getSupplyItem() != null && lot.getSupplyItem().getId() != null)
+                .map(lot -> AdminInventoryOptionsResponse.ItemOption.builder()
+                        .id(lot.getSupplyItem().getId())
+                        .name(lot.getSupplyItem().getName() != null ? lot.getSupplyItem().getName() : "Unknown Item")
+                        .build())
+                .collect(Collectors.toMap(
+                        AdminInventoryOptionsResponse.ItemOption::getId,
+                        item -> item,
+                        (left, right) -> left,
+                        LinkedHashMap::new))
+                .values()
+                .stream()
+                .sorted(Comparator.comparing(AdminInventoryOptionsResponse.ItemOption::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
         return AdminInventoryOptionsResponse.builder()
                 .farms(farms)
                 .categories(categories)
+                .items(items)
                 .build();
     }
 
     public PageResponse<AdminInventoryRiskLotResponse> listRiskLots(
             Integer farmId,
+            Integer itemId,
             String status,
+            String severity,
             Integer windowDays,
             String q,
             String sort,
@@ -76,10 +98,13 @@ public class AdminInventoryService {
         int safeLimit = normalizeLimit(limit);
         BigDecimal threshold = lowStockThreshold != null ? lowStockThreshold : BigDecimal.valueOf(5);
         String statusFilter = status != null ? status.trim().toUpperCase(Locale.ROOT) : "RISK";
+        String severityFilter = severity != null ? severity.trim().toUpperCase(Locale.ROOT) : "ALL";
         String searchKeyword = q != null ? q.trim().toLowerCase(Locale.ROOT) : null;
 
         LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         LocalDate cutoff = today.plusDays(safeWindowDays);
+        Map<Integer, Boolean> abnormalByLotId = new LinkedHashMap<>();
 
         List<AdminInventoryRiskLotResponse> filtered = new ArrayList<>();
         for (LotAggregate aggregate : buildLotAggregates()) {
@@ -93,6 +118,9 @@ public class AdminInventoryService {
             }
 
             org.example.QuanLyMuaVu.module.inventory.entity.SupplyLot lot = aggregate.lot;
+            if (itemId != null && (lot.getSupplyItem() == null || !itemId.equals(lot.getSupplyItem().getId()))) {
+                continue;
+            }
             if (searchKeyword != null && !searchKeyword.isBlank()) {
                 String itemName = lot.getSupplyItem() != null && lot.getSupplyItem().getName() != null
                         ? lot.getSupplyItem().getName().toLowerCase(Locale.ROOT)
@@ -103,8 +131,22 @@ public class AdminInventoryService {
                 }
             }
 
-            String riskStatus = resolveRiskStatus(lot.getExpiryDate(), today, cutoff, aggregate.onHand, threshold);
+            boolean abnormalMovement = abnormalByLotId.computeIfAbsent(
+                    lot.getId(),
+                    ignored -> hasAbnormalMovement(lot.getId(), aggregate.onHand, safeWindowDays, now));
+
+            String riskStatus = resolveRiskStatus(
+                    lot.getExpiryDate(),
+                    today,
+                    cutoff,
+                    aggregate.onHand,
+                    threshold,
+                    abnormalMovement);
             if (!matchesStatusFilter(statusFilter, riskStatus)) {
+                continue;
+            }
+            String riskSeverity = resolveSeverity(riskStatus, lot.getExpiryDate(), today);
+            if (!matchesSeverityFilter(severityFilter, riskSeverity)) {
                 continue;
             }
 
@@ -123,6 +165,7 @@ public class AdminInventoryService {
                     .onHand(toDouble(aggregate.onHand))
                     .daysToExpiry(daysToExpiry)
                     .status(riskStatus)
+                    .severity(riskSeverity)
                     .unit(lot.getSupplyItem() != null ? lot.getSupplyItem().getUnit() : null)
                     .unitCost(null)
                     .build();
@@ -364,13 +407,17 @@ public class AdminInventoryService {
             LocalDate today,
             LocalDate cutoff,
             BigDecimal onHand,
-            BigDecimal lowStockThreshold) {
+            BigDecimal lowStockThreshold,
+            boolean abnormalMovement) {
 
         if (expiryDate == null) {
-            return "UNKNOWN_EXPIRY";
+            return abnormalMovement ? "ABNORMAL_MOVEMENT" : "UNKNOWN_EXPIRY";
         }
         if (expiryDate.isBefore(today)) {
             return "EXPIRED";
+        }
+        if (abnormalMovement) {
+            return "ABNORMAL_MOVEMENT";
         }
         if (!expiryDate.isAfter(cutoff)) {
             return "EXPIRING";
@@ -379,6 +426,71 @@ public class AdminInventoryService {
             return "LOW_STOCK";
         }
         return "HEALTHY";
+    }
+
+    private String resolveSeverity(String status, LocalDate expiryDate, LocalDate today) {
+        if ("EXPIRED".equals(status)) {
+            return "CRITICAL";
+        }
+        if ("ABNORMAL_MOVEMENT".equals(status)) {
+            return "HIGH";
+        }
+        if ("EXPIRING".equals(status)) {
+            long days = expiryDate != null ? ChronoUnit.DAYS.between(today, expiryDate) : Long.MAX_VALUE;
+            return days <= 7 ? "HIGH" : "MEDIUM";
+        }
+        if ("LOW_STOCK".equals(status)) {
+            return "MEDIUM";
+        }
+        if ("UNKNOWN_EXPIRY".equals(status)) {
+            return "LOW";
+        }
+        return "NONE";
+    }
+
+    private boolean matchesSeverityFilter(String severityFilter, String currentSeverity) {
+        if (severityFilter == null || severityFilter.isBlank() || "ALL".equals(severityFilter)) {
+            return true;
+        }
+        return severityFilter.equals(currentSeverity);
+    }
+
+    private boolean hasAbnormalMovement(
+            Integer lotId,
+            BigDecimal onHand,
+            int windowDays,
+            LocalDateTime now) {
+        if (lotId == null) {
+            return false;
+        }
+
+        LocalDateTime thresholdDate = now.minusDays(Math.max(windowDays, 1));
+        List<org.example.QuanLyMuaVu.module.inventory.entity.StockMovement> movements = inventoryQueryPort
+                .findStockMovementsBySupplyLotId(lotId);
+        if (movements.isEmpty()) {
+            return false;
+        }
+
+        long recentMovementCount = movements.stream()
+                .filter(movement -> movement.getMovementDate() != null && !movement.getMovementDate().isBefore(thresholdDate))
+                .count();
+
+        long recentAdjustCount = movements.stream()
+                .filter(movement -> movement.getMovementType() == org.example.QuanLyMuaVu.Enums.StockMovementType.ADJUST)
+                .filter(movement -> movement.getMovementDate() != null && !movement.getMovementDate().isBefore(thresholdDate))
+                .count();
+
+        BigDecimal largeAdjustThreshold = onHand != null
+                ? onHand.abs().multiply(BigDecimal.valueOf(0.5))
+                : BigDecimal.ZERO;
+        boolean hasLargeAdjust = movements.stream()
+                .filter(movement -> movement.getMovementType() == org.example.QuanLyMuaVu.Enums.StockMovementType.ADJUST)
+                .filter(movement -> movement.getMovementDate() != null && !movement.getMovementDate().isBefore(thresholdDate))
+                .map(org.example.QuanLyMuaVu.module.inventory.entity.StockMovement::getQuantity)
+                .filter(quantity -> quantity != null)
+                .anyMatch(quantity -> quantity.compareTo(largeAdjustThreshold) >= 0);
+
+        return recentAdjustCount >= 2 || hasLargeAdjust || recentMovementCount >= 8;
     }
 
     private String resolveHealthStatus(

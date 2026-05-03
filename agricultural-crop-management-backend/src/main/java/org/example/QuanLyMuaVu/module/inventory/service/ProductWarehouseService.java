@@ -233,7 +233,7 @@ public class ProductWarehouseService {
     }
 
     public ProductWarehouseLotResponse updateLot(Integer id, UpdateProductWarehouseLotRequest request) {
-        ProductWarehouseLot lot = getLotForCurrentFarmer(id);
+        ProductWarehouseLot lot = getLotForCurrentFarmerForUpdate(id);
 
         if (request.getProductName() != null && !request.getProductName().isBlank()) {
             lot.setProductName(request.getProductName().trim());
@@ -265,8 +265,14 @@ public class ProductWarehouseService {
         return toLotResponse(saved);
     }
 
+    public void archiveLot(Integer id) {
+        ProductWarehouseLot lot = getLotForCurrentFarmerForUpdate(id);
+        lot.setStatus(ProductWarehouseLotStatus.ARCHIVED);
+        productWarehouseLotRepository.save(lot);
+    }
+
     public ProductWarehouseLotResponse adjustLot(Integer id, AdjustProductWarehouseLotRequest request) {
-        ProductWarehouseLot lot = getLotForCurrentFarmer(id);
+        ProductWarehouseLot lot = getLotForCurrentFarmerForUpdate(id);
         org.example.QuanLyMuaVu.module.identity.entity.User currentUser = farmAccessService.getCurrentUser();
 
         BigDecimal delta = request.getQuantityDelta();
@@ -299,7 +305,7 @@ public class ProductWarehouseService {
     }
 
     public ProductWarehouseLotResponse stockOutLot(Integer id, StockOutProductWarehouseLotRequest request) {
-        ProductWarehouseLot lot = getLotForCurrentFarmer(id);
+        ProductWarehouseLot lot = getLotForCurrentFarmerForUpdate(id);
         org.example.QuanLyMuaVu.module.identity.entity.User currentUser = farmAccessService.getCurrentUser();
 
         BigDecimal quantity = normalizePositiveQuantity(request.getQuantity());
@@ -482,7 +488,19 @@ public class ProductWarehouseService {
     }
 
     private ProductWarehouseLot getLotForCurrentFarmer(Integer lotId) {
-        ProductWarehouseLot lot = productWarehouseLotRepository.findById(lotId)
+        return getLotForCurrentFarmer(lotId, false);
+    }
+
+    private ProductWarehouseLot getLotForCurrentFarmerForUpdate(Integer lotId) {
+        return getLotForCurrentFarmer(lotId, true);
+    }
+
+    private ProductWarehouseLot getLotForCurrentFarmer(Integer lotId, boolean forUpdate) {
+        Optional<ProductWarehouseLot> lotOptional = forUpdate
+                ? productWarehouseLotRepository.findByIdForUpdate(lotId)
+                : productWarehouseLotRepository.findById(lotId);
+
+        ProductWarehouseLot lot = lotOptional
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
         if (lot.getFarm() == null) {
             throw new AppException(ErrorCode.FARM_NOT_FOUND);

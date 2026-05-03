@@ -1,9 +1,14 @@
+export { useInView } from "./useInView";
+export { useScrolled } from "./useScrolled";
 export { useMarketplaceAddToCart } from "./useMarketplaceAddToCart";
 export { useMarketplaceCartCount } from "./useMarketplaceCartCount";
 export { useMarketplaceCartMergeBridge } from "./useMarketplaceCartMergeBridge";
+export { useCheckoutValidation } from "./useCheckoutValidation";
+export type { CheckoutValidationInput, CheckoutValidationResult } from "./useCheckoutValidation";
 export {
   marketplaceQueryKeys,
   useMarketplaceAddresses,
+  useMarketplaceCategories,
   useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
   useMarketplaceAdminOrders,

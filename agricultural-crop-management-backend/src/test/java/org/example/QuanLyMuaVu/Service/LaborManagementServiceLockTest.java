@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.example.QuanLyMuaVu.Enums.SeasonStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.port.FarmAccessPort;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.farm.entity.Plot;
@@ -52,6 +53,8 @@ class LaborManagementServiceLockTest {
     @Mock
     FarmAccessPort farmAccessService;
     @Mock
+    AuditLogService auditLogService;
+    @Mock
     DomainEventPublisher domainEventPublisher;
 
     @InjectMocks
@@ -84,4 +87,3 @@ class LaborManagementServiceLockTest {
         verifyNoInteractions(seasonEmployeeRepository);
     }
 }
-

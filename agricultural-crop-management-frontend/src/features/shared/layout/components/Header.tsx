@@ -1,18 +1,24 @@
-import { Menu, Bell, Bot } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useI18n } from '@/hooks/useI18n';
 import {
+  Badge,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { SearchBar } from './SearchBar';
-import { ProfileMenu } from './ProfileMenu';
+  Button,
+  Separator,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/ui';
+import { Bell, Bot, Menu } from 'lucide-react';
+import { DashboardHeader } from '@/widgets/layout/ui/DashboardHeader';
+import { ProfileMenu } from '@/widgets/layout/ui/ProfileMenu';
+import { GlobalSearchBar } from '@/widgets/layout/ui/SearchBar';
 import { HeaderProps } from '../types';
 
 /**
@@ -27,7 +33,6 @@ export function Header({
   config,
   breadcrumbs,
   sidebarCollapsed: _sidebarCollapsed,
-  searchQuery,
   unreadCount,
   userName,
   userEmail,
@@ -37,47 +42,45 @@ export function Header({
   language,
   onToggleSidebar,
   onViewChange,
-  onSearchChange,
   onAiDrawerOpen,
   onNotificationsOpen,
   onThemeChange,
   onLanguageChange,
   onLogout,
 }: HeaderProps) {
+  const { t } = useI18n();
+
   return (
     <header
-      className="h-16 border-b border-white/10 flex items-center justify-between px-4 gap-4 shrink-0 z-50"
+      className="h-16 border-b border-white/10 flex items-center justify-between px-3 sm:px-4 gap-2 sm:gap-4 shrink-0 z-50"
       style={{ backgroundColor: config.color }}
     >
-      {/* Left Section */}
-      <div className="flex items-center gap-4">
-        {/* Sidebar Toggle */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleSidebar}
           className="shrink-0 text-white hover:bg-white/10"
+          aria-label={t('nav.toggleSidebar', { defaultValue: 'Toggle navigation' })}
         >
           <Menu className="w-5 h-5" />
         </Button>
 
-        {/* Logo */}
         <button
           onClick={() => onViewChange('dashboard')}
-          className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 shrink-0 min-w-0 hover:opacity-80 transition-opacity"
         >
           <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
             <span className="text-white text-lg">{config.emoji}</span>
           </div>
-          <div className="hidden md:block">
-            <div className="font-semibold text-sm text-white">ACM Platform</div>
-            <div className="text-xs text-white/80">{config.name}</div>
+          <div className="hidden sm:block min-w-0">
+            <div className="font-semibold text-sm text-white">{t('common.appName')}</div>
+            <div className="text-xs text-white/80 truncate">{config.name}</div>
           </div>
         </button>
 
         <Separator orientation="vertical" className="h-8 hidden lg:block bg-white/20" />
 
-        {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
           <Breadcrumb className="hidden lg:block">
             <BreadcrumbList>
@@ -103,12 +106,15 @@ export function Header({
         )}
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-2">
-        {/* Global Search */}
-        <SearchBar value={searchQuery} onChange={onSearchChange} />
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <DashboardHeader />
 
-        {/* AI Assistant Toggle */}
+        {(portalType === 'ADMIN' || portalType === 'FARMER') && (
+          <GlobalSearchBar portal={portalType === 'ADMIN' ? 'admin' : 'farmer'} />
+        )}
+
+        <ThemeToggle className="text-white hover:bg-white/10" />
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -122,12 +128,11 @@ export function Header({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>AI Assistant</p>
+              <p>{t('header.aiAssistant')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
-        {/* Notifications Bell */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -149,14 +154,13 @@ export function Header({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Notifications</p>
+              <p>{t('header.notifications')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <Separator orientation="vertical" className="h-8 bg-white/20" />
 
-        {/* Profile Menu */}
         <ProfileMenu
           userName={userName}
           userEmail={userEmail}

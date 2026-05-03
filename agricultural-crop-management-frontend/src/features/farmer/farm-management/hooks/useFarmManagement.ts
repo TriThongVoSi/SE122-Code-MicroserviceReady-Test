@@ -139,7 +139,7 @@ export function useFarmManagement(): UseFarmManagementReturn {
     // COMPUTED VALUES
     // ═══════════════════════════════════════════════════════════════
 
-    const hasActiveFilters = filters.keyword || filters.activeFilter !== null;
+    const hasActiveFilters = Boolean(filters.keyword) || filters.activeFilter !== null;
 
     // Filtered farms (already filtered by useFarmsList)
     const filteredFarms = useMemo(() => farms, [farms]);

@@ -21,11 +21,13 @@ const navTranslationKeys: Record<string, string> = {
 
     'notifications': 'nav.notifications',
     'ai-assistant': 'nav.aiAssistant',
+    'chat': 'nav.chat',
     'alerts': 'nav.alertsCenter',
     'users-roles': 'nav.usersRoles',
     'crops-varieties': 'nav.cropsVarieties',
     'reports': 'nav.reports',
     'marketplace': 'nav.marketplace',
+    'marketplace-workspace': 'nav.marketplace',
     'marketplace-dashboard': 'nav.marketplace',
     'marketplace-products': 'nav.marketplace',
     'marketplace-orders': 'nav.orders',
@@ -66,12 +68,12 @@ export function Sidebar({
     
     return (
         <aside
-            className={`acm-sidebar shadow-lg transition-all duration-300 shrink-0 ${collapsed ? 'w-[72px]' : 'w-64'
+            className={`acm-sidebar h-full overflow-hidden shadow-lg transition-all duration-300 shrink-0 ${collapsed ? 'w-[72px]' : 'w-64'
                 }`}
         >
-            <div className="h-full flex flex-col">
+            <div className="h-full min-h-0 flex flex-col">
                 {/* Navigation Items */}
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto overscroll-contain">
                     {navigationItems.map((item) => {
                         const isActive = currentView === item.id;
 

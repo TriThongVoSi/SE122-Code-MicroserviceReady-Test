@@ -33,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminReportService {
 
+    private static final String MARKETPLACE_REVENUE_STATUS_PENDING = "TODO_PENDING_MARKETPLACE_REVENUE_CONTRACT";
+
     private final ExpenseQueryPort expenseQueryPort;
     private final AdminReportReadRepository adminReportReadRepository;
 
@@ -93,6 +95,8 @@ public class AdminReportService {
                     .cropName(row.getCropName())
                     .totalQuantity(quantity)
                     .totalRevenue(revenue)
+                    .marketplaceRevenue(null)
+                    .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                     .avgPricePerUnit(calculateAvgPrice(revenue, quantity))
                     .build();
         }).collect(Collectors.toList());
@@ -114,6 +118,8 @@ public class AdminReportService {
                     .cropName(row.getCropName())
                     .farmName(row.getFarmName())
                     .totalRevenue(revenue)
+                    .marketplaceRevenue(null)
+                    .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                     .totalExpense(expense)
                     .grossProfit(profit)
                     .profitMargin(calculatePercentage(profit, revenue))
@@ -143,6 +149,7 @@ public class AdminReportService {
         if (actualYield.compareTo(BigDecimal.ZERO) == 0 && totalCost.compareTo(BigDecimal.ZERO) > 0) {
             warnings.add("No harvested yield in selected range while expenses exist");
         }
+        warnings.add("Marketplace revenue is excluded until marketplace report contract is finalized.");
 
         AdminReportResponse.AppliedFilters appliedFilters = AdminReportResponse.AppliedFilters.builder()
                 .dateFrom(filter.getEffectiveFromDate() != null ? filter.getEffectiveFromDate().toString() : null)
@@ -151,6 +158,8 @@ public class AdminReportService {
                 .farmId(filter.getFarmId())
                 .plotId(filter.getPlotId())
                 .varietyId(filter.getVarietyId())
+                .areaMinHa(filter.getAreaMinHa())
+                .areaMaxHa(filter.getAreaMaxHa())
                 .build();
 
         return AdminReportResponse.ReportSummary.builder()
@@ -158,6 +167,8 @@ public class AdminReportService {
                 .totalCost(totalCost)
                 .costPerTon(costPerTon)
                 .revenue(revenue)
+                .marketplaceRevenue(null)
+                .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                 .grossProfit(grossProfit)
                 .marginPercent(marginPercent)
                 .warnings(warnings)
@@ -279,6 +290,8 @@ public class AdminReportService {
                     .totals(AdminReportResponse.RevenueTotals.builder()
                             .totalQuantity(BigDecimal.ZERO)
                             .totalRevenue(BigDecimal.ZERO)
+                            .marketplaceRevenue(null)
+                            .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                             .avgPrice(null)
                             .build())
                     .build();
@@ -309,6 +322,8 @@ public class AdminReportService {
                 .totals(AdminReportResponse.RevenueTotals.builder()
                         .totalQuantity(totalQuantity)
                         .totalRevenue(totalRevenue)
+                        .marketplaceRevenue(null)
+                        .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                         .avgPrice(calculateAvgPrice(totalRevenue, totalQuantity))
                         .build())
                 .build();
@@ -322,6 +337,8 @@ public class AdminReportService {
                     .chartSeries(Collections.emptyList())
                     .totals(AdminReportResponse.ProfitTotals.builder()
                             .totalRevenue(BigDecimal.ZERO)
+                            .marketplaceRevenue(null)
+                            .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                             .totalCost(BigDecimal.ZERO)
                             .grossProfit(BigDecimal.ZERO)
                             .marginPercent(null)
@@ -356,6 +373,8 @@ public class AdminReportService {
                 .chartSeries(tableRows)
                 .totals(AdminReportResponse.ProfitTotals.builder()
                         .totalRevenue(totalRevenue)
+                        .marketplaceRevenue(null)
+                        .marketplaceRevenueStatus(MARKETPLACE_REVENUE_STATUS_PENDING)
                         .totalCost(totalCost)
                         .grossProfit(grossProfit)
                         .marginPercent(calculatePercentage(grossProfit, totalRevenue))
@@ -487,23 +506,29 @@ public class AdminReportService {
     }
 
     private String buildRevenueCsv(AdminReportResponse.RevenueAnalyticsResponse response) {
-        StringBuilder b = new StringBuilder("crop_name,plot_name,total_quantity_kg,total_revenue,avg_price\n");
+        StringBuilder b = new StringBuilder(
+                "crop_name,plot_name,total_quantity_kg,total_revenue,marketplace_revenue,marketplace_revenue_status,avg_price\n");
         for (AdminReportResponse.RevenueRow row : response.getTableRows()) {
             b.append(csv(row.getCropName())).append(',')
                     .append(csv(row.getPlotName())).append(',')
                     .append(csvNumber(row.getTotalQuantity())).append(',')
                     .append(csvNumber(row.getTotalRevenue())).append(',')
+                    .append(',')
+                    .append(csv(MARKETPLACE_REVENUE_STATUS_PENDING)).append(',')
                     .append(csvNumber(row.getAvgPrice())).append('\n');
         }
         return b.toString();
     }
 
     private String buildProfitCsv(AdminReportResponse.ProfitAnalyticsResponse response) {
-        StringBuilder b = new StringBuilder("crop_name,plot_name,total_revenue,total_cost,gross_profit,margin_percent\n");
+        StringBuilder b = new StringBuilder(
+                "crop_name,plot_name,total_revenue,marketplace_revenue,marketplace_revenue_status,total_cost,gross_profit,margin_percent\n");
         for (AdminReportResponse.ProfitRow row : response.getTableRows()) {
             b.append(csv(row.getCropName())).append(',')
                     .append(csv(row.getPlotName())).append(',')
                     .append(csvNumber(row.getTotalRevenue())).append(',')
+                    .append(',')
+                    .append(csv(MARKETPLACE_REVENUE_STATUS_PENDING)).append(',')
                     .append(csvNumber(row.getTotalCost())).append(',')
                     .append(csvNumber(row.getGrossProfit())).append(',')
                     .append(csvNumber(row.getMarginPercent())).append('\n');

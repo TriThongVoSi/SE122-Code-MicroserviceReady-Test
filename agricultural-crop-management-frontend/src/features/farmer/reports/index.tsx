@@ -13,12 +13,21 @@ import { FilterDrawer } from "./components/FilterDrawer";
 import { ExportModal } from "./components/ExportModal";
 import type { ReportSection } from "./types";
 
+export type SeasonReportMode = "interim" | "final";
+
 interface ReportsProps {
     workspaceSeasonId?: number;
     workspaceSeasonName?: string;
+    reportMode?: SeasonReportMode;
+    harvestProgressPercent?: number;
 }
 
-export function Reports({ workspaceSeasonId, workspaceSeasonName }: ReportsProps) {
+export function Reports({
+    workspaceSeasonId,
+    workspaceSeasonName,
+    reportMode,
+    harvestProgressPercent,
+}: ReportsProps) {
     const {
         activeSection, selectedSeason, yieldViewMode, isFilterDrawerOpen,
         isExportModalOpen, isExporting, exportFormat, includeCharts,
@@ -46,6 +55,14 @@ export function Reports({ workspaceSeasonId, workspaceSeasonName }: ReportsProps
         { value: "pesticide", icon: AlertTriangle, label: "Pesticide" },
     ];
 
+    const resolvedMode: SeasonReportMode = reportMode ?? "final";
+    const reportTitle = resolvedMode === "final"
+        ? "Báo cáo tổng kết mùa vụ"
+        : "Báo cáo tạm tính";
+    const reportSubtitle = resolvedMode === "final"
+        ? "Bộ số liệu đã được chốt theo mùa vụ hoàn tất."
+        : "Dữ liệu được cập nhật theo tiến độ thu hoạch, các chỉ số có thể thay đổi.";
+
     return (
         <div className="min-h-screen acm-main-content pb-20">
             <div className="max-w-[1920px] mx-auto">
@@ -60,6 +77,9 @@ export function Reports({ workspaceSeasonId, workspaceSeasonName }: ReportsProps
                             onExportClick={() => setIsExportModalOpen(true)}
                             seasonOptions={seasonOptions}
                             disableSeasonSelect={Boolean(workspaceSeasonId)}
+                            title={reportTitle}
+                            subtitle={reportSubtitle}
+                            progressPercent={harvestProgressPercent}
                         />
                         {hasError && (
                             <Card className="mb-4 border-destructive/20 bg-destructive/5">
@@ -137,7 +157,3 @@ export function Reports({ workspaceSeasonId, workspaceSeasonName }: ReportsProps
         </div>
     );
 }
-
-
-
-

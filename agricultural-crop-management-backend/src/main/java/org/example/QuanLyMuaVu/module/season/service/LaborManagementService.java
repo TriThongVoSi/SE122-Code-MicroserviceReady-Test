@@ -6,13 +6,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.example.QuanLyMuaVu.module.shared.pattern.Observer.DomainEventPublisher;
+import org.example.QuanLyMuaVu.module.shared.pattern.Observer.TaskAssignedEvent;
 import org.example.QuanLyMuaVu.module.shared.pattern.Observer.TaskCompletedEvent;
 import org.example.QuanLyMuaVu.Constant.PredefinedRole;
 import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
@@ -21,12 +25,14 @@ import org.example.QuanLyMuaVu.Enums.TaskStatus;
 import org.example.QuanLyMuaVu.Enums.UserStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
+import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.farm.port.FarmAccessPort;
 import org.example.QuanLyMuaVu.module.identity.port.IdentityQueryPort;
 import org.example.QuanLyMuaVu.module.incident.port.IncidentCommandPort;
 import org.example.QuanLyMuaVu.module.season.dto.request.AddSeasonEmployeeRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.BulkAssignSeasonEmployeesRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.EmployeeTaskProgressRequest;
+import org.example.QuanLyMuaVu.module.season.dto.request.UpdatePayrollRecordRequest;
 import org.example.QuanLyMuaVu.module.season.dto.request.UpdateSeasonEmployeeRequest;
 import org.example.QuanLyMuaVu.module.season.dto.response.EmployeeDirectoryResponse;
 import org.example.QuanLyMuaVu.module.season.dto.response.PayrollRecordResponse;
@@ -67,6 +73,7 @@ public class LaborManagementService {
     PayrollRecordRepository payrollRecordRepository;
     IncidentCommandPort incidentCommandPort;
     FarmAccessPort farmAccessService;
+    AuditLogService auditLogService;
     DomainEventPublisher domainEventPublisher;
 
     // ---------------------------------------------------------------------
@@ -168,6 +175,7 @@ public class LaborManagementService {
         ensureSeasonOpenForLabor(season);
         SeasonEmployee seasonEmployee = seasonEmployeeRepository.findBySeason_IdAndEmployee_Id(season.getId(), employeeUserId)
                 .orElseThrow(() -> new AppException(ErrorCode.SEASON_EMPLOYEE_NOT_FOUND));
+        BigDecimal beforeWagePerTask = seasonEmployee.getWagePerTask();
 
         if (request.getWagePerTask() != null) {
             seasonEmployee.setWagePerTask(request.getWagePerTask());
@@ -177,6 +185,26 @@ public class LaborManagementService {
         }
 
         SeasonEmployee saved = seasonEmployeeRepository.save(seasonEmployee);
+
+        if (hasBigDecimalChanged(beforeWagePerTask, saved.getWagePerTask())) {
+            Map<String, Object> snapshot = new LinkedHashMap<>();
+            snapshot.put("seasonEmployeeId", saved.getId());
+            snapshot.put("seasonId", saved.getSeason() != null ? saved.getSeason().getId() : null);
+            snapshot.put("employeeUserId", saved.getEmployee() != null ? saved.getEmployee().getId() : null);
+            snapshot.put("beforeWagePerTask", beforeWagePerTask);
+            snapshot.put("afterWagePerTask", saved.getWagePerTask());
+
+            auditLogService.logModuleOperation(
+                    "WORKFORCE",
+                    "SEASON_EMPLOYEE",
+                    saved.getId(),
+                    "PAYROLL_WAGE_PER_TASK_UPDATED",
+                    resolveAuditActor(),
+                    snapshot,
+                    "Farmer updated wage per task",
+                    null);
+        }
+
         return toSeasonEmployeeResponse(saved);
     }
 
@@ -206,13 +234,12 @@ public class LaborManagementService {
             throw new AppException(ErrorCode.SEASON_EMPLOYEE_NOT_FOUND);
         }
 
+        org.example.QuanLyMuaVu.module.identity.entity.User currentFarmer = farmAccessService.getCurrentUser();
+
         task.setUser(seasonEmployee.getEmployee());
         Task saved = taskRepository.save(task);
 
-        notifyUser(seasonEmployee.getEmployee(),
-                "New task assigned",
-                String.format("Task '%s' has been assigned to you.", saved.getTitle()),
-                "/employee/tasks");
+        domainEventPublisher.publish(new TaskAssignedEvent(saved, currentFarmer.getId()));
 
         return toTaskResponse(saved);
     }
@@ -238,6 +265,51 @@ public class LaborManagementService {
                 .map(this::toPayrollRecordResponse)
                 .toList();
         return PageResponse.of(payroll, items);
+    }
+
+    @Transactional(readOnly = true)
+    public PayrollRecordResponse getSeasonPayrollDetail(Integer seasonId, Integer payrollRecordId) {
+        Season season = getSeasonForCurrentFarmer(seasonId);
+        PayrollRecord payrollRecord = payrollRecordRepository.findByIdAndSeason_Id(payrollRecordId, season.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        return toPayrollRecordResponse(payrollRecord);
+    }
+
+    public PayrollRecordResponse updateSeasonPayroll(
+            Integer seasonId,
+            Integer payrollRecordId,
+            UpdatePayrollRecordRequest request) {
+        Season season = getSeasonForCurrentFarmer(seasonId);
+        PayrollRecord payrollRecord = payrollRecordRepository.findByIdAndSeason_Id(payrollRecordId, season.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        String beforeNote = normalizePayrollNote(payrollRecord.getNote());
+        String afterNote = normalizePayrollNote(request.getNote());
+        payrollRecord.setNote(afterNote);
+        PayrollRecord saved = payrollRecordRepository.save(payrollRecord);
+
+        if (!Objects.equals(beforeNote, afterNote)) {
+            Map<String, Object> snapshot = new LinkedHashMap<>();
+            snapshot.put("payrollRecordId", saved.getId());
+            snapshot.put("seasonId", season.getId());
+            snapshot.put("employeeUserId", saved.getEmployee() != null ? saved.getEmployee().getId() : null);
+            snapshot.put("periodStart", saved.getPeriodStart());
+            snapshot.put("periodEnd", saved.getPeriodEnd());
+            snapshot.put("beforeNote", beforeNote);
+            snapshot.put("afterNote", afterNote);
+
+            auditLogService.logModuleOperation(
+                    "WORKFORCE",
+                    "PAYROLL_RECORD",
+                    saved.getId(),
+                    "PAYROLL_NOTE_UPDATED",
+                    resolveAuditActor(),
+                    snapshot,
+                    "Farmer updated payroll note",
+                    null);
+        }
+
+        return toPayrollRecordResponse(saved);
     }
 
     public List<PayrollRecordResponse> recalculatePayroll(Integer seasonId, Long employeeUserId, LocalDate periodStart,
@@ -394,6 +466,14 @@ public class LaborManagementService {
                 .map(this::toPayrollRecordResponse)
                 .toList();
         return PageResponse.of(payroll, items);
+    }
+
+    @Transactional(readOnly = true)
+    public PayrollRecordResponse getMyPayrollDetail(Integer payrollRecordId) {
+        org.example.QuanLyMuaVu.module.identity.entity.User currentEmployee = farmAccessService.getCurrentUser();
+        PayrollRecord payrollRecord = payrollRecordRepository.findByIdAndEmployee_Id(payrollRecordId, currentEmployee.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+        return toPayrollRecordResponse(payrollRecord);
     }
 
     @Transactional(readOnly = true)
@@ -561,6 +641,38 @@ public class LaborManagementService {
             return;
         }
         incidentCommandPort.createNotification(user.getId(), title, message, link);
+    }
+
+    private String resolveAuditActor() {
+        org.example.QuanLyMuaVu.module.identity.entity.User currentUser = farmAccessService.getCurrentUser();
+        if (currentUser == null) {
+            return null;
+        }
+        if (currentUser.getUsername() != null && !currentUser.getUsername().isBlank()) {
+            return currentUser.getUsername();
+        }
+        if (currentUser.getEmail() != null && !currentUser.getEmail().isBlank()) {
+            return currentUser.getEmail();
+        }
+        return currentUser.getId() != null ? currentUser.getId().toString() : null;
+    }
+
+    private boolean hasBigDecimalChanged(BigDecimal before, BigDecimal after) {
+        if (before == null && after == null) {
+            return false;
+        }
+        if (before == null || after == null) {
+            return true;
+        }
+        return before.compareTo(after) != 0;
+    }
+
+    private String normalizePayrollNote(String note) {
+        if (note == null) {
+            return null;
+        }
+        String normalized = note.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private EmployeeDirectoryResponse toEmployeeDirectoryResponse(org.example.QuanLyMuaVu.module.identity.entity.User user) {

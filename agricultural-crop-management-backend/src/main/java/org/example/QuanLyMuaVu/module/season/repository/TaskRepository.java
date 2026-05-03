@@ -16,6 +16,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Integer>,
                 org.springframework.data.jpa.repository.JpaSpecificationExecutor<Task> {
+        interface TaskStatusCountProjection {
+                TaskStatus getStatus();
+
+                Long getTotal();
+        }
+
         // Existing season-scoped methods
         List<Task> findByTitleContainingIgnoreCase(String title);
 
@@ -114,6 +120,10 @@ public interface TaskRepository extends JpaRepository<Task, Integer>,
          */
         @Query("SELECT COUNT(t) FROM Task t WHERE t.season.id = :seasonId AND t.status = 'DONE'")
         long countCompletedBySeasonId(@Param("seasonId") Integer seasonId);
+
+        @Query("SELECT t.status AS status, COUNT(t) AS total " +
+                        "FROM Task t WHERE t.season.id = :seasonId GROUP BY t.status")
+        List<TaskStatusCountProjection> countStatusBySeasonId(@Param("seasonId") Integer seasonId);
 
         // ═══════════════════════════════════════════════════════════════════════════
         // BR176/BR180: Expense-Task Validation Queries

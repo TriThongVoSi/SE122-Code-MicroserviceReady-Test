@@ -13,14 +13,16 @@ import {
 } from '@/shared/ui';
 import { useCreateFarm } from '../hooks/useCreateFarm';
 import { useUpdateFarm } from '../hooks/useUpdateFarm';
-import type { FarmDetailResponse } from '@/entities/farm';
+import type { Farm, FarmDetailResponse } from '@/entities/farm';
 import { Controller, useWatch } from 'react-hook-form';
+
+type FarmFormInitialData = Pick<FarmDetailResponse, 'name' | 'provinceId' | 'wardId' | 'area' | 'active'> | Farm;
 
 interface FarmFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     mode: 'create' | 'edit';
-    farm?: FarmDetailResponse;
+    farm?: FarmFormInitialData;
     farmId?: number;
     onCreated?: (farm: FarmDetailResponse) => void;
 }
@@ -87,12 +89,16 @@ export function FarmFormDialog({
                                 return (
                                     <AddressSelector
                                         value={{
-                                            provinceId: provinceField.value,
+                                            provinceId: provinceField.value ?? null,
                                             wardId: wardId ?? null,
                                         }}
                                         onChange={(address: AddressValue) => {
-                                            provinceField.onChange(address.provinceId);
-                                            form.setValue('wardId', address.wardId);
+                                            provinceField.onChange(address.provinceId ?? undefined);
+                                            if (address.wardId == null) {
+                                                form.resetField('wardId');
+                                            } else {
+                                                form.setValue('wardId', address.wardId);
+                                            }
                                         }}
                                         error={combinedError}
                                         disabled={isSubmitting}
@@ -182,12 +188,12 @@ export function FarmFormDialog({
                             return (
                                 <AddressSelector
                                     value={{
-                                        provinceId: provinceField.value,
+                                        provinceId: provinceField.value ?? null,
                                         wardId: wardId ?? null,
                                     }}
                                     onChange={(address: AddressValue) => {
-                                        provinceField.onChange(address.provinceId);
-                                        form.setValue('wardId', address.wardId);
+                                        provinceField.onChange(address.provinceId ?? null);
+                                        form.setValue('wardId', address.wardId ?? null);
                                     }}
                                     error={combinedError}
                                     disabled={isSubmitting}

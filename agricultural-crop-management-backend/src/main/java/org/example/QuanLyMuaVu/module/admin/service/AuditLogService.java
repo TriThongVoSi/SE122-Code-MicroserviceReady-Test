@@ -1,31 +1,44 @@
 package org.example.QuanLyMuaVu.module.admin.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.example.QuanLyMuaVu.DTO.Common.PageResponse;
+import org.example.QuanLyMuaVu.module.admin.dto.response.AdminAuditLogResponse;
 import org.example.QuanLyMuaVu.module.admin.entity.AuditLog;
 import org.example.QuanLyMuaVu.module.admin.repository.AuditLogRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * Service for creating audit logs of critical operations.
+ * Shared infrastructure for audit logging and admin audit-viewer queries.
  * 
- * Transaction Strategy:
- * - Non-critical operations (soft delete, restore, create, update): Use
- * REQUIRES_NEW propagation.
- * Audit logs persist independently, even if main operation fails.
- * Audit failures are logged but don't fail the business operation.
- * 
- * - Critical operations (hard delete): Use MANDATORY propagation.
- * Audit logging runs in the same transaction as the delete.
- * If audit fails, the entire transaction (including delete) is rolled back.
- * This ensures we NEVER have a permanent deletion without an audit trail.
+ * Notes:
+ * - Write APIs are internal only (no edit/delete API exposed).
+ * - Snapshot JSON is redacted for sensitive fields before persistence.
+ * - Existing entry point {@link #logEntityOperation(String, Integer, String, String, Object, String, String)}
+ * remains for backward compatibility.
  */
 @Slf4j
 @Service
@@ -33,27 +46,22 @@ import org.springframework.transaction.annotation.Transactional;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuditLogService {
 
+    Set<String> SENSITIVE_FIELD_KEYWORDS = Set.of(
+            "password",
+            "pwd",
+            "token",
+            "secret",
+            "authorization",
+            "apikey",
+            "api_key",
+            "accesskey",
+            "refresh_token",
+            "credential");
+    String REDACTED_VALUE = "[REDACTED]";
+
     AuditLogRepository auditLogRepository;
     ObjectMapper objectMapper;
 
-    /**
-     * Log non-critical farm operations (CREATE, UPDATE, SOFT_DELETE, RESTORE).
-     * 
-     * Uses REQUIRES_NEW propagation to ensure audit log is saved in a separate
-     * transaction.
-     * If the main operation fails, the audit log still persists.
-     * If audit logging fails, it's logged as an error but doesn't fail the business
-     * operation.
-     * 
-     * Rationale: For recoverable operations, audit failure shouldn't block users.
-     * The business can recover from these operations even without audit trails.
-     *
-     * @param farm        The farm entity being operated on
-     * @param operation   The operation type (CREATE, UPDATE, SOFT_DELETE, RESTORE)
-     * @param performedBy Username of the user performing the operation
-     * @param reason      Optional reason provided by the user
-     * @param ipAddress   IP address of the request
-     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logFarmOperation(
             org.example.QuanLyMuaVu.module.farm.entity.Farm farm,
@@ -61,47 +69,29 @@ public class AuditLogService {
             String performedBy,
             String reason,
             String ipAddress) {
+        if (farm == null || farm.getId() == null) {
+            return;
+        }
         try {
-            createAuditLog(farm, operation, performedBy, reason, ipAddress);
-            log.info(
-                    "[AUDIT] Non-critical operation logged: entityType=FARM, entityId={}, operation={}, performedBy={}",
-                    farm.getId(), operation, performedBy);
-
+            persistAuditLog(
+                    "FARM",
+                    "FARM",
+                    farm.getId(),
+                    operation,
+                    performedBy,
+                    farm,
+                    reason,
+                    ipAddress);
         } catch (Exception e) {
-            // Log error but don't fail the operation
-            // Audit logging failure should not prevent non-critical business operations
             log.error(
                     "[AUDIT_FAILURE] Failed to create audit log for farm operation: farmId={}, operation={}, error={}",
-                    farm.getId(), operation, e.getMessage(), e);
-
-            // TODO: Send alert to monitoring system (e.g., DataDog, CloudWatch, PagerDuty)
-            // This is a degraded state that should be investigated
+                    farm.getId(),
+                    operation,
+                    e.getMessage(),
+                    e);
         }
     }
 
-    /**
-     * Log CRITICAL farm operations (HARD_DELETE) that require mandatory audit
-     * trails.
-     * 
-     * Uses MANDATORY propagation - this method MUST be called within an existing
-     * transaction.
-     * The audit log is saved in the SAME transaction as the delete operation.
-     * 
-     * If audit logging fails, an exception is thrown, causing the entire
-     * transaction
-     * (including the delete) to be rolled back.
-     * 
-     * Rationale: Hard delete is irreversible. We MUST have an audit trail, or the
-     * operation
-     * should not proceed. This ensures compliance and data governance requirements.
-     *
-     * @param farm        The farm entity being operated on (BEFORE deletion)
-     * @param operation   The operation type (should be HARD_DELETE)
-     * @param performedBy Username of the user performing the operation
-     * @param reason      MANDATORY reason for hard delete (enforced by caller)
-     * @param ipAddress   IP address of the request
-     * @throws RuntimeException if audit logging fails, causing transaction rollback
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void logFarmOperationCritical(
             org.example.QuanLyMuaVu.module.farm.entity.Farm farm,
@@ -109,62 +99,27 @@ public class AuditLogService {
             String performedBy,
             String reason,
             String ipAddress) {
-        try {
-            createAuditLog(farm, operation, performedBy, reason, ipAddress);
-            log.info(
-                    "[AUDIT_CRITICAL] Critical operation logged: entityType=FARM, entityId={}, operation={}, performedBy={}",
-                    farm.getId(), operation, performedBy);
-
-        } catch (Exception e) {
-            // For critical operations, we MUST fail if audit logging fails
-            log.error("[AUDIT_CRITICAL_FAILURE] CRITICAL: Failed to create audit log for HARD_DELETE. " +
-                    "Transaction will be rolled back. farmId={}, operation={}, error={}",
-                    farm.getId(), operation, e.getMessage(), e);
-
-            // TODO: Send CRITICAL alert to monitoring system
-            // This should trigger immediate investigation
-
-            // Re-throw to cause transaction rollback
-            throw new RuntimeException("Critical audit logging failed for " + operation +
-                    " on org.example.QuanLyMuaVu.module.farm.entity.Farm ID " + farm.getId() + ". Operation aborted for data governance.", e);
+        if (farm == null || farm.getId() == null) {
+            return;
         }
-    }
-
-    /**
-     * Shared logic to create audit log entry.
-     * Minimizes PII in snapshot by redacting sensitive fields if needed.
-     */
-    private void createAuditLog(
-            org.example.QuanLyMuaVu.module.farm.entity.Farm farm,
-            String operation,
-            String performedBy,
-            String reason,
-            String ipAddress) throws JsonProcessingException {
-
-        // Serialize farm to JSON snapshot
-        // TODO: Consider redacting sensitive PII fields (e.g., detailed address) for
-        // GDPR compliance
-        String snapshot = objectMapper.writeValueAsString(farm);
-
-        AuditLog auditLog = AuditLog.builder()
-                .entityType("FARM")
-                .entityId(farm.getId())
-                .operation(operation)
-                .performedBy(performedBy)
-                .performedAt(LocalDateTime.now())
-                .snapshotDataJson(snapshot)
-                .reason(reason)
-                .ipAddress(ipAddress)
-                .build();
-
-        auditLogRepository.save(auditLog);
-    }
-
-    /**
-     * Retrieve audit trail for a specific farm.
-     */
-    public java.util.List<AuditLog> getFarmAuditTrail(Integer farmId) {
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc("FARM", farmId);
+        try {
+            persistAuditLog(
+                    "FARM",
+                    "FARM",
+                    farm.getId(),
+                    operation,
+                    performedBy,
+                    farm,
+                    reason,
+                    ipAddress);
+        } catch (Exception e) {
+            log.error("[AUDIT_CRITICAL_FAILURE] Failed to create critical audit log: farmId={}, operation={}, error={}",
+                    farm.getId(),
+                    operation,
+                    e.getMessage(),
+                    e);
+            throw new RuntimeException("Critical audit logging failed for " + operation + " on FARM " + farm.getId(), e);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -177,18 +132,15 @@ public class AuditLogService {
             String reason,
             String ipAddress) {
         try {
-            String snapshotJson = snapshot == null ? null : objectMapper.writeValueAsString(snapshot);
-            AuditLog auditLog = AuditLog.builder()
-                    .entityType(entityType)
-                    .entityId(entityId)
-                    .operation(operation)
-                    .performedBy(performedBy)
-                    .performedAt(LocalDateTime.now())
-                    .snapshotDataJson(snapshotJson)
-                    .reason(reason)
-                    .ipAddress(ipAddress)
-                    .build();
-            auditLogRepository.save(auditLog);
+            persistAuditLog(
+                    null,
+                    entityType,
+                    entityId,
+                    operation,
+                    performedBy,
+                    snapshot,
+                    reason,
+                    ipAddress);
         } catch (Exception e) {
             log.error(
                     "[AUDIT_FAILURE] Failed to create audit log: entityType={}, entityId={}, operation={}, error={}",
@@ -200,7 +152,263 @@ public class AuditLogService {
         }
     }
 
-    public java.util.List<AuditLog> getEntityAuditTrail(String entityType, Integer entityId) {
+    /**
+     * Generic helper for modules to log auditable operations with explicit module ownership.
+     * Entity type will be normalized to {@code MODULE_ENTITY} if it isn't already namespaced.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logModuleOperation(
+            String module,
+            String entityType,
+            Integer entityId,
+            String operation,
+            String performedBy,
+            Object snapshot,
+            String reason,
+            String ipAddress) {
+        try {
+            persistAuditLog(
+                    module,
+                    entityType,
+                    entityId,
+                    operation,
+                    performedBy,
+                    snapshot,
+                    reason,
+                    ipAddress);
+        } catch (Exception e) {
+            log.error(
+                    "[AUDIT_FAILURE] Failed to create module audit log: module={}, entityType={}, entityId={}, operation={}, error={}",
+                    module,
+                    entityType,
+                    entityId,
+                    operation,
+                    e.getMessage(),
+                    e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditLog> getFarmAuditTrail(Integer farmId) {
+        return auditLogRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc("FARM", farmId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditLog> getEntityAuditTrail(String entityType, Integer entityId) {
         return auditLogRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc(entityType, entityId);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AdminAuditLogResponse> listAuditLogs(
+            LocalDateTime fromTime,
+            LocalDateTime toTime,
+            String module,
+            String entityType,
+            String operation,
+            String performedBy,
+            Integer entityId,
+            Pageable pageable) {
+        Pageable safePageable = withDefaultSort(pageable);
+
+        Page<AuditLog> logsPage = auditLogRepository.searchAuditLogs(
+                fromTime,
+                toTime,
+                normalizeFilter(module),
+                normalizeFilter(entityType),
+                normalizeFilter(operation),
+                normalizeFilter(performedBy),
+                entityId,
+                safePageable);
+
+        List<AdminAuditLogResponse> items = logsPage.getContent().stream()
+                .map(this::toAuditLogResponse)
+                .toList();
+
+        return PageResponse.of(logsPage, items);
+    }
+
+    private void persistAuditLog(
+            String module,
+            String entityType,
+            Integer entityId,
+            String operation,
+            String performedBy,
+            Object snapshot,
+            String reason,
+            String ipAddress) throws JsonProcessingException {
+        if (entityId == null || operation == null || operation.isBlank()) {
+            return;
+        }
+
+        AuditLog auditLog = AuditLog.builder()
+                .entityType(normalizeEntityType(module, entityType))
+                .entityId(entityId)
+                .operation(operation.trim().toUpperCase(Locale.ROOT))
+                .performedBy(resolveActor(performedBy))
+                .performedAt(LocalDateTime.now())
+                .snapshotDataJson(serializeAndRedactSnapshot(snapshot))
+                .reason(normalizeFilter(reason))
+                .ipAddress(resolveIpAddress(ipAddress))
+                .build();
+
+        auditLogRepository.save(auditLog);
+    }
+
+    private String serializeAndRedactSnapshot(Object snapshot) throws JsonProcessingException {
+        if (snapshot == null) {
+            return null;
+        }
+        JsonNode rawNode = objectMapper.valueToTree(snapshot);
+        JsonNode redacted = redactSensitiveNode(rawNode);
+        return objectMapper.writeValueAsString(redacted);
+    }
+
+    private JsonNode redactSensitiveNode(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return node;
+        }
+
+        if (node.isObject()) {
+            ObjectNode objectNode = objectMapper.createObjectNode();
+            node.fields().forEachRemaining(entry -> {
+                String fieldName = entry.getKey();
+                JsonNode value = entry.getValue();
+                if (isSensitiveField(fieldName)) {
+                    objectNode.put(fieldName, REDACTED_VALUE);
+                    return;
+                }
+                objectNode.set(fieldName, redactSensitiveNode(value));
+            });
+            return objectNode;
+        }
+
+        if (node.isArray()) {
+            ArrayNode arrayNode = objectMapper.createArrayNode();
+            for (JsonNode item : node) {
+                arrayNode.add(redactSensitiveNode(item));
+            }
+            return arrayNode;
+        }
+
+        return node;
+    }
+
+    private boolean isSensitiveField(String fieldName) {
+        String normalized = fieldName == null ? "" : fieldName.toLowerCase(Locale.ROOT);
+        return SENSITIVE_FIELD_KEYWORDS.stream().anyMatch(normalized::contains);
+    }
+
+    private String normalizeEntityType(String module, String entityType) {
+        String normalizedEntityType = normalizeFilter(entityType);
+        if (normalizedEntityType == null) {
+            normalizedEntityType = "UNKNOWN";
+        }
+        normalizedEntityType = normalizedEntityType.toUpperCase(Locale.ROOT);
+
+        String normalizedModule = normalizeFilter(module);
+        if (normalizedModule == null) {
+            return normalizedEntityType;
+        }
+        normalizedModule = normalizedModule.toUpperCase(Locale.ROOT);
+
+        if (normalizedEntityType.equals(normalizedModule)
+                || normalizedEntityType.startsWith(normalizedModule + "_")) {
+            return normalizedEntityType;
+        }
+        return normalizedModule + "_" + normalizedEntityType;
+    }
+
+    private String resolveActor(String performedBy) {
+        String explicitActor = normalizeFilter(performedBy);
+        if (explicitActor != null) {
+            return explicitActor;
+        }
+
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null
+                    && authentication.isAuthenticated()
+                    && authentication.getName() != null
+                    && !"anonymousUser".equalsIgnoreCase(authentication.getName())) {
+                return authentication.getName();
+            }
+        } catch (Exception ex) {
+            log.debug("Could not resolve actor from SecurityContext: {}", ex.getMessage());
+        }
+
+        return "system";
+    }
+
+    private String resolveIpAddress(String ipAddress) {
+        String explicitIp = normalizeFilter(ipAddress);
+        if (explicitIp != null) {
+            return explicitIp;
+        }
+
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (!(requestAttributes instanceof ServletRequestAttributes servletRequestAttributes)) {
+            return null;
+        }
+
+        HttpServletRequest request = servletRequestAttributes.getRequest();
+        String forwardedFor = normalizeFilter(request.getHeader("X-Forwarded-For"));
+        if (forwardedFor != null) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        String realIp = normalizeFilter(request.getHeader("X-Real-IP"));
+        if (realIp != null) {
+            return realIp;
+        }
+
+        return normalizeFilter(request.getRemoteAddr());
+    }
+
+    private Pageable withDefaultSort(Pageable pageable) {
+        if (pageable == null) {
+            return PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "performedAt"));
+        }
+        if (pageable.getSort().isSorted()) {
+            return pageable;
+        }
+        return PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "performedAt"));
+    }
+
+    private String normalizeFilter(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private AdminAuditLogResponse toAuditLogResponse(AuditLog auditLog) {
+        return AdminAuditLogResponse.builder()
+                .id(auditLog.getId())
+                .module(extractModule(auditLog.getEntityType()))
+                .operation(auditLog.getOperation())
+                .entityType(auditLog.getEntityType())
+                .entityId(auditLog.getEntityId())
+                .performedBy(auditLog.getPerformedBy())
+                .performedAt(auditLog.getPerformedAt())
+                .snapshotData(auditLog.getSnapshotDataJson())
+                .reason(auditLog.getReason())
+                .ipAddress(auditLog.getIpAddress())
+                .build();
+    }
+
+    private String extractModule(String entityType) {
+        String normalizedEntityType = normalizeFilter(entityType);
+        if (normalizedEntityType == null) {
+            return "GENERAL";
+        }
+        int separatorIndex = normalizedEntityType.indexOf('_');
+        if (separatorIndex < 0) {
+            return normalizedEntityType.toUpperCase(Locale.ROOT);
+        }
+        return normalizedEntityType.substring(0, separatorIndex).toUpperCase(Locale.ROOT);
     }
 }

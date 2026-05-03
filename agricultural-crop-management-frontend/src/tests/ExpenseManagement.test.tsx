@@ -6,6 +6,23 @@ import type { ExpenseFormData } from "@/features/farmer/expense-management/types
 
 const mockUseExpenseManagement = vi.fn();
 
+vi.mock("@/hooks/useI18n", () => ({
+    useI18n: () => ({
+        t: (key: string) => {
+            const dictionary: Record<string, string> = {
+                "expenses.pageTitle": "Expense Management",
+                "expenses.subtitle": "Track and optimize your farm spending",
+                "expenses.tabs.list": "List",
+                "expenses.tabs.analytics": "Analytics",
+                "expenses.reminders": "Reminders",
+                "expenses.export": "Export",
+                "expenses.createButton": "Add Expense",
+            };
+            return dictionary[key] ?? key;
+        },
+    }),
+}));
+
 vi.mock("@/features/farmer/expense-management/hooks/useExpenseManagement", () => ({
     useExpenseManagement: () => mockUseExpenseManagement(),
 }));
@@ -18,6 +35,7 @@ vi.mock("@/shared/contexts", () => ({
     usePreferences: () => ({
         preferences: { currency: "USD", locale: "en-US" },
     }),
+    useOptionalSeason: () => null,
 }));
 
 describe("ExpenseManagement", () => {

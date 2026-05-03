@@ -35,6 +35,9 @@ const ForgotPasswordPage = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPasswordPage }))
 );
+const ChatPage = lazy(() =>
+  import('@/features/chat').then((m) => ({ default: m.ChatPage }))
+);
 
 // ═══════════════════════════════════════════════════════════════
 // LAZY IMPORTS — ProtectedRoute guard
@@ -85,9 +88,9 @@ const MarketplaceMyOrdersPage = lazy(() =>
 const MarketplaceOrderDetailPage = lazy(() =>
   import('@/features/marketplace/pages').then((m) => ({ default: m.OrderDetailPage }))
 );
-const BuyerProfilePage = lazy(() =>
-  import('@/features/buyer/profile').then((m) => ({ default: m.BuyerProfile }))
-);
+
+// Buyer profile components
+import { BuyerProfileLayout, PersonalInfoPage, AddressBookPage, SecurityPage } from '@/features/buyer/profile';
 
 // ═══════════════════════════════════════════════════════════════
 // LAZY IMPORTS — Farmer branch
@@ -368,6 +371,14 @@ export function AppRoutes() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/signin" element={<Navigate to="/sign-in" replace />} />
         <Route path="/signup" element={<Navigate to="/sign-up" replace />} />
+        <Route
+          path="/chat"
+          element={(
+            <ProtectedRoute requireAuth>
+              <ChatPage />
+            </ProtectedRoute>
+          )}
+        />
 
         {/* ━━━ Public Layout Branch ━━━ */}
         <Route element={<PublicLayoutWrapper />}>
@@ -383,7 +394,7 @@ export function AppRoutes() {
             <Route
               path="cart"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <CartPage />
                 </ProtectedRoute>
               )}
@@ -391,7 +402,7 @@ export function AppRoutes() {
             <Route
               path="checkout"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <CheckoutPage />
                 </ProtectedRoute>
               )}
@@ -399,7 +410,7 @@ export function AppRoutes() {
             <Route
               path="orders"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <MarketplaceMyOrdersPage />
                 </ProtectedRoute>
               )}
@@ -407,7 +418,7 @@ export function AppRoutes() {
             <Route
               path="orders/:id"
               element={(
-                <ProtectedRoute requireAuth>
+                <ProtectedRoute requiredRole="buyer">
                   <MarketplaceOrderDetailPage />
                 </ProtectedRoute>
               )}
@@ -415,11 +426,16 @@ export function AppRoutes() {
             <Route
               path="profile"
               element={(
-                <ProtectedRoute requireAuth>
-                  <BuyerProfilePage />
+                <ProtectedRoute requiredRole="buyer">
+                  <BuyerProfileLayout />
                 </ProtectedRoute>
               )}
-            />
+            >
+              <Route index element={<Navigate to="info" replace />} />
+              <Route path="info" element={<PersonalInfoPage />} />
+              <Route path="addresses" element={<AddressBookPage />} />
+              <Route path="security" element={<SecurityPage />} />
+            </Route>
           </Route>
           <Route path="/buyer/*" element={<Navigate to="/marketplace" replace />} />
         </Route>
@@ -439,6 +455,7 @@ export function AppRoutes() {
         >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<FarmerDashboard />} />
+          <Route path="marketplace-workspace" element={<Navigate to="/farmer/marketplace-dashboard" replace />} />
           <Route path="marketplace-dashboard" element={<MarketplaceSellerDashboardPage />} />
           <Route path="marketplace-products" element={<MarketplaceSellerProductsPage />} />
           <Route path="marketplace-products/:id" element={<MarketplaceSellerProductDetailPage />} />

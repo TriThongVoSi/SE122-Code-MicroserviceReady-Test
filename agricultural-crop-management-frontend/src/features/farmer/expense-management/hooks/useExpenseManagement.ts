@@ -437,7 +437,7 @@ export function useExpenseManagement() {
 
         try {
             const { page, size, ...filters } = listParams;
-            const blob = await expenseApi.exportCsv(filters);
+            const blob = await expenseApi.exportCsv({ page, size, ...filters });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             const date = new Date().toISOString().split("T")[0];

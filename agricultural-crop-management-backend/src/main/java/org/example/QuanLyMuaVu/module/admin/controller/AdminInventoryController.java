@@ -36,7 +36,9 @@ public class AdminInventoryController {
     @GetMapping("/lots")
     public ApiResponse<PageResponse<AdminInventoryRiskLotResponse>> listRiskLots(
             @RequestParam(value = "farmId", required = false) Integer farmId,
+            @RequestParam(value = "itemId", required = false) Integer itemId,
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "severity", required = false) String severity,
             @RequestParam(value = "windowDays", required = false) Integer windowDays,
             @RequestParam(value = "q", required = false) String q,
             @RequestParam(value = "sort", required = false) String sort,
@@ -46,7 +48,9 @@ public class AdminInventoryController {
 
         return ApiResponse.success(adminInventoryService.listRiskLots(
                 farmId,
+                itemId,
                 status,
+                severity,
                 windowDays,
                 q,
                 sort,

@@ -1,13 +1,15 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUpdateFarm as useUpdateFarmEntity, FarmUpdateRequestSchema, type FarmUpdateRequest, type FarmDetailResponse } from '@/entities/farm';
+import { useUpdateFarm as useUpdateFarmEntity, FarmUpdateRequestSchema, type FarmUpdateRequest, type Farm, type FarmDetailResponse } from '@/entities/farm';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+
+type FarmFormInitialData = Pick<FarmDetailResponse, 'name' | 'provinceId' | 'wardId' | 'area' | 'active'> | Farm;
 
 /**
  * Feature hook for updating a farm with form validation and toast handling
  */
-export function useUpdateFarm(farmId: number, initialData?: FarmDetailResponse) {
+export function useUpdateFarm(farmId: number, initialData?: FarmFormInitialData) {
     const form = useForm<FarmUpdateRequest>({
         resolver: zodResolver(FarmUpdateRequestSchema),
         defaultValues: {

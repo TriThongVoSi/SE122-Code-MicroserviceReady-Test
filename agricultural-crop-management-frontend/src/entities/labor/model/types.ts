@@ -9,4 +9,5 @@ export type {
   AssignTaskEmployeeRequest,
   EmployeeTaskProgressRequest,
   PayrollRecalculateRequest,
+  PayrollRecordUpdateRequest,
 } from "./schemas";

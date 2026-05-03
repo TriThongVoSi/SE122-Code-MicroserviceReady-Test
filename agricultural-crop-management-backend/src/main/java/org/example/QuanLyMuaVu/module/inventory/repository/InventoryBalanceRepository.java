@@ -18,6 +18,10 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
 
     boolean existsByWarehouse_Id(Integer warehouseId);
 
+    boolean existsBySupplyLot_Id(Integer supplyLotId);
+
+    boolean existsBySupplyLot_IdAndWarehouse_Farm_IdIn(Integer supplyLotId, List<Integer> farmIds);
+
     /**
      * Find inventory balance with pessimistic write lock for upsert operations.
      * Used for IN movements and positive ADJUST movements.
@@ -33,6 +37,17 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
             @Param("lot") SupplyLot lot,
             @Param("warehouse") Warehouse warehouse,
             @Param("location") StockLocation location);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT ib FROM InventoryBalance ib
+            WHERE ib.supplyLot = :lot
+              AND ib.warehouse = :warehouse
+            ORDER BY ib.id ASC
+            """)
+    List<InventoryBalance> findAllByLotAndWarehouseWithLock(
+            @Param("lot") SupplyLot lot,
+            @Param("warehouse") Warehouse warehouse);
 
     /**
      * Find inventory balance without lock (for read operations).
@@ -75,6 +90,16 @@ public interface InventoryBalanceRepository extends JpaRepository<InventoryBalan
             @Param("lot") SupplyLot lot,
             @Param("warehouse") Warehouse warehouse,
             @Param("location") StockLocation location);
+
+    @Query("""
+            SELECT COALESCE(SUM(ib.quantity), 0)
+            FROM InventoryBalance ib
+            WHERE ib.supplyLot = :lot
+              AND ib.warehouse = :warehouse
+            """)
+    BigDecimal sumQuantityByLotAndWarehouse(
+            @Param("lot") SupplyLot lot,
+            @Param("warehouse") Warehouse warehouse);
 
     @Query("""
             SELECT ib FROM InventoryBalance ib

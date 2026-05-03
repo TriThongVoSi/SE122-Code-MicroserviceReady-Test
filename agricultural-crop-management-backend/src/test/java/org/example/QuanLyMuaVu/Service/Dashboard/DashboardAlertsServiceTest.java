@@ -3,12 +3,15 @@ package org.example.QuanLyMuaVu.Service.Dashboard;
 import org.example.QuanLyMuaVu.module.incident.entity.Incident;
 import org.example.QuanLyMuaVu.module.inventory.entity.Warehouse;
 import org.example.QuanLyMuaVu.module.sustainability.dto.response.DashboardOverviewResponse;
+import org.example.QuanLyMuaVu.module.sustainability.dto.response.FieldMapResponse;
 import org.example.QuanLyMuaVu.module.inventory.dto.response.LowStockAlertResponse;
+import org.example.QuanLyMuaVu.module.farm.port.FarmQueryPort;
 import org.example.QuanLyMuaVu.module.shared.security.CurrentUserService;
 import org.example.QuanLyMuaVu.module.incident.port.IncidentQueryPort;
 import org.example.QuanLyMuaVu.module.inventory.port.InventoryLowStockView;
 import org.example.QuanLyMuaVu.module.inventory.port.InventoryQueryPort;
 import org.example.QuanLyMuaVu.module.sustainability.service.DashboardAlertsService;
+import org.example.QuanLyMuaVu.module.sustainability.service.SustainabilityDashboardService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +42,12 @@ class DashboardAlertsServiceTest {
 
     @Mock
     private InventoryQueryPort inventoryQueryPort;
+
+    @Mock
+    private FarmQueryPort farmQueryPort;
+
+    @Mock
+    private SustainabilityDashboardService sustainabilityDashboardService;
 
     @InjectMocks
     private DashboardAlertsService dashboardAlertsService;
@@ -90,5 +99,23 @@ class DashboardAlertsServiceTest {
         List<LowStockAlertResponse> result = dashboardAlertsService.getLowStock(0);
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("buildSustainabilityAlerts aggregates levels and missing inputs")
+    void buildSustainabilityAlerts_AggregatesFieldLevels() {
+        when(sustainabilityDashboardService.getFieldMap(12, null, null, null))
+                .thenReturn(FieldMapResponse.builder().items(List.of(
+                        FieldMapResponse.FieldMapItem.builder().fdnLevel("high").missingInputs(List.of("mineral")).build(),
+                        FieldMapResponse.FieldMapItem.builder().fdnLevel("medium").missingInputs(List.of()).build(),
+                        FieldMapResponse.FieldMapItem.builder().fdnLevel("low").missingInputs(null).build())).build());
+
+        DashboardOverviewResponse.SustainabilityAlerts alerts = dashboardAlertsService.buildSustainabilityAlerts(12);
+
+        assertEquals(3, alerts.getTotalFields());
+        assertEquals(1, alerts.getHighRiskFields());
+        assertEquals(1, alerts.getMediumRiskFields());
+        assertEquals(1, alerts.getLowRiskFields());
+        assertEquals(1, alerts.getFieldsMissingInputs());
     }
 }

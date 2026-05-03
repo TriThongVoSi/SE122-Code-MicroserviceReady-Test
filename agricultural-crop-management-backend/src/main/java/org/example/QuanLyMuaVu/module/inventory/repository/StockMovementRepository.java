@@ -20,6 +20,10 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, In
 
         boolean existsByWarehouse_Id(Integer warehouseId);
 
+        boolean existsBySupplyLot_Id(Integer supplyLotId);
+
+        boolean existsBySupplyLot_IdAndWarehouse_Farm_IdIn(Integer supplyLotId, List<Integer> farmIds);
+
         @Query("""
                         select coalesce(sum(
                             case when m.movementType = org.example.QuanLyMuaVu.Enums.StockMovementType.IN then m.quantity

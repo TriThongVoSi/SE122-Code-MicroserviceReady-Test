@@ -60,6 +60,10 @@ public class DashboardService {
                 .expenses(kpiService.buildExpenses(season))
                 .harvest(kpiService.buildHarvest(season))
                 .alerts(alertsService.buildAlerts(ownerId))
+                .taskStatus(kpiService.buildTaskStatusSummary(season))
+                .inventoryRisk(alertsService.buildInventoryRisk(ownerId))
+                .lotStatus(alertsService.buildLotStatus(ownerId))
+                .sustainabilityAlerts(alertsService.buildSustainabilityAlerts(season != null ? season.getId() : null))
                 .build();
     }
 

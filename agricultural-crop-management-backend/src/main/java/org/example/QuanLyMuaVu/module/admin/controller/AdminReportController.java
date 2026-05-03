@@ -1,6 +1,7 @@
 package org.example.QuanLyMuaVu.module.admin.controller;
 
 import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,11 @@ public class AdminReportController {
                         Integer cropId,
                         Integer farmId,
                         Integer plotId,
-                        Integer varietyId) {
+                        Integer varietyId,
+                        BigDecimal areaMinHa,
+                        BigDecimal areaMaxHa,
+                        Integer page,
+                        Integer size) {
                 return AdminReportFilter.builder()
                                 .year(year)
                                 .fromDate(fromDate)
@@ -44,6 +49,10 @@ public class AdminReportController {
                                 .farmId(farmId)
                                 .plotId(plotId)
                                 .varietyId(varietyId)
+                                .areaMinHa(areaMinHa)
+                                .areaMaxHa(areaMaxHa)
+                                .page(page)
+                                .size(size)
                                 .build();
         }
 
@@ -67,23 +76,44 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
                         @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa,
+                        @RequestParam(required = false) Integer page,
+                        @RequestParam(required = false) Integer size,
                         @RequestParam(required = false, defaultValue = "false") Boolean analytics) {
-
-                AdminReportFilter filter = buildFilter(
+                AdminReportFilter analyticFilter = buildFilter(
                                 year,
                                 firstNonNull(dateFrom, fromDate),
                                 firstNonNull(dateTo, toDate),
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 if (Boolean.TRUE.equals(analytics)) {
                         return ResponseEntity.ok(
-                                        ApiResponse.success("Yield analytics generated", adminReportService.getYieldAnalytics(filter)));
+                                        ApiResponse.success("Yield analytics generated",
+                                                        adminReportService.getYieldAnalytics(analyticFilter)));
                 }
 
-                List<AdminReportResponse.YieldReport> report = adminReportService.getYieldReport(filter);
+                AdminReportFilter listFilter = buildFilter(
+                                year,
+                                firstNonNull(dateFrom, fromDate),
+                                firstNonNull(dateTo, toDate),
+                                cropId,
+                                farmId,
+                                plotId,
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                page,
+                                size);
+
+                List<AdminReportResponse.YieldReport> report = adminReportService.getYieldReport(listFilter);
                 return ResponseEntity.ok(ApiResponse.success("Yield report generated", report));
         }
 
@@ -98,25 +128,46 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
                         @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa,
+                        @RequestParam(required = false) Integer page,
+                        @RequestParam(required = false) Integer size,
                         @RequestParam(required = false) String granularity,
                         @RequestParam(required = false, defaultValue = "false") Boolean analytics) {
 
-                AdminReportFilter filter = buildFilter(
+                AdminReportFilter analyticFilter = buildFilter(
                                 year,
                                 firstNonNull(dateFrom, fromDate),
                                 firstNonNull(dateTo, toDate),
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 if (Boolean.TRUE.equals(analytics)) {
                         return ResponseEntity.ok(ApiResponse.success(
                                         "Cost analytics generated",
-                                        adminReportService.getCostAnalytics(filter, granularity)));
+                                        adminReportService.getCostAnalytics(analyticFilter, granularity)));
                 }
 
-                List<AdminReportResponse.CostReport> report = adminReportService.getCostReport(filter);
+                AdminReportFilter listFilter = buildFilter(
+                                year,
+                                firstNonNull(dateFrom, fromDate),
+                                firstNonNull(dateTo, toDate),
+                                cropId,
+                                farmId,
+                                plotId,
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                page,
+                                size);
+
+                List<AdminReportResponse.CostReport> report = adminReportService.getCostReport(listFilter);
                 return ResponseEntity.ok(ApiResponse.success("Cost report generated", report));
         }
 
@@ -131,24 +182,45 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
                         @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa,
+                        @RequestParam(required = false) Integer page,
+                        @RequestParam(required = false) Integer size,
                         @RequestParam(required = false, defaultValue = "false") Boolean analytics) {
 
-                AdminReportFilter filter = buildFilter(
+                AdminReportFilter analyticFilter = buildFilter(
                                 year,
                                 firstNonNull(dateFrom, fromDate),
                                 firstNonNull(dateTo, toDate),
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 if (Boolean.TRUE.equals(analytics)) {
                         return ResponseEntity.ok(ApiResponse.success(
                                         "Revenue analytics generated",
-                                        adminReportService.getRevenueAnalytics(filter)));
+                                        adminReportService.getRevenueAnalytics(analyticFilter)));
                 }
 
-                List<AdminReportResponse.RevenueReport> report = adminReportService.getRevenueReport(filter);
+                AdminReportFilter listFilter = buildFilter(
+                                year,
+                                firstNonNull(dateFrom, fromDate),
+                                firstNonNull(dateTo, toDate),
+                                cropId,
+                                farmId,
+                                plotId,
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                page,
+                                size);
+
+                List<AdminReportResponse.RevenueReport> report = adminReportService.getRevenueReport(listFilter);
                 return ResponseEntity.ok(ApiResponse.success("Revenue report generated", report));
         }
 
@@ -163,24 +235,45 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
                         @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa,
+                        @RequestParam(required = false) Integer page,
+                        @RequestParam(required = false) Integer size,
                         @RequestParam(required = false, defaultValue = "false") Boolean analytics) {
 
-                AdminReportFilter filter = buildFilter(
+                AdminReportFilter analyticFilter = buildFilter(
                                 year,
                                 firstNonNull(dateFrom, fromDate),
                                 firstNonNull(dateTo, toDate),
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 if (Boolean.TRUE.equals(analytics)) {
                         return ResponseEntity.ok(ApiResponse.success(
                                         "Profit analytics generated",
-                                        adminReportService.getProfitAnalytics(filter)));
+                                        adminReportService.getProfitAnalytics(analyticFilter)));
                 }
 
-                List<AdminReportResponse.ProfitReport> report = adminReportService.getProfitReport(filter);
+                AdminReportFilter listFilter = buildFilter(
+                                year,
+                                firstNonNull(dateFrom, fromDate),
+                                firstNonNull(dateTo, toDate),
+                                cropId,
+                                farmId,
+                                plotId,
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                page,
+                                size);
+
+                List<AdminReportResponse.ProfitReport> report = adminReportService.getProfitReport(listFilter);
                 return ResponseEntity.ok(ApiResponse.success("Profit report generated", report));
         }
 
@@ -196,7 +289,9 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer cropId,
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
-                        @RequestParam(required = false) Integer varietyId) {
+                        @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa) {
 
                 AdminReportFilter filter = buildFilter(
                                 year,
@@ -205,7 +300,11 @@ public class AdminReportController {
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 AdminReportResponse.ReportSummary summary = adminReportService.getSummary(filter);
                 return ResponseEntity.ok(ApiResponse.success("Summary report generated", summary));
@@ -223,6 +322,8 @@ public class AdminReportController {
                         @RequestParam(required = false) Integer farmId,
                         @RequestParam(required = false) Integer plotId,
                         @RequestParam(required = false) Integer varietyId,
+                        @RequestParam(required = false) BigDecimal areaMinHa,
+                        @RequestParam(required = false) BigDecimal areaMaxHa,
                         @RequestParam(required = false) String granularity) {
 
                 AdminReportFilter filter = buildFilter(
@@ -232,7 +333,11 @@ public class AdminReportController {
                                 cropId,
                                 farmId,
                                 plotId,
-                                varietyId);
+                                varietyId,
+                                areaMinHa,
+                                areaMaxHa,
+                                null,
+                                null);
 
                 String csv = adminReportService.exportReportCsv(tab, filter, granularity);
                 String fileName = "admin-report-" + tab.toLowerCase() + ".csv";

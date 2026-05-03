@@ -19,6 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ExpenseService {
 
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    private static final String SEASON_NOT_FOUND_MESSAGE = "Season not found";
+    private static final String EXPENSE_NOT_FOUND_MESSAGE = "Expense not found";
+
     private final ExpenseRepository expenseRepository;
     private final IdentityQueryPort identityQueryPort;
     private final SeasonQueryPort seasonQueryPort;
@@ -27,10 +31,9 @@ public class ExpenseService {
     // CREATE
     // ---------------------------
     public ExpenseResponse createExpense(ExpenseRequest request) {
-        org.example.QuanLyMuaVu.module.identity.entity.User user = identityQueryPort.findUserById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("org.example.QuanLyMuaVu.module.identity.entity.User not found"));
-        org.example.QuanLyMuaVu.module.season.entity.Season season = seasonQueryPort.findSeasonById(request.getSeasonId())
-                .orElseThrow(() -> new RuntimeException("org.example.QuanLyMuaVu.module.season.entity.Season not found"));
+        org.example.QuanLyMuaVu.module.identity.entity.User user = resolveUser(request.getUserId());
+        org.example.QuanLyMuaVu.module.season.entity.Season season = resolveSeason(request.getSeasonId());
+        BigDecimal totalCost = calculateTotalCost(request.getUnitPrice(), request.getQuantity());
 
         Expense expense = Expense.builder()
                 .userId(user.getId())
@@ -40,7 +43,8 @@ public class ExpenseService {
                 .itemName(request.getItemName())
                 .unitPrice(request.getUnitPrice())
                 .quantity(request.getQuantity())
-                .totalCost(request.getUnitPrice().multiply(BigDecimal.valueOf(request.getQuantity())))
+                .totalCost(totalCost)
+                .amount(totalCost)
                 .expenseDate(request.getExpenseDate())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -53,7 +57,7 @@ public class ExpenseService {
     // ---------------------------
     public ExpenseResponse getExpenseById(Integer id) {
         Expense expense = expenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new RuntimeException(EXPENSE_NOT_FOUND_MESSAGE));
         return mapToResponse(expense);
     }
 
@@ -82,12 +86,11 @@ public class ExpenseService {
     // ---------------------------
     public ExpenseResponse updateExpense(Integer id, ExpenseRequest request) {
         Expense expense = expenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new RuntimeException(EXPENSE_NOT_FOUND_MESSAGE));
 
-        org.example.QuanLyMuaVu.module.identity.entity.User user = identityQueryPort.findUserById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("org.example.QuanLyMuaVu.module.identity.entity.User not found"));
-        org.example.QuanLyMuaVu.module.season.entity.Season season = seasonQueryPort.findSeasonById(request.getSeasonId())
-                .orElseThrow(() -> new RuntimeException("org.example.QuanLyMuaVu.module.season.entity.Season not found"));
+        org.example.QuanLyMuaVu.module.identity.entity.User user = resolveUser(request.getUserId());
+        org.example.QuanLyMuaVu.module.season.entity.Season season = resolveSeason(request.getSeasonId());
+        BigDecimal totalCost = calculateTotalCost(request.getUnitPrice(), request.getQuantity());
 
         expense.setUserId(user.getId());
         expense.setUser(user);
@@ -96,7 +99,8 @@ public class ExpenseService {
         expense.setItemName(request.getItemName());
         expense.setUnitPrice(request.getUnitPrice());
         expense.setQuantity(request.getQuantity());
-        expense.setTotalCost(request.getUnitPrice().multiply(BigDecimal.valueOf(request.getQuantity())));
+        expense.setTotalCost(totalCost);
+        expense.setAmount(totalCost);
         expense.setExpenseDate(request.getExpenseDate());
 
         return mapToResponse(expenseRepository.save(expense));
@@ -107,21 +111,44 @@ public class ExpenseService {
     // ---------------------------
     public void deleteExpense(Integer id) {
         if (!expenseRepository.existsById(id)) {
-            throw new RuntimeException("Expense not found");
+            throw new RuntimeException(EXPENSE_NOT_FOUND_MESSAGE);
         }
         expenseRepository.deleteById(id);
+    }
+
+    private org.example.QuanLyMuaVu.module.identity.entity.User resolveUser(Long userId) {
+        return identityQueryPort.findUserById(userId)
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND_MESSAGE));
+    }
+
+    private org.example.QuanLyMuaVu.module.season.entity.Season resolveSeason(Integer seasonId) {
+        return seasonQueryPort.findSeasonById(seasonId)
+                .orElseThrow(() -> new RuntimeException(SEASON_NOT_FOUND_MESSAGE));
+    }
+
+    private BigDecimal calculateTotalCost(BigDecimal unitPrice, Integer quantity) {
+        return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 
     // ---------------------------
     // PRIVATE MAPPER
     // ---------------------------
     private ExpenseResponse mapToResponse(Expense expense) {
+        org.example.QuanLyMuaVu.module.season.entity.Season season = expense.getSeason();
+        org.example.QuanLyMuaVu.module.season.entity.Task task = expense.getTask();
+
         return ExpenseResponse.builder()
                 .id(expense.getId())
                 .seasonId(expense.getSeasonId())
-                .taskId(expense.getTaskId())
+                .seasonName(season != null ? season.getSeasonName() : null)
+                .plotId(season != null && season.getPlot() != null ? season.getPlot().getId() : null)
+                .plotName(season != null && season.getPlot() != null ? season.getPlot().getPlotName() : null)
+                .taskId(expense.getTaskId() != null ? expense.getTaskId() : task != null ? task.getId() : null)
+                .taskTitle(task != null ? task.getTitle() : null)
                 .userName(expense.getUser() != null ? expense.getUser().getUsername() : null)
-                .seasonName(expense.getSeason() != null ? expense.getSeason().getSeasonName() : null)
+                .category(expense.getCategory())
+                .amount(expense.getEffectiveAmount())
+                .note(expense.getNote())
                 .itemName(expense.getItemName())
                 .unitPrice(expense.getUnitPrice())
                 .quantity(expense.getQuantity())

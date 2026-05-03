@@ -10,6 +10,7 @@ import {
   EmployeeDirectorySchema,
   PayrollRecordSchema,
   PayrollRecalculateRequestSchema,
+  PayrollRecordUpdateRequestSchema,
   SeasonEmployeeSchema,
   TaskProgressLogSchema,
   UpdateSeasonEmployeeRequestSchema,
@@ -22,6 +23,7 @@ import type {
   EmployeeDirectory,
   PayrollRecord,
   PayrollRecalculateRequest,
+  PayrollRecordUpdateRequest,
   SeasonEmployee,
   TaskProgressLog,
   UpdateSeasonEmployeeRequest,
@@ -103,6 +105,24 @@ export const laborApi = {
     return parsePageResponse(response.data, PayrollRecordSchema);
   },
 
+  getSeasonPayrollDetail: async (seasonId: number, payrollRecordId: number): Promise<PayrollRecord> => {
+    const response = await httpClient.get(`/api/v1/farmer/labor/seasons/${seasonId}/payroll/${payrollRecordId}`);
+    return parseApiResponse(response.data, PayrollRecordSchema);
+  },
+
+  updateSeasonPayroll: async (
+    seasonId: number,
+    payrollRecordId: number,
+    data: PayrollRecordUpdateRequest
+  ): Promise<PayrollRecord> => {
+    const payload = PayrollRecordUpdateRequestSchema.parse(data);
+    const response = await httpClient.patch(
+      `/api/v1/farmer/labor/seasons/${seasonId}/payroll/${payrollRecordId}`,
+      payload
+    );
+    return parseApiResponse(response.data, PayrollRecordSchema);
+  },
+
   recalculateSeasonPayroll: async (
     seasonId: number,
     data?: PayrollRecalculateRequest
@@ -146,5 +166,10 @@ export const laborApi = {
   listMyPayroll: async (params?: { seasonId?: number; page?: number; size?: number }): Promise<PageResponse<PayrollRecord>> => {
     const response = await httpClient.get("/api/v1/employee/payroll", { params });
     return parsePageResponse(response.data, PayrollRecordSchema);
+  },
+
+  getMyPayrollDetail: async (payrollRecordId: number): Promise<PayrollRecord> => {
+    const response = await httpClient.get(`/api/v1/employee/payroll/${payrollRecordId}`);
+    return parseApiResponse(response.data, PayrollRecordSchema);
   },
 };

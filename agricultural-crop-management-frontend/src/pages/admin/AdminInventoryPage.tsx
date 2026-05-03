@@ -38,8 +38,17 @@ const STATUS_OPTIONS = [
   { value: "EXPIRED", label: "Expired" },
   { value: "EXPIRING", label: "Expiring" },
   { value: "LOW_STOCK", label: "Low Stock" },
+  { value: "ABNORMAL_MOVEMENT", label: "Abnormal Movement" },
   { value: "UNKNOWN_EXPIRY", label: "Unknown Expiry" },
   { value: "ALL", label: "All Lots" },
+];
+const SEVERITY_OPTIONS = [
+  { value: "ALL", label: "All Severities" },
+  { value: "CRITICAL", label: "Critical" },
+  { value: "HIGH", label: "High" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "LOW", label: "Low" },
+  { value: "NONE", label: "None" },
 ];
 
 const parseNumber = (value: string | null) => {
@@ -66,7 +75,9 @@ export function AdminInventoryPage() {
   const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "");
 
   const farmId = parseNumber(searchParams.get("farmId"));
+  const itemId = parseNumber(searchParams.get("itemId"));
   const status = (searchParams.get("status") || "RISK").toUpperCase();
+  const severity = (searchParams.get("severity") || "ALL").toUpperCase();
   const windowDays = parseNumber(searchParams.get("windowDays")) ?? 30;
   const sort = (searchParams.get("sort") || "EXPIRY_ASC").toUpperCase();
   const lowStockThreshold =
@@ -75,7 +86,16 @@ export function AdminInventoryPage() {
 
   useEffect(() => {
     setPage(0);
-  }, [farmId, status, windowDays, sort, lowStockThreshold, debouncedSearch]);
+  }, [
+    farmId,
+    itemId,
+    status,
+    severity,
+    windowDays,
+    sort,
+    lowStockThreshold,
+    debouncedSearch,
+  ]);
 
   useEffect(() => {
     setSearchParams((prev) => {
@@ -99,7 +119,9 @@ export function AdminInventoryPage() {
       "adminInventory",
       "lots",
       farmId,
+      itemId,
       status,
+      severity,
       windowDays,
       sort,
       debouncedSearch,
@@ -109,7 +131,9 @@ export function AdminInventoryPage() {
     queryFn: () =>
       adminInventoryApi.listRiskLots({
         farmId: farmId ?? undefined,
+        itemId: itemId ?? undefined,
         status,
+        severity,
         windowDays,
         q: debouncedSearch || undefined,
         sort,
@@ -180,12 +204,41 @@ export function AdminInventoryPage() {
             Low Stock
           </Badge>
         );
+      case "ABNORMAL_MOVEMENT":
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-300">
+            Abnormal Movement
+          </Badge>
+        );
       case "UNKNOWN_EXPIRY":
         return <Badge variant="secondary">Unknown Expiry</Badge>;
       case "HEALTHY":
         return <Badge variant="secondary">Healthy</Badge>;
       default:
         return <Badge variant="outline">{value}</Badge>;
+    }
+  };
+
+  const renderSeverityBadge = (value: string | null | undefined) => {
+    switch (value) {
+      case "CRITICAL":
+        return <Badge variant="destructive">Critical</Badge>;
+      case "HIGH":
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-300">
+            High
+          </Badge>
+        );
+      case "MEDIUM":
+        return (
+          <Badge variant="outline" className="text-amber-600 border-amber-300">
+            Medium
+          </Badge>
+        );
+      case "LOW":
+        return <Badge variant="secondary">Low</Badge>;
+      default:
+        return <Badge variant="outline">{value || "None"}</Badge>;
     }
   };
 
@@ -197,7 +250,7 @@ export function AdminInventoryPage() {
           <b>Inventory Risks</b>
         </h1>
         <p className="text-muted-foreground">
-          Monitor expiring, expired, and low stock lots.
+          Monitor expiring, expired, low stock, and abnormal movement lots.
         </p>
       </div>
 
@@ -224,6 +277,25 @@ export function AdminInventoryPage() {
             </Select>
 
             <Select
+              value={itemId?.toString() ?? "all"}
+              onValueChange={(value) =>
+                updateParams({ itemId: value === "all" ? undefined : value })
+              }
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[220px]">
+                <SelectValue placeholder="All items" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All items</SelectItem>
+                {(optionsQuery.data?.items ?? []).map((item) => (
+                  <SelectItem key={item.id} value={String(item.id)}>
+                    {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
               value={status}
               onValueChange={(value) => updateParams({ status: value })}
             >
@@ -232,6 +304,22 @@ export function AdminInventoryPage() {
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={severity}
+              onValueChange={(value) => updateParams({ severity: value })}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[170px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SEVERITY_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -341,6 +429,7 @@ export function AdminInventoryPage() {
                         <TableHead className="text-right">On hand</TableHead>
                         <TableHead>Days to expiry</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Severity</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -362,6 +451,9 @@ export function AdminInventoryPage() {
                           </TableCell>
                           <TableCell>{lot.daysToExpiry ?? "-"}</TableCell>
                           <TableCell>{renderStatusBadge(lot.status)}</TableCell>
+                          <TableCell>
+                            {renderSeverityBadge(lot.severity)}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"

@@ -10,16 +10,14 @@ import { portalConfig } from '../lib/config';
 describe('Farmer Portal Navigation Configuration', () => {
     const farmerNav = portalConfig.FARMER.navigation;
 
-    it('should contain exactly 13 navigation items', () => {
-        expect(farmerNav).toHaveLength(13);
+    it('should contain exactly 12 navigation items', () => {
+        expect(farmerNav).toHaveLength(12);
     });
 
     it('should have items in the exact required order', () => {
         const expectedOrder = [
             'dashboard',
-            'marketplace-dashboard',
-            'marketplace-products',
-            'marketplace-orders',
+            'marketplace-workspace',
             'farms',
             'seasons',
             'suppliers-supplies',
@@ -28,6 +26,7 @@ describe('Farmer Portal Navigation Configuration', () => {
             'documents',
             'reports',
             'ai-assistant',
+            'chat',
             'notifications',
         ];
 
@@ -54,9 +53,7 @@ describe('Farmer Portal Navigation Configuration', () => {
         }, {} as Record<string, string>);
 
         expect(itemLabels['dashboard']).toBe('Dashboard');
-        expect(itemLabels['marketplace-dashboard']).toBe('Marketplace Dashboard');
-        expect(itemLabels['marketplace-products']).toBe('Marketplace Products');
-        expect(itemLabels['marketplace-orders']).toBe('Marketplace Orders');
+        expect(itemLabels['marketplace-workspace']).toBe('Marketplace Workspace');
         expect(itemLabels['farms']).toBe('Farms & Plots');
         expect(itemLabels['seasons']).toBe('Seasons');
         expect(itemLabels['suppliers-supplies']).toBe('Suppliers & Supplies');
@@ -64,6 +61,7 @@ describe('Farmer Portal Navigation Configuration', () => {
         expect(itemLabels['product-warehouse']).toBe('Product Warehouse');
         expect(itemLabels['documents']).toBe('Documents');
         expect(itemLabels['reports']).toBe('Reports');
+        expect(itemLabels['chat']).toBe('Chat');
         expect(itemLabels['notifications']).toBe('Notifications');
         expect(itemLabels['ai-assistant']).toBe('AI Assistant');
     });

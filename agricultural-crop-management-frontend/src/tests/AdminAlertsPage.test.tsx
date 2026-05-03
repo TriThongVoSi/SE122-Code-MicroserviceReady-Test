@@ -4,6 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminAlertsPage } from '@/pages/admin/AdminAlertsPage';
 
+vi.mock('@/hooks/useI18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 const adminAlertMocks = vi.hoisted(() => ({
   list: vi.fn(),
   refresh: vi.fn(),
@@ -97,10 +103,10 @@ describe('AdminAlertsPage', () => {
     );
 
     expect(await screen.findByText('Inventory expiring soon')).toBeInTheDocument();
-    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.getByText(/admin\.alerts\.status\.new/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-    const sendAlertButton = await screen.findByRole('button', { name: 'Send alert' });
+    fireEvent.click(screen.getByRole('button', { name: /admin\.alerts\.actions\.send/i }));
+    const sendAlertButton = await screen.findByRole('button', { name: /admin\.alerts\.sendwarning\.sendalert/i });
     fireEvent.click(sendAlertButton);
 
     await waitFor(() =>
@@ -110,7 +116,7 @@ describe('AdminAlertsPage', () => {
       )
     );
 
-    const sentBadges = await screen.findAllByText('Sent');
+    const sentBadges = await screen.findAllByText(/admin\.alerts\.status\.sent/i);
     expect(sentBadges.length).toBeGreaterThan(0);
   });
 });

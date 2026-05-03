@@ -16,6 +16,8 @@ export const laborKeys = {
     seasonId: number,
     params?: { employeeUserId?: number; page?: number; size?: number }
   ) => [...laborKeys.seasonPayrollBase(seasonId), params ?? {}] as const,
+  seasonPayrollDetail: (seasonId: number, payrollRecordId: number) =>
+    [...laborKeys.seasonPayrollBase(seasonId), "detail", payrollRecordId] as const,
   employeeTasksBase: () => [...laborKeys.all, "employee-tasks"] as const,
   employeeTasks: (params?: { status?: string; seasonId?: number; page?: number; size?: number }) =>
     [...laborKeys.employeeTasksBase(), params ?? {}] as const,
@@ -26,4 +28,6 @@ export const laborKeys = {
   employeePayrollBase: () => [...laborKeys.all, "employee-payroll"] as const,
   employeePayroll: (params?: { seasonId?: number; page?: number; size?: number }) =>
     [...laborKeys.employeePayrollBase(), params ?? {}] as const,
+  employeePayrollDetail: (payrollRecordId: number) =>
+    [...laborKeys.employeePayrollBase(), "detail", payrollRecordId] as const,
 };

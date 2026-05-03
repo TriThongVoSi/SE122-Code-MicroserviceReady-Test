@@ -18,6 +18,7 @@ export type FarmerView =
   | 'labor-management'
   | 'inventory'
   | 'product-warehouse'
+  | 'marketplace-workspace'
   | 'marketplace-dashboard'
   | 'marketplace-products'
   | 'marketplace-orders'

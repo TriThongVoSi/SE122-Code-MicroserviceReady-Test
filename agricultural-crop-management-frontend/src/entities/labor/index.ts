@@ -9,6 +9,7 @@ export type {
   AssignTaskEmployeeRequest,
   EmployeeTaskProgressRequest,
   PayrollRecalculateRequest,
+  PayrollRecordUpdateRequest,
 } from "./model/types";
 
 export {
@@ -22,6 +23,7 @@ export {
   AssignTaskEmployeeRequestSchema,
   EmployeeTaskProgressRequestSchema,
   PayrollRecalculateRequestSchema,
+  PayrollRecordUpdateRequestSchema,
 } from "./model/schemas";
 
 export { laborKeys } from "./model/keys";
@@ -35,6 +37,7 @@ export {
   useEmployeeTasks,
   useEmployeeProgressLogs,
   useEmployeePayrollRecords,
+  useEmployeePayrollDetail,
   useEmployeeSeasonPlan,
   useAddSeasonEmployee,
   useBulkAssignSeasonEmployees,
@@ -42,6 +45,7 @@ export {
   useRemoveSeasonEmployee,
   useAssignTaskToEmployee,
   useRecalculateSeasonPayroll,
+  useUpdateSeasonPayrollRecord,
   useEmployeeAcceptTask,
   useEmployeeReportTaskProgress,
 } from "./api/hooks";

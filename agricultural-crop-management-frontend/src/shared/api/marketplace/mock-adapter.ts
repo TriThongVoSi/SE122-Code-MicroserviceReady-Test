@@ -58,6 +58,7 @@ type LotRef = {
   harvestedAt: string;
   unit: string;
   availableQuantity: number;
+  initialQuantity: number | null;
   productName: string;
   productVariant: string | null;
 };
@@ -228,6 +229,7 @@ export function createMarketplaceMockAdapter(
         harvestedAt: "2026-03-10",
         unit: "kg",
         availableQuantity: 280,
+        initialQuantity: 280,
         productName: "Cherry Tomato",
         productVariant: "Greenhouse",
       },
@@ -244,6 +246,7 @@ export function createMarketplaceMockAdapter(
         harvestedAt: "2026-02-28",
         unit: "kg",
         availableQuantity: 900,
+        initialQuantity: 900,
         productName: "Premium Rice",
         productVariant: "5kg bag",
       },
@@ -260,6 +263,7 @@ export function createMarketplaceMockAdapter(
         harvestedAt: "2026-03-12",
         unit: "kg",
         availableQuantity: 320,
+        initialQuantity: 320,
         productName: "Durian Ri6",
         productVariant: null,
       },
@@ -276,6 +280,7 @@ export function createMarketplaceMockAdapter(
         harvestedAt: "2026-04-12",
         unit: "kg",
         availableQuantity: 120,
+        initialQuantity: 120,
         productName: "Mango",
         productVariant: "Cat Chu",
       },

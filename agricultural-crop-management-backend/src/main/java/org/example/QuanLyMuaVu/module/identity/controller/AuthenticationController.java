@@ -180,7 +180,7 @@ public class AuthenticationController {
                 return ApiResponse.success(result);
         }
 
-        @PreAuthorize("hasAnyRole('BUYER','FARMER','EMPLOYEE')")
+        @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
         @PostMapping("/sign-out")
         @Operation(summary = "Sign out user", description = "Invalidate current JWT token")
         @ApiResponses(value = {

@@ -1,4 +1,19 @@
-# Sensitive environment variables and API keys
+# =========================
+# OS / Editor files
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# =========================
+# Environment files (secrets)
+# =========================
 .env
 .env.*
 *.env
@@ -10,7 +25,9 @@
 !.env.sample
 !.env.*.sample
 
-# Secret and credential files
+# =========================
+# Secret / credential files
+# =========================
 *.secret
 *.secrets
 secret.*
@@ -20,11 +37,42 @@ credentials.*
 service-account*.json
 firebase-adminsdk*.json
 google-credentials*.json
-
-# Private key and certificate bundles
 *.pem
 *.key
 *.p12
 *.pfx
 *.jks
 *.keystore
+
+# =========================
+# Logs and runtime artifacts
+# =========================
+*.log
+logs/
+*.pid
+*.pid.lock
+*.seed
+
+# =========================
+# Dependencies / package managers
+# =========================
+**/node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+# =========================
+# Common build / cache artifacts
+# =========================
+**/target/
+**/build/
+**/dist/
+**/out/
+**/coverage/
+**/.cache/
+**/.parcel-cache/
+**/.next/
+**/.nuxt/
+**/storybook-static/
+**/*.tsbuildinfo

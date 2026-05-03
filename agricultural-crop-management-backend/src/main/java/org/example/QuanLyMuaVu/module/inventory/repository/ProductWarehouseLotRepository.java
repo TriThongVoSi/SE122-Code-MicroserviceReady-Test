@@ -64,6 +64,10 @@ public interface ProductWarehouseLotRepository extends JpaRepository<ProductWare
     @Query("SELECT l FROM ProductWarehouseLot l WHERE l.id IN :ids")
     List<ProductWarehouseLot> findAllByIdInForUpdate(@Param("ids") Collection<Integer> ids);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM ProductWarehouseLot l WHERE l.id = :id")
+    Optional<ProductWarehouseLot> findByIdForUpdate(@Param("id") Integer id);
+
     @Query("""
             select l from ProductWarehouseLot l
             where l.farm.id = :farmId

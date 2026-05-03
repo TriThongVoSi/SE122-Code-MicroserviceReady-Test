@@ -28,6 +28,7 @@ import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.service.MarketplaceService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -109,6 +110,13 @@ public class MarketplaceController {
         return ApiResponse.success(marketplaceService.updateCartItem(productId, request));
     }
 
+    @PatchMapping("/cart/items/{productId}")
+    public ApiResponse<MarketplaceCartResponse> patchCartItem(
+            @PathVariable Long productId,
+            @Valid @RequestBody MarketplaceUpdateCartItemRequest request) {
+        return ApiResponse.success(marketplaceService.updateCartItem(productId, request));
+    }
+
     @DeleteMapping("/cart/items/{productId}")
     public ApiResponse<MarketplaceCartResponse> removeCartItem(@PathVariable Long productId) {
         return ApiResponse.success(marketplaceService.removeCartItem(productId));
@@ -117,6 +125,11 @@ public class MarketplaceController {
     @PostMapping("/cart/merge")
     public ApiResponse<MarketplaceCartResponse> mergeCart(@Valid @RequestBody MarketplaceMergeCartRequest request) {
         return ApiResponse.success(marketplaceService.mergeCart(request));
+    }
+
+    @DeleteMapping("/cart")
+    public ApiResponse<MarketplaceCartResponse> clearCart() {
+        return ApiResponse.success(marketplaceService.clearCart());
     }
 
     @PostMapping("/orders")

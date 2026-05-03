@@ -347,6 +347,8 @@ export function SeasonWorkspaceLayout() {
           : 50;
 
   const harvestWorkflowLabel = getHarvestWorkflowLabel(harvestProgressPercent);
+  const reportButtonLabel =
+    harvestProgressPercent >= 100 ? "Xem báo cáo tổng kết mùa vụ" : "Xem báo cáo tạm tính";
   const isWorkspaceProcessing =
     createTaskMutation.isPending
     || createFieldLogMutation.isPending
@@ -611,6 +613,14 @@ export function SeasonWorkspaceLayout() {
                 <Wheat className="w-4 h-4 mr-2" />
                 Thu hoạch
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/farmer/seasons/${seasonIdNumber}/workspace/reports`)}
+                className={workspaceActionButtonClass}
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                {reportButtonLabel}
+              </Button>
             </div>
           </div>
 
@@ -671,7 +681,7 @@ export function SeasonWorkspaceLayout() {
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        {WORKSPACE_MODULE_TABS.filter((tab) => tab.path !== "reports" || harvestProgressPercent >= 100).map((tab) => (
+        {WORKSPACE_MODULE_TABS.map((tab) => (
           <NavLink
             key={tab.key}
             to={`/farmer/seasons/${seasonIdNumber}/workspace/${tab.path}`}

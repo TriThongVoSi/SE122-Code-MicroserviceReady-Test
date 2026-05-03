@@ -47,6 +47,15 @@ const resolveViewFromPath = (pathname: string): FarmerView => {
     return 'seasons';
   }
 
+  if (
+    pathParts[1] === 'marketplace-workspace' ||
+    pathParts[1] === 'marketplace-dashboard' ||
+    pathParts[1] === 'marketplace-products' ||
+    pathParts[1] === 'marketplace-orders'
+  ) {
+    return 'marketplace-workspace';
+  }
+
   return (pathParts[1] as FarmerView) ?? 'dashboard';
 };
 
@@ -114,9 +123,10 @@ export function useFarmerPortalShell(): UseFarmerPortalShellReturn {
     'labor-management': t('nav.laborManagement'),
     inventory: t('nav.inventory'),
     'product-warehouse': t('nav.productWarehouse'),
+    'marketplace-workspace': t('nav.marketplace', { defaultValue: 'Marketplace Workspace' }),
     'marketplace-dashboard': t('nav.marketplace', { defaultValue: 'Marketplace' }),
-    'marketplace-products': t('nav.marketplace', { defaultValue: 'Marketplace Products' }),
-    'marketplace-orders': t('nav.orders', { defaultValue: 'Marketplace Orders' }),
+    'marketplace-products': t('nav.marketplace', { defaultValue: 'Marketplace' }),
+    'marketplace-orders': t('nav.marketplace', { defaultValue: 'Marketplace' }),
     documents: t('nav.documents'),
     incidents: t('nav.incidents'),
     'ai-assistant': t('nav.aiAssistant'),
@@ -161,6 +171,16 @@ export function useFarmerPortalShell(): UseFarmerPortalShellReturn {
   const handleViewChange = (view: string): void => {
     if (view.startsWith('/')) {
       navigate(view);
+      return;
+    }
+
+    if (view === 'chat') {
+      navigate('/chat');
+      return;
+    }
+
+    if (view === 'marketplace-workspace') {
+      navigate('/farmer/marketplace-dashboard');
       return;
     }
 

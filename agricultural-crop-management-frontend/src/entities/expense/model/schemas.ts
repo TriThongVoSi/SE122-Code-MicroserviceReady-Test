@@ -40,7 +40,22 @@ export const ExpenseListParamsSchema = z.object({
   size: z.number().int().min(1).default(20),
 });
 
-export type ExpenseListParams = z.infer<typeof ExpenseListParamsSchema>;
+export type ExpenseListParams = {
+  seasonId?: number;
+  plotId?: number;
+  cropId?: number;
+  taskId?: number;
+  vendorId?: number;
+  category?: string;
+  paymentStatus?: PaymentStatus;
+  fromDate?: string;
+  toDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  q?: string;
+  page?: number;
+  size?: number;
+};
 
 // ═══════════════════════════════════════════════════════════════
 // EXPENSE RESPONSE (BR177/BR178 compliant)
