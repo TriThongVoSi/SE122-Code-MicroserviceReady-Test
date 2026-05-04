@@ -55,6 +55,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateO
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateReviewRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceFarmerProductUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceMergeCartRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceRejectPaymentProofRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateOrderStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdatePaymentVerificationRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateProductStatusRequest;
@@ -76,6 +77,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderA
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderItemResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPaymentResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPreviewResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplacePaymentProofResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductSummaryResponse;
@@ -716,8 +718,8 @@ public class MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
 
         if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER
-                || order.getStatus() == MarketplaceOrderStatus.CANCELLED
-                || order.getStatus() == MarketplaceOrderStatus.REJECTED) {
+                || (order.getStatus() != MarketplaceOrderStatus.PENDING_PAYMENT
+                        && order.getStatus() != MarketplaceOrderStatus.PAYMENT_SUBMITTED)) {
             throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_NOT_ALLOWED);
         }
         if (file == null || file.isEmpty() || normalizeNullable(file.getOriginalFilename()) == null) {
@@ -779,6 +781,119 @@ public class MarketplaceService {
                     "/farmer/marketplace-orders/" + savedOrder.getId());
         }
         return toOrderResponse(savedOrder);
+    }
+
+    @Transactional(readOnly = true)
+    public MarketplacePaymentProofResponse getPaymentProof(Long orderId) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        return toPaymentProofResponse(order);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MarketplacePaymentProofResponse> listAdminPaymentProofs(int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.ASC, "paymentProofUploadedAt"));
+        Page<MarketplaceOrder> orderPage = marketplaceOrderRepository.findByPaymentVerificationStatus(
+                MarketplacePaymentVerificationStatus.SUBMITTED, pageable);
+        List<MarketplacePaymentProofResponse> items = orderPage.getContent().stream()
+                .map(this::toPaymentProofResponse)
+                .toList();
+        return PageResponse.of(orderPage, items);
+    }
+
+    @Transactional
+    public MarketplacePaymentProofResponse verifyAdminPaymentProof(Long orderId) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        if (order.getPaymentVerificationStatus() != MarketplacePaymentVerificationStatus.SUBMITTED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+
+        User admin = currentUserService.getCurrentUser();
+        order.setPaymentVerificationStatus(MarketplacePaymentVerificationStatus.VERIFIED);
+        order.setPaymentVerifiedAt(LocalDateTime.now());
+        order.setPaymentVerifiedByUserId(admin.getId());
+        order.setPaymentVerificationNote(null);
+
+        // Auto-advance order status to PAYMENT_VERIFIED
+        if (order.getStatus() == MarketplaceOrderStatus.PAYMENT_SUBMITTED) {
+            order.setStatus(MarketplaceOrderStatus.PAYMENT_VERIFIED);
+        }
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "PAYMENT_VERIFIED", "Admin verified payment proof");
+
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Payment verified",
+                    "Payment for order " + saved.getOrderCode() + " has been verified.",
+                    "/marketplace/orders/" + saved.getId());
+        }
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Payment verified",
+                    "Payment for order " + saved.getOrderCode() + " has been verified.",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toPaymentProofResponse(saved);
+    }
+
+    @Transactional
+    public MarketplacePaymentProofResponse rejectAdminPaymentProof(
+            Long orderId,
+            MarketplaceRejectPaymentProofRequest request) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        if (order.getPaymentVerificationStatus() != MarketplacePaymentVerificationStatus.SUBMITTED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        String reason = normalizeNullable(request.reason());
+        if (reason == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        User admin = currentUserService.getCurrentUser();
+        order.setPaymentVerificationStatus(MarketplacePaymentVerificationStatus.REJECTED);
+        order.setPaymentVerifiedAt(LocalDateTime.now());
+        order.setPaymentVerifiedByUserId(admin.getId());
+        order.setPaymentVerificationNote(reason);
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "PAYMENT_REJECTED", "Admin rejected payment proof: " + reason);
+
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Payment rejected",
+                    "Payment for order " + saved.getOrderCode() + " was rejected. Reason: " + reason,
+                    "/marketplace/orders/" + saved.getId());
+        }
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Payment rejected",
+                    "Payment for order " + saved.getOrderCode() + " was rejected.",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toPaymentProofResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -2019,6 +2134,21 @@ public class MarketplaceService {
                 order.getPaymentVerifiedAt(),
                 order.getPaymentVerifiedByUserId(),
                 order.getPaymentVerificationNote());
+    }
+
+    private MarketplacePaymentProofResponse toPaymentProofResponse(MarketplaceOrder order) {
+        return new MarketplacePaymentProofResponse(
+                order.getId(),
+                order.getOrderCode(),
+                order.getBuyerUser() == null ? null : order.getBuyerUser().getId(),
+                order.getPaymentProofFileName(),
+                order.getPaymentProofContentType(),
+                order.getPaymentProofStoragePath(),
+                order.getPaymentProofUploadedAt(),
+                order.getPaymentVerificationStatus(),
+                order.getPaymentVerificationNote(),
+                order.getPaymentVerifiedAt(),
+                order.getPaymentVerifiedByUserId());
     }
 
     private MarketplaceAddressResponse toAddressResponse(MarketplaceAddress address) {
