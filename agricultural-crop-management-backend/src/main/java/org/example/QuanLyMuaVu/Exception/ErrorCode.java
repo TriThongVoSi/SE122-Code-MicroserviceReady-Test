@@ -201,6 +201,8 @@ public enum ErrorCode {
                         HttpStatus.NOT_FOUND),
         MARKETPLACE_ADDRESS_REQUIRED("ERR_MARKETPLACE_ADDRESS_REQUIRED",
                         "Marketplace shipping address is required", HttpStatus.BAD_REQUEST),
+        MARKETPLACE_ADDRESS_PHONE_INVALID("ERR_MARKETPLACE_ADDRESS_PHONE_INVALID",
+                        "Phone must be a valid Vietnamese mobile number", HttpStatus.BAD_REQUEST),
         MARKETPLACE_REVIEW_NOT_ALLOWED("ERR_MARKETPLACE_REVIEW_NOT_ALLOWED",
                         "Marketplace review is not allowed for this order state", HttpStatus.CONFLICT),
         MARKETPLACE_REVIEW_ALREADY_EXISTS("ERR_MARKETPLACE_REVIEW_ALREADY_EXISTS",

@@ -784,7 +784,7 @@ public class MarketplaceService {
     @Transactional(readOnly = true)
     public List<MarketplaceAddressResponse> listAddresses() {
         Long userId = currentUserService.getCurrentUserId();
-        return marketplaceAddressRepository.findAllByUser_IdOrderByIsDefaultDescIdDesc(userId).stream()
+        return marketplaceAddressRepository.findAllByUser_IdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(userId).stream()
                 .map(this::toAddressResponse)
                 .toList();
     }
@@ -792,7 +792,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceAddressResponse createAddress(MarketplaceAddressUpsertRequest request) {
         User user = currentUserService.getCurrentUser();
-        boolean shouldSetDefault = Boolean.TRUE.equals(request.isDefault()) || !marketplaceAddressRepository.existsByUser_Id(user.getId());
+        boolean shouldSetDefault = Boolean.TRUE.equals(request.isDefault()) || !marketplaceAddressRepository.existsByUser_IdAndDeletedAtIsNull(user.getId());
         if (shouldSetDefault) {
             marketplaceAddressRepository.clearDefaultByUserId(user.getId());
         }
@@ -816,7 +816,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceAddressResponse updateAddress(Long addressId, MarketplaceAddressUpsertRequest request) {
         Long userId = currentUserService.getCurrentUserId();
-        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_Id(addressId, userId)
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.isDefault())) {
@@ -839,20 +839,34 @@ public class MarketplaceService {
     @Transactional
     public void deleteAddress(Long addressId) {
         Long userId = currentUserService.getCurrentUserId();
-        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_Id(addressId, userId)
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
 
         boolean wasDefault = Boolean.TRUE.equals(address.getIsDefault());
-        marketplaceAddressRepository.delete(address);
+        address.setIsDefault(false);
+        address.setDeletedAt(LocalDateTime.now());
+        marketplaceAddressRepository.save(address);
 
         if (wasDefault) {
-            List<MarketplaceAddress> remaining = marketplaceAddressRepository.findAllByUser_IdOrderByIsDefaultDescIdDesc(userId);
+            List<MarketplaceAddress> remaining = marketplaceAddressRepository.findAllByUser_IdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(userId);
             if (!remaining.isEmpty()) {
                 MarketplaceAddress first = remaining.getFirst();
                 first.setIsDefault(true);
                 marketplaceAddressRepository.save(first);
             }
         }
+    }
+
+    @Transactional
+    public MarketplaceAddressResponse setDefaultAddress(Long addressId) {
+        Long userId = currentUserService.getCurrentUserId();
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
+
+        marketplaceAddressRepository.clearDefaultByUserId(userId);
+        address.setIsDefault(true);
+
+        return toAddressResponse(marketplaceAddressRepository.save(address));
     }
 
     @Transactional
@@ -1386,10 +1400,10 @@ public class MarketplaceService {
     private ShippingSnapshot resolveShippingSnapshot(Long userId, MarketplaceCreateOrderRequest request) {
         MarketplaceAddress selectedAddress = null;
         if (request.addressId() != null) {
-            selectedAddress = marketplaceAddressRepository.findByIdAndUser_Id(request.addressId(), userId)
+            selectedAddress = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(request.addressId(), userId)
                     .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
         } else {
-            selectedAddress = marketplaceAddressRepository.findFirstByUser_IdAndIsDefaultTrueOrderByIdDesc(userId)
+            selectedAddress = marketplaceAddressRepository.findFirstByUser_IdAndIsDefaultTrueAndDeletedAtIsNullOrderByIdDesc(userId)
                     .orElse(null);
         }
 

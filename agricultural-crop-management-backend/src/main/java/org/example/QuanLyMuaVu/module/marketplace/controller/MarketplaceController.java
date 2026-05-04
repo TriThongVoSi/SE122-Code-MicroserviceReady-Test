@@ -187,11 +187,16 @@ public class MarketplaceController {
         return ApiResponse.success(marketplaceService.createAddress(request));
     }
 
-    @PutMapping("/addresses/{addressId}")
+    @PatchMapping("/addresses/{addressId}")
     public ApiResponse<MarketplaceAddressResponse> updateAddress(
             @PathVariable Long addressId,
             @Valid @RequestBody MarketplaceAddressUpsertRequest request) {
         return ApiResponse.success(marketplaceService.updateAddress(addressId, request));
+    }
+
+    @PatchMapping("/addresses/{addressId}/default")
+    public ApiResponse<MarketplaceAddressResponse> setDefaultAddress(@PathVariable Long addressId) {
+        return ApiResponse.success(marketplaceService.setDefaultAddress(addressId));
     }
 
     @DeleteMapping("/addresses/{addressId}")
