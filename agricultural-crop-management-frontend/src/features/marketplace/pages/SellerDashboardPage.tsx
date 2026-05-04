@@ -11,8 +11,6 @@ import { useMarketplaceFarmerDashboard, useMarketplaceFarmerProducts } from "../
 import { SellerMarketplaceTabs } from "../layout";
 import { formatDateTime, formatVnd } from "../lib/format";
 
-const LOW_STOCK_THRESHOLD = 20;
-
 function MetricCard({
   icon: Icon,
   label,
@@ -90,9 +88,10 @@ export function SellerDashboardPage() {
   }
 
   const dashboard = dashboardQuery.data;
-  const lowStockProducts = (productsQuery.data?.items ?? [])
-    .filter((product) => product.availableQuantity <= LOW_STOCK_THRESHOLD)
-    .sort((left, right) => left.availableQuantity - right.availableQuantity)
+
+  const topProducts = (productsQuery.data?.items ?? [])
+    .slice()
+    .sort((left, right) => right.availableQuantity - left.availableQuantity)
     .slice(0, 5);
 
   return (
@@ -192,15 +191,15 @@ export function SellerDashboardPage() {
         <Card className="overflow-hidden border-gray-200 shadow-sm">
           <CardHeader className="border-b border-gray-100">
             <div className="flex items-center justify-between gap-3">
-              <CardTitle>Low stock products</CardTitle>
+              <CardTitle>Top products</CardTitle>
               <Link to="/farmer/marketplace-products" className="text-sm font-medium text-emerald-600 hover:underline">
                 Manage products
               </Link>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 p-6">
-            {lowStockProducts.length > 0 ? (
-              lowStockProducts.map((product) => (
+            {topProducts.length > 0 ? (
+              topProducts.map((product) => (
                 <div key={product.id} className="flex items-center gap-4 rounded-xl border border-gray-200 p-4">
                   <div className="h-14 w-14 overflow-hidden rounded-lg bg-gray-100">
                     <img
@@ -216,7 +215,7 @@ export function SellerDashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs uppercase tracking-wide text-gray-400">Available</p>
-                    <p className="font-semibold text-red-500">
+                    <p className="font-semibold text-emerald-600">
                       {product.availableQuantity} {product.unit}
                     </p>
                   </div>
@@ -224,7 +223,7 @@ export function SellerDashboardPage() {
               ))
             ) : (
               <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
-                No low-stock warnings right now.
+                No published products yet.
               </div>
             )}
           </CardContent>

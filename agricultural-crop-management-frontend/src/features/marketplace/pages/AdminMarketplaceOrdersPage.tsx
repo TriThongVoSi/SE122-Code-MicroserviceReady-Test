@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import type { MarketplaceOrderStatus } from "@/shared/api";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 import {
   useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
@@ -10,6 +11,7 @@ import {
   useMarketplaceUpdateAdminOrderStatusMutation,
 } from "../hooks";
 import { formatDateTime, formatVnd } from "../lib/format";
+import { RejectWithReasonModal, PaginationControls } from "../components";
 
 const statusFilters: Array<{ value: "ALL" | MarketplaceOrderStatus; label: string }> = [
   { value: "ALL", label: "All" },
@@ -46,20 +48,74 @@ function paymentStatusLabel(status: string) {
 export function AdminMarketplaceOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<"ALL" | MarketplaceOrderStatus>("ALL");
-  const [verificationNote, setVerificationNote] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
+  const [rejectPaymentModalState, setRejectPaymentModalState] = useState<{
+    isOpen: boolean;
+    orderId: number | null;
+  }>({ isOpen: false, orderId: null });
+  const [cancelOrderModalState, setCancelOrderModalState] = useState<{
+    isOpen: boolean;
+    orderId: number | null;
+  }>({ isOpen: false, orderId: null });
 
   const ordersQuery = useMarketplaceAdminOrders({
-    page: 0,
-    size: 100,
+    page,
+    size: pageSize,
     status: status === "ALL" ? undefined : status,
   });
 
   const selectedOrderId = Number(searchParams.get("orderId") ?? 0);
   const selectedOrderQuery = useMarketplaceAdminOrderDetail(selectedOrderId);
-  const selectedOrder = useMemo(() => selectedOrderQuery.data, [selectedOrderQuery.data]);
+  const selectedOrder = selectedOrderQuery.data;
   const auditLogsQuery = useMarketplaceAdminOrderAuditLogs(selectedOrderId);
   const verifyMutation = useMarketplaceUpdateAdminOrderPaymentVerificationMutation(selectedOrderId || 0);
   const cancelMutation = useMarketplaceUpdateAdminOrderStatusMutation(selectedOrderId || 0);
+
+  const openRejectPaymentModal = (orderId: number) => {
+    setRejectPaymentModalState({ isOpen: true, orderId });
+  };
+
+  const closeRejectPaymentModal = () => {
+    setRejectPaymentModalState({ isOpen: false, orderId: null });
+  };
+
+  const handleRejectPaymentConfirm = async (reason: string) => {
+    if (!rejectPaymentModalState.orderId) return;
+
+    try {
+      await verifyMutation.mutateAsync({
+        verificationStatus: "REJECTED",
+        verificationNote: reason,
+      });
+      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+      closeRejectPaymentModal();
+    } catch (error) {
+      toast.error("Failed to reject payment proof. Please try again.");
+      // Keep modal open on error so user can retry
+    }
+  };
+
+  const openCancelOrderModal = (orderId: number) => {
+    setCancelOrderModalState({ isOpen: true, orderId });
+  };
+
+  const closeCancelOrderModal = () => {
+    setCancelOrderModalState({ isOpen: false, orderId: null });
+  };
+
+  const handleCancelOrderConfirm = async (reason: string) => {
+    if (!cancelOrderModalState.orderId) return;
+
+    try {
+      await cancelMutation.mutateAsync({ status: "CANCELLED", reason });
+      await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+      closeCancelOrderModal();
+    } catch (error) {
+      toast.error("Failed to cancel order. Please try again.");
+      // Keep modal open on error so user can retry
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -67,7 +123,7 @@ export function AdminMarketplaceOrdersPage() {
         <p className="text-sm font-medium text-emerald-600">FarmTrace Admin</p>
         <h1 className="mt-1 text-3xl font-bold text-gray-900">Manage marketplace orders</h1>
         <p className="mt-2 max-w-2xl text-sm text-gray-500">
-          Keep the live order verification controls, but return the screen to a simpler card-and-list structure.
+          Review and manage marketplace orders, verify payment proofs, and track order status changes.
         </p>
       </div>
 
@@ -78,7 +134,10 @@ export function AdminMarketplaceOrdersPage() {
             type="button"
             variant={status === option.value ? "default" : "outline"}
             size="sm"
-            onClick={() => setStatus(option.value)}
+            onClick={() => {
+              setStatus(option.value);
+              setPage(0);
+            }}
             className="rounded-full"
           >
             {option.label}
@@ -166,21 +225,20 @@ export function AdminMarketplaceOrdersPage() {
                 ) : null}
 
                 <div className="rounded-xl border border-gray-200 p-4">
-                  <p className="mb-3 text-sm font-medium text-gray-900">Verification note</p>
-                  <Input
-                    value={verificationNote}
-                    onChange={(event) => setVerificationNote(event.target.value)}
-                    placeholder="Add a note for the buyer"
-                  />
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <p className="mb-3 text-sm font-medium text-gray-900">Payment verification</p>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       disabled={verifyMutation.isPending}
                       onClick={async () => {
-                        await verifyMutation.mutateAsync({
-                          verificationStatus: "VERIFIED",
-                          verificationNote,
-                        });
-                        await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                        try {
+                          await verifyMutation.mutateAsync({
+                            verificationStatus: "VERIFIED",
+                            verificationNote: "",
+                          });
+                          await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
+                        } catch (error) {
+                          toast.error("Failed to verify payment. Please try again.");
+                        }
                       }}
                     >
                       Mark verified
@@ -188,13 +246,7 @@ export function AdminMarketplaceOrdersPage() {
                     <Button
                       variant="outline"
                       disabled={verifyMutation.isPending}
-                      onClick={async () => {
-                        await verifyMutation.mutateAsync({
-                          verificationStatus: "REJECTED",
-                          verificationNote,
-                        });
-                        await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-                      }}
+                      onClick={() => openRejectPaymentModal(selectedOrder.id)}
                     >
                       Reject proof
                     </Button>
@@ -202,10 +254,7 @@ export function AdminMarketplaceOrdersPage() {
                       <Button
                         variant="destructive"
                         disabled={cancelMutation.isPending}
-                        onClick={async () => {
-                          await cancelMutation.mutateAsync({ status: "CANCELLED" });
-                          await Promise.all([selectedOrderQuery.refetch(), auditLogsQuery.refetch()]);
-                        }}
+                        onClick={() => openCancelOrderModal(selectedOrder.id)}
                       >
                         Cancel order
                       </Button>
@@ -264,6 +313,42 @@ export function AdminMarketplaceOrdersPage() {
           </Card>
         )}
       </div>
+
+      {ordersQuery.data && (
+        <PaginationControls
+          currentPage={page}
+          totalPages={ordersQuery.data.totalPages}
+          totalElements={ordersQuery.data.totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setPage(0);
+          }}
+        />
+      )}
+
+      <RejectWithReasonModal
+        isOpen={rejectPaymentModalState.isOpen}
+        onClose={closeRejectPaymentModal}
+        onConfirm={handleRejectPaymentConfirm}
+        title="Reject Payment Proof"
+        description="The buyer will be notified and may need to resubmit proof."
+        reasonLabel="Reason for rejection"
+        reasonPlaceholder="Explain why the payment proof is being rejected..."
+        isLoading={verifyMutation.isPending}
+      />
+
+      <RejectWithReasonModal
+        isOpen={cancelOrderModalState.isOpen}
+        onClose={closeCancelOrderModal}
+        onConfirm={handleCancelOrderConfirm}
+        title="Cancel Order"
+        description="This order will be cancelled. The buyer and farmer will be notified."
+        reasonLabel="Reason for cancellation"
+        reasonPlaceholder="Explain why this order is being cancelled..."
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }
