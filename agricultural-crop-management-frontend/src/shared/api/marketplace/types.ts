@@ -3,16 +3,26 @@ import type { MarketplacePage } from "./contracts";
 export type MarketplaceProductStatus =
   | "DRAFT"
   | "PENDING_REVIEW"
+  | "ACTIVE"
+  | "REJECTED"
+  | "INACTIVE"
+  | "SOLD_OUT"
   | "PUBLISHED"
   | "HIDDEN";
 
 export type MarketplaceOrderStatus =
-  | "PENDING"
+  | "PENDING_PAYMENT"
+  | "PAYMENT_SUBMITTED"
+  | "PAYMENT_VERIFIED"
   | "CONFIRMED"
   | "PREPARING"
-  | "DELIVERING"
+  | "SHIPPED"
+  | "DELIVERED"
   | "COMPLETED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "REJECTED"
+  | "PENDING"
+  | "DELIVERING";
 
 export type MarketplacePaymentMethod = "COD" | "BANK_TRANSFER";
 export type MarketplacePaymentVerificationStatus =
@@ -102,11 +112,14 @@ export type MarketplaceReview = {
   id: number;
   productId: number;
   orderId: number;
+  orderItemId: number;
   buyerUserId: number;
   buyerDisplayName: string;
   rating: number;
   comment: string;
+  hidden: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type MarketplaceCartItem = {
@@ -288,8 +301,8 @@ export type MarketplaceAddressUpsertRequest = {
 };
 
 export type MarketplaceCreateReviewRequest = {
-  productId: number;
   orderId: number;
+  orderItemId: number;
   rating: number;
   comment: string;
 };

@@ -165,7 +165,7 @@ describe('OrderDetailPage', () => {
 
     expect(vi.mocked(marketplaceApi.createReview)).toHaveBeenCalledWith({
       orderId: 55,
-      productId: 10,
+      orderItemId: 1,
       rating: 5,
       comment: 'Great product!',
     });
