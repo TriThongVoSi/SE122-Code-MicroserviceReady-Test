@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.math.BigDecimal;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceOrder;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentVerificationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrder, Long> {
+
+    Page<MarketplaceOrder> findByPaymentVerificationStatus(
+            MarketplacePaymentVerificationStatus paymentVerificationStatus, Pageable pageable);
 
     Page<MarketplaceOrder> findByBuyerUser_Id(Long buyerUserId, Pageable pageable);
 

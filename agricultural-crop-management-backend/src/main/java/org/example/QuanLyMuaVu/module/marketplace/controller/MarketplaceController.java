@@ -89,8 +89,26 @@ public class MarketplaceController {
         return ApiResponse.success(marketplaceService.getFarmDetail(farmId));
     }
 
+    @GetMapping("/farms/{farmId}/reviews")
+    public ApiResponse<PageResponse<MarketplaceReviewResponse>> listFarmReviews(
+            @PathVariable Integer farmId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size) {
+        return ApiResponse.success(marketplaceService.listFarmReviews(farmId, page, size));
+    }
+
+    @GetMapping("/products/{productId}/traceability")
+    public ApiResponse<MarketplaceTraceabilityResponse> getProductTraceability(@PathVariable Long productId) {
+        return ApiResponse.success(marketplaceService.getTraceability(productId));
+    }
+
+    /**
+     * @deprecated Use GET /api/v1/marketplace/products/{productId}/traceability instead.
+     * Kept temporarily for backward compatibility.
+     */
+    @Deprecated
     @GetMapping("/traceability/{productId}")
-    public ApiResponse<MarketplaceTraceabilityResponse> getTraceability(@PathVariable Long productId) {
+    public ApiResponse<MarketplaceTraceabilityResponse> getTraceabilityLegacy(@PathVariable Long productId) {
         return ApiResponse.success(marketplaceService.getTraceability(productId));
     }
 
@@ -187,11 +205,16 @@ public class MarketplaceController {
         return ApiResponse.success(marketplaceService.createAddress(request));
     }
 
-    @PutMapping("/addresses/{addressId}")
+    @PatchMapping("/addresses/{addressId}")
     public ApiResponse<MarketplaceAddressResponse> updateAddress(
             @PathVariable Long addressId,
             @Valid @RequestBody MarketplaceAddressUpsertRequest request) {
         return ApiResponse.success(marketplaceService.updateAddress(addressId, request));
+    }
+
+    @PatchMapping("/addresses/{addressId}/default")
+    public ApiResponse<MarketplaceAddressResponse> setDefaultAddress(@PathVariable Long addressId) {
+        return ApiResponse.success(marketplaceService.setDefaultAddress(addressId));
     }
 
     @DeleteMapping("/addresses/{addressId}")
@@ -200,9 +223,14 @@ public class MarketplaceController {
         return ApiResponse.success(null);
     }
 
+    /**
+     * @deprecated Use POST /api/v1/buyer/orders/{orderId}/reviews instead.
+     * Kept temporarily for backward compatibility.
+     */
+    @Deprecated
     @PostMapping("/reviews")
     public ApiResponse<MarketplaceReviewResponse> createReview(
             @Valid @RequestBody MarketplaceCreateReviewRequest request) {
-        return ApiResponse.success(marketplaceService.createReview(request));
+        return ApiResponse.success(marketplaceService.createReviewLegacy(request));
     }
 }

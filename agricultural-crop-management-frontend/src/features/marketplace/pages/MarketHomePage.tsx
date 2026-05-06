@@ -114,7 +114,7 @@ export function MarketHomePage() {
                       referrerPolicy="no-referrer"
                     />
                     <div className="fb-hero-overlay" aria-hidden="true" />
-                    <div className="absolute bottom-6 left-1 right-6 z-10 text-white">
+                    <div className="absolute bottom-6 left-3 right-6 z-10 text-white">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="fb-frosted-pill">Có truy xuất</span>
                         <span className="fb-frosted-pill">Kết nối dữ liệu thật</span>

@@ -30,9 +30,11 @@ import type {
   MarketplaceOrderAuditLog,
   MarketplaceOrderPage,
   MarketplaceOrderQuery,
+  MarketplaceOrderStatus,
   MarketplaceProductDetail,
   MarketplaceProductPage,
   MarketplaceProductQuery,
+  MarketplaceProductStatus,
   MarketplaceReview,
   MarketplaceReviewPage,
   MarketplaceReviewQuery,
@@ -54,11 +56,37 @@ async function requestEnvelope<T>(
   }
 }
 
+function normalizeOrderStatus(status?: MarketplaceOrderStatus): MarketplaceOrderStatus | undefined {
+  if (status === "PENDING") {
+    return "PENDING_PAYMENT";
+  }
+
+  if (status === "DELIVERING") {
+    return "SHIPPED";
+  }
+
+  return status;
+}
+
+function normalizeProductStatus(status?: MarketplaceProductStatus): MarketplaceProductStatus | undefined {
+  if (status === "PUBLISHED") {
+    return "ACTIVE";
+  }
+
+  if (status === "HIDDEN") {
+    return "INACTIVE";
+  }
+
+  return status;
+}
+
 export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
   return {
     listProducts(query?: MarketplaceProductQuery) {
       return requestEnvelope<MarketplaceProductPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/products`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/products`, {
+          params: query,
+        }),
       );
     },
 
@@ -90,7 +118,7 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     getTraceability(productId: number) {
       return requestEnvelope<MarketplaceTraceability>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/traceability/${productId}`),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/products/${productId}/traceability`),
       );
     },
 
@@ -136,7 +164,9 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     listOrders(query?: MarketplaceOrderQuery) {
       return requestEnvelope<MarketplaceOrderPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/orders`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/orders`, {
+          params: { ...query, status: normalizeOrderStatus(query?.status) },
+        }),
       );
     },
 
@@ -178,7 +208,7 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     updateAddress(addressId: number, request: MarketplaceAddressUpsertRequest) {
       return requestEnvelope<MarketplaceAddress>(() =>
-        httpClient.put(`${MARKETPLACE_API_PREFIX}/addresses/${addressId}`, request),
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/addresses/${addressId}`, request),
       );
     },
 
@@ -190,7 +220,11 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     createReview(request: MarketplaceCreateReviewRequest) {
       return requestEnvelope<MarketplaceReview>(() =>
-        httpClient.post(`${MARKETPLACE_API_PREFIX}/reviews`, request),
+        httpClient.post(`/api/v1/buyer/orders/${request.orderId}/reviews`, {
+          orderItemId: request.orderItemId,
+          rating: request.rating,
+          comment: request.comment,
+        }),
       );
     },
 
@@ -202,7 +236,9 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     listFarmerProducts(query?: MarketplaceFarmerProductQuery) {
       return requestEnvelope<MarketplaceProductPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/products`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/products`, {
+          params: { ...query, status: normalizeProductStatus(query?.status) },
+        }),
       );
     },
 
@@ -232,13 +268,18 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     updateFarmerProductStatus(productId: number, request: MarketplaceUpdateProductStatusRequest) {
       return requestEnvelope<MarketplaceProductDetail>(() =>
-        httpClient.patch(`${MARKETPLACE_API_PREFIX}/farmer/products/${productId}/status`, request),
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/farmer/products/${productId}/status`, {
+          ...request,
+          status: normalizeProductStatus(request.status),
+        }),
       );
     },
 
     listFarmerOrders(query?: MarketplaceFarmerOrderQuery) {
       return requestEnvelope<MarketplaceOrderPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/orders`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/farmer/orders`, {
+          params: { ...query, status: normalizeOrderStatus(query?.status) },
+        }),
       );
     },
 
@@ -250,25 +291,35 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     updateFarmerOrderStatus(orderId: number, request: MarketplaceUpdateOrderStatusRequest) {
       return requestEnvelope<MarketplaceOrder>(() =>
-        httpClient.patch(`${MARKETPLACE_API_PREFIX}/farmer/orders/${orderId}/status`, request),
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/farmer/orders/${orderId}/status`, {
+          ...request,
+          status: normalizeOrderStatus(request.status),
+        }),
       );
     },
 
     listAdminProducts(query?: MarketplaceAdminProductQuery) {
       return requestEnvelope<MarketplaceProductPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/products`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/products`, {
+          params: { ...query, status: normalizeProductStatus(query?.status) },
+        }),
       );
     },
 
     updateAdminProductStatus(productId: number, request: MarketplaceUpdateProductStatusRequest) {
       return requestEnvelope<MarketplaceProductDetail>(() =>
-        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/products/${productId}/status`, request),
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/products/${productId}/status`, {
+          ...request,
+          status: normalizeProductStatus(request.status),
+        }),
       );
     },
 
     listAdminOrders(query?: MarketplaceAdminOrderQuery) {
       return requestEnvelope<MarketplaceOrderPage>(() =>
-        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/orders`, { params: query }),
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/orders`, {
+          params: { ...query, status: normalizeOrderStatus(query?.status) },
+        }),
       );
     },
 
@@ -286,7 +337,10 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
 
     updateAdminOrderStatus(orderId: number, request: MarketplaceUpdateOrderStatusRequest) {
       return requestEnvelope<MarketplaceOrder>(() =>
-        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}/status`, request),
+        httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/orders/${orderId}/status`, {
+          ...request,
+          status: normalizeOrderStatus(request.status),
+        }),
       );
     },
 

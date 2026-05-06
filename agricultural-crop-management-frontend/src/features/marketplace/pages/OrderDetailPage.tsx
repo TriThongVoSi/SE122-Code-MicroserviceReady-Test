@@ -52,7 +52,7 @@ function StarInput({
 function statusVariant(status: string) {
   if (status === "COMPLETED") return "success" as const;
   if (status === "CANCELLED") return "destructive" as const;
-  if (status === "PENDING") return "warning" as const;
+  if (status === "PENDING_PAYMENT" || status === "PENDING") return "warning" as const;
   return "secondary" as const;
 }
 
@@ -181,7 +181,7 @@ export function OrderDetailPage() {
                               try {
                                 await reviewMutation.mutateAsync({
                                   orderId: order.id,
-                                  productId: item.productId,
+                                  orderItemId: item.id,
                                   rating: draft.rating,
                                   comment: draft.comment,
                                 });

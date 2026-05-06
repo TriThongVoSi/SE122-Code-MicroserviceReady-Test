@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>org.example</groupId>
-    <artifactId>Season-Management-Platform-with-Virtual-Assistant</artifactId>
+    <artifactId>back_end</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>QuanLyMuaVu</name>
     <description>Summer</description>

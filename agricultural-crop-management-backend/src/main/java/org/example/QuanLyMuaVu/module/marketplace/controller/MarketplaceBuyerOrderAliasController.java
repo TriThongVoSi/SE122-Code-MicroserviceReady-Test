@@ -10,6 +10,8 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateO
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceCreateOrderResultResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPreviewResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplacePaymentProofResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceTraceabilityResponse;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.service.MarketplaceService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * URL alias controller for buyer order endpoints.
@@ -70,4 +73,24 @@ public class MarketplaceBuyerOrderAliasController {
     public ApiResponse<MarketplaceOrderResponse> cancelOrderPost(@PathVariable Long orderId) {
         return ApiResponse.success(marketplaceService.cancelOrder(orderId));
     }
+
+    @PostMapping("/{orderId}/payment-proof")
+    public ApiResponse<MarketplaceOrderResponse> uploadPaymentProof(
+            @PathVariable Long orderId,
+            @RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(marketplaceService.uploadPaymentProof(orderId, file));
+    }
+
+    @GetMapping("/{orderId}/payment-proof")
+    public ApiResponse<MarketplacePaymentProofResponse> getPaymentProof(@PathVariable Long orderId) {
+        return ApiResponse.success(marketplaceService.getPaymentProof(orderId));
+    }
+
+    @GetMapping("/{orderId}/items/{itemId}/traceability")
+    public ApiResponse<MarketplaceTraceabilityResponse> getOrderItemTraceability(
+            @PathVariable Long orderId,
+            @PathVariable Long itemId) {
+        return ApiResponse.success(marketplaceService.getOrderItemTraceability(orderId, itemId));
+    }
 }
+

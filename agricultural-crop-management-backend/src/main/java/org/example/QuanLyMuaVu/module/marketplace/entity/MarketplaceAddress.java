@@ -71,6 +71,9 @@ public class MarketplaceAddress {
     @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt;
 
+    @Column(name = "deleted_at")
+    LocalDateTime deletedAt;
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();

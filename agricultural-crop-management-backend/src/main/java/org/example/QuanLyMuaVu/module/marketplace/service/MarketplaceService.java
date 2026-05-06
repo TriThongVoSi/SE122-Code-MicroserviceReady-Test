@@ -53,8 +53,10 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceAddCart
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceAddressUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateOrderRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceCreateReviewRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateReviewRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceFarmerProductUpsertRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceMergeCartRequest;
+import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceRejectPaymentProofRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateOrderStatusRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdatePaymentVerificationRequest;
 import org.example.QuanLyMuaVu.module.marketplace.dto.request.MarketplaceUpdateProductStatusRequest;
@@ -76,6 +78,7 @@ import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderA
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderItemResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPaymentResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderPreviewResponse;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplacePaymentProofResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceOrderResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductDetailResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductSummaryResponse;
@@ -97,6 +100,7 @@ import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceAddressR
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceCartItemRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceCartRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceOrderGroupRepository;
+import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceOrderItemRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceOrderRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceProductRepository;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceProductReviewRepository;
@@ -127,6 +131,7 @@ public class MarketplaceService {
     MarketplaceCartRepository marketplaceCartRepository;
     MarketplaceCartItemRepository marketplaceCartItemRepository;
     MarketplaceOrderGroupRepository marketplaceOrderGroupRepository;
+    MarketplaceOrderItemRepository marketplaceOrderItemRepository;
     MarketplaceOrderRepository marketplaceOrderRepository;
     MarketplaceAddressRepository marketplaceAddressRepository;
     MarketplaceProductReviewRepository marketplaceProductReviewRepository;
@@ -192,12 +197,185 @@ public class MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
 
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<MarketplaceProductReview> reviewPage = marketplaceProductReviewRepository.findByProductId(productId, pageable);
+        Page<MarketplaceProductReview> reviewPage = marketplaceProductReviewRepository.findVisibleByProductId(productId, pageable);
         List<MarketplaceReviewResponse> items = reviewPage.getContent().stream()
                 .map(this::toReviewResponse)
                 .toList();
 
         return PageResponse.of(reviewPage, items);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MarketplaceReviewResponse> listFarmReviews(Integer farmId, int page, int size) {
+        farmRepository.findById(farmId).orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+        Page<MarketplaceProductReview> reviewPage = marketplaceProductReviewRepository.findVisibleByFarmId(farmId, pageable);
+        List<MarketplaceReviewResponse> items = reviewPage.getContent().stream()
+                .map(this::toReviewResponse)
+                .toList();
+
+        return PageResponse.of(reviewPage, items);
+    }
+
+    // ─────────────── Review CRUD (Buyer) ───────────────
+
+    @Transactional
+    public MarketplaceReviewResponse createReview(Long orderId, MarketplaceCreateReviewRequest request) {
+        User buyer = currentUserService.getCurrentUser();
+        Long buyerUserId = buyer.getId();
+
+        // 1. Validate order exists and belongs to buyer
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+
+        // 2. Validate order is COMPLETED
+        if (order.getStatus() != MarketplaceOrderStatus.COMPLETED) {
+            throw new AppException(ErrorCode.MARKETPLACE_REVIEW_ORDER_NOT_COMPLETED);
+        }
+
+        // 3. Validate orderItem belongs to this order
+        MarketplaceOrderItem orderItem = marketplaceOrderItemRepository.findByIdAndOrder_Id(request.orderItemId(), orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_ITEM_NOT_IN_ORDER));
+
+        // 4. Validate no duplicate review
+        if (marketplaceProductReviewRepository.existsByOrderItem_IdAndBuyerUser_Id(orderItem.getId(), buyerUserId)) {
+            throw new AppException(ErrorCode.MARKETPLACE_REVIEW_ALREADY_EXISTS);
+        }
+
+        // 5. Validate rating range (belt-and-suspenders, DTO already validates)
+        if (request.rating() < 1 || request.rating() > 5) {
+            throw new AppException(ErrorCode.MARKETPLACE_INVALID_RATING);
+        }
+
+        MarketplaceProduct product = orderItem.getProduct();
+
+        MarketplaceProductReview review = MarketplaceProductReview.builder()
+                .product(product)
+                .order(order)
+                .orderItem(orderItem)
+                .buyerUser(buyer)
+                .rating(request.rating())
+                .comment(normalizeNullable(request.comment()))
+                .hidden(false)
+                .build();
+
+        review = marketplaceProductReviewRepository.save(review);
+
+        // Recalculate denormalized ratings
+        recalculateProductRating(product.getId());
+        if (product.getFarm() != null) {
+            recalculateFarmRating(product.getFarm().getId());
+        }
+
+        return toReviewResponse(review);
+    }
+
+    /**
+     * Deprecated-compatible create review — called from the old POST /marketplace/reviews endpoint.
+     * Requires productId and orderId in the request body instead of orderId as path variable.
+     */
+    @Transactional
+    public MarketplaceReviewResponse createReviewLegacy(MarketplaceCreateReviewRequest request) {
+        // For legacy endpoint, orderItemId is still used.
+        // We need to find the order from the orderItem.
+        MarketplaceOrderItem orderItem = marketplaceOrderItemRepository.findById(request.orderItemId())
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_ITEM_NOT_IN_ORDER));
+        return createReview(orderItem.getOrder().getId(), request);
+    }
+
+    @Transactional
+    public MarketplaceReviewResponse editReview(Long reviewId, MarketplaceUpdateReviewRequest request) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+
+        MarketplaceProductReview review = marketplaceProductReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_FOUND));
+
+        // Ownership check
+        if (!Objects.equals(review.getBuyerUser().getId(), buyerUserId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        boolean ratingChanged = false;
+        if (request.rating() != null) {
+            if (request.rating() < 1 || request.rating() > 5) {
+                throw new AppException(ErrorCode.MARKETPLACE_INVALID_RATING);
+            }
+            if (!Objects.equals(review.getRating(), request.rating())) {
+                review.setRating(request.rating());
+                ratingChanged = true;
+            }
+        }
+        // comment can be set to null (clear) or updated
+        review.setComment(normalizeNullable(request.comment()));
+
+        review = marketplaceProductReviewRepository.save(review);
+
+        if (ratingChanged) {
+            recalculateProductRating(review.getProduct().getId());
+            if (review.getProduct().getFarm() != null) {
+                recalculateFarmRating(review.getProduct().getFarm().getId());
+            }
+        }
+
+        return toReviewResponse(review);
+    }
+
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+
+        MarketplaceProductReview review = marketplaceProductReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_FOUND));
+
+        // Ownership check
+        if (!Objects.equals(review.getBuyerUser().getId(), buyerUserId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        Long productId = review.getProduct().getId();
+        Integer farmId = review.getProduct().getFarm() != null ? review.getProduct().getFarm().getId() : null;
+
+        marketplaceProductReviewRepository.delete(review);
+
+        recalculateProductRating(productId);
+        if (farmId != null) {
+            recalculateFarmRating(farmId);
+        }
+    }
+
+    // ─────────────── Review Admin ───────────────
+
+    @Transactional
+    public MarketplaceReviewResponse adminHideReview(Long reviewId) {
+        MarketplaceProductReview review = marketplaceProductReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_FOUND));
+
+        review.setHidden(true);
+        review = marketplaceProductReviewRepository.save(review);
+
+        recalculateProductRating(review.getProduct().getId());
+        if (review.getProduct().getFarm() != null) {
+            recalculateFarmRating(review.getProduct().getFarm().getId());
+        }
+
+        return toReviewResponse(review);
+    }
+
+    @Transactional
+    public void adminDeleteReview(Long reviewId) {
+        MarketplaceProductReview review = marketplaceProductReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_FOUND));
+
+        Long productId = review.getProduct().getId();
+        Integer farmId = review.getProduct().getFarm() != null ? review.getProduct().getFarm().getId() : null;
+
+        marketplaceProductReviewRepository.delete(review);
+
+        recalculateProductRating(productId);
+        if (farmId != null) {
+            recalculateFarmRating(farmId);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -247,32 +425,220 @@ public class MarketplaceService {
         MarketplaceProduct product = marketplaceProductRepository.findSellableByIdAndStatus(productId, MarketplaceProductStatus.PUBLISHED)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
 
-        validateTraceabilityChain(product);
-
-        Farm farm = product.getFarm();
-        var season = product.getSeason();
-        var lot = product.getLot();
-
-        return new MarketplaceTraceabilityResponse(
+        return buildTraceabilityResponse(
                 product.getId(),
                 Boolean.TRUE.equals(product.getTraceable()),
-                new MarketplaceTraceabilityResponse.FarmTraceability(
-                        farm.getId(),
-                        farm.getName(),
-                        resolveFarmRegion(farm),
-                        resolveFarmAddress(farm)),
-                new MarketplaceTraceabilityResponse.SeasonTraceability(
-                        season.getId(),
-                        season.getSeasonName(),
-                        season.getStartDate(),
-                        season.getPlannedHarvestDate()),
-                new MarketplaceTraceabilityResponse.LotTraceability(
-                        lot.getId(),
-                        lot.getLotCode(),
-                        lot.getHarvestedAt(),
-                        lot.getUnit(),
-                        lot.getInitialQuantity()),
+                product.getFarm(),
+                product.getSeason(),
+                product.getLot(),
+                product.getPublishedAt());
+    }
+
+    @Transactional(readOnly = true)
+    public MarketplaceTraceabilityResponse getOrderItemTraceability(Long orderId, Long itemId) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+
+        MarketplaceOrderItem orderItem = order.getItems().stream()
+                .filter(item -> Objects.equals(item.getId(), itemId))
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_REVIEW_ITEM_NOT_IN_ORDER));
+
+        Long productId = orderItem.getProduct() != null ? orderItem.getProduct().getId() : null;
+        boolean traceable = Boolean.TRUE.equals(orderItem.getTraceableSnapshot());
+
+        // Use snapshotted references from order item (they are captured at order creation time)
+        LocalDateTime publishedAt = orderItem.getProduct() != null
+                ? orderItem.getProduct().getPublishedAt() : null;
+
+        return buildTraceabilityResponse(
+                productId,
+                traceable,
+                orderItem.getFarm(),
+                orderItem.getSeason(),
+                orderItem.getLot(),
+                publishedAt);
+    }
+
+    private MarketplaceTraceabilityResponse buildTraceabilityResponse(
+            Long productId,
+            boolean traceable,
+            Farm farm,
+            Season season,
+            ProductWarehouseLot lot,
+            LocalDateTime publishedAt) {
+
+        // Farm — graceful null fallback
+        MarketplaceTraceabilityResponse.FarmTraceability farmTrace = null;
+        if (farm != null) {
+            farmTrace = new MarketplaceTraceabilityResponse.FarmTraceability(
+                    farm.getId(),
+                    farm.getName(),
+                    resolveFarmRegion(farm),
+                    resolveFarmAddress(farm),
+                    null); // TODO: certificationInfo — pending feature scoping
+        }
+
+        // Plot — navigated via lot.plot (primary source) or season.plot (fallback)
+        MarketplaceTraceabilityResponse.PlotTraceability plotTrace = null;
+        org.example.QuanLyMuaVu.module.farm.entity.Plot plot = null;
+        if (lot != null && lot.getPlot() != null) {
+            plot = lot.getPlot();
+        } else if (season != null && season.getPlot() != null) {
+            plot = season.getPlot();
+        }
+        if (plot != null) {
+            plotTrace = new MarketplaceTraceabilityResponse.PlotTraceability(
+                    plot.getId(),
+                    plot.getPlotName(),
+                    plot.getArea());
+        }
+
+        // Season — includes crop name via season.crop
+        MarketplaceTraceabilityResponse.SeasonTraceability seasonTrace = null;
+        if (season != null) {
+            String cropName = season.getCrop() != null ? season.getCrop().getCropName() : null;
+            String varietyName = season.getVariety() != null ? season.getVariety().getName() : null;
+            seasonTrace = new MarketplaceTraceabilityResponse.SeasonTraceability(
+                    season.getId(),
+                    season.getSeasonName(),
+                    cropName,
+                    varietyName,
+                    season.getStartDate(),
+                    season.getPlannedHarvestDate());
+        }
+
+        // Harvest — from lot.harvest
+        MarketplaceTraceabilityResponse.HarvestTraceability harvestTrace = null;
+        if (lot != null && lot.getHarvest() != null) {
+            var harvest = lot.getHarvest();
+            harvestTrace = new MarketplaceTraceabilityResponse.HarvestTraceability(
+                    harvest.getId(),
+                    harvest.getHarvestDate(),
+                    harvest.getQuantity(),
+                    harvest.getGrade()); // grade as quality notes — never expose internal 'note'
+        }
+
+        // Product lot — lot details + warehouse/storage info
+        MarketplaceTraceabilityResponse.ProductLotTraceability lotTrace = null;
+        if (lot != null) {
+            String warehouseName = lot.getWarehouse() != null ? lot.getWarehouse().getName() : null;
+            String storageLocation = buildStorageLocation(lot.getLocation());
+            lotTrace = new MarketplaceTraceabilityResponse.ProductLotTraceability(
+                    lot.getId(),
+                    lot.getLotCode(),
+                    lot.getHarvestedAt(),
+                    lot.getReceivedAt(),
+                    lot.getUnit(),
+                    lot.getInitialQuantity(),
+                    lot.getGrade(),
+                    warehouseName,
+                    storageLocation);
+        }
+
+        // Timeline milestones — derived from entity state
+        List<MarketplaceTraceabilityResponse.TimelineMilestone> timeline =
+                buildTimelineMilestones(season, lot, publishedAt);
+
+        return new MarketplaceTraceabilityResponse(
+                productId,
+                traceable,
+                farmTrace,
+                plotTrace,
+                seasonTrace,
+                harvestTrace,
+                lotTrace,
+                timeline,
                 LocalDateTime.now());
+    }
+
+    private List<MarketplaceTraceabilityResponse.TimelineMilestone> buildTimelineMilestones(
+            Season season,
+            ProductWarehouseLot lot,
+            LocalDateTime publishedAt) {
+        List<MarketplaceTraceabilityResponse.TimelineMilestone> milestones = new ArrayList<>();
+
+        // PLANTED — season start date
+        if (season != null && season.getStartDate() != null) {
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "PLANTED",
+                    season.getStartDate().atStartOfDay(),
+                    "Crop planted — " + (season.getCrop() != null ? season.getCrop().getCropName() : season.getSeasonName())));
+        }
+
+        // TENDED — season is ACTIVE, COMPLETED, or ARCHIVED
+        if (season != null && season.getStatus() != null
+                && season.getStatus() != org.example.QuanLyMuaVu.Enums.SeasonStatus.PLANNED
+                && season.getStatus() != org.example.QuanLyMuaVu.Enums.SeasonStatus.CANCELLED) {
+            LocalDateTime tendedAt = season.getStartDate() != null
+                    ? season.getStartDate().plusDays(1).atStartOfDay() : null;
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "TENDED",
+                    tendedAt,
+                    "Crop tended during growing season"));
+        }
+
+        // HARVESTED — from lot.harvest or lot.harvestedAt
+        if (lot != null && lot.getHarvest() != null && lot.getHarvest().getHarvestDate() != null) {
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "HARVESTED",
+                    lot.getHarvest().getHarvestDate().atStartOfDay(),
+                    "Crop harvested — grade: " + (lot.getHarvest().getGrade() != null ? lot.getHarvest().getGrade() : "N/A")));
+        } else if (lot != null && lot.getHarvestedAt() != null) {
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "HARVESTED",
+                    lot.getHarvestedAt().atStartOfDay(),
+                    "Crop harvested"));
+        }
+
+        // STORED — lot received at warehouse
+        if (lot != null && lot.getReceivedAt() != null) {
+            String warehouseName = lot.getWarehouse() != null ? lot.getWarehouse().getName() : "warehouse";
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "STORED",
+                    lot.getReceivedAt(),
+                    "Stored in " + warehouseName));
+        }
+
+        // LISTED — product published on marketplace
+        if (publishedAt != null) {
+            milestones.add(new MarketplaceTraceabilityResponse.TimelineMilestone(
+                    "LISTED",
+                    publishedAt,
+                    "Listed on marketplace"));
+        }
+
+        // Sort chronologically (nulls last)
+        milestones.sort(Comparator.comparing(
+                MarketplaceTraceabilityResponse.TimelineMilestone::date,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+
+        return milestones;
+    }
+
+    private String buildStorageLocation(org.example.QuanLyMuaVu.module.inventory.entity.StockLocation location) {
+        if (location == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (location.getZone() != null) {
+            sb.append("Zone ").append(location.getZone());
+        }
+        if (location.getAisle() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("Aisle ").append(location.getAisle());
+        }
+        if (location.getShelf() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("Shelf ").append(location.getShelf());
+        }
+        if (location.getBin() != null) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append("Bin ").append(location.getBin());
+        }
+        return sb.isEmpty() ? null : sb.toString();
     }
 
     @Transactional(readOnly = true)
@@ -716,8 +1082,8 @@ public class MarketplaceService {
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
 
         if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER
-                || order.getStatus() == MarketplaceOrderStatus.CANCELLED
-                || order.getStatus() == MarketplaceOrderStatus.REJECTED) {
+                || (order.getStatus() != MarketplaceOrderStatus.PENDING_PAYMENT
+                        && order.getStatus() != MarketplaceOrderStatus.PAYMENT_SUBMITTED)) {
             throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_NOT_ALLOWED);
         }
         if (file == null || file.isEmpty() || normalizeNullable(file.getOriginalFilename()) == null) {
@@ -782,9 +1148,122 @@ public class MarketplaceService {
     }
 
     @Transactional(readOnly = true)
+    public MarketplacePaymentProofResponse getPaymentProof(Long orderId) {
+        Long buyerUserId = currentUserService.getCurrentUserId();
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(orderId, buyerUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        return toPaymentProofResponse(order);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MarketplacePaymentProofResponse> listAdminPaymentProofs(int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.ASC, "paymentProofUploadedAt"));
+        Page<MarketplaceOrder> orderPage = marketplaceOrderRepository.findByPaymentVerificationStatus(
+                MarketplacePaymentVerificationStatus.SUBMITTED, pageable);
+        List<MarketplacePaymentProofResponse> items = orderPage.getContent().stream()
+                .map(this::toPaymentProofResponse)
+                .toList();
+        return PageResponse.of(orderPage, items);
+    }
+
+    @Transactional
+    public MarketplacePaymentProofResponse verifyAdminPaymentProof(Long orderId) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        if (order.getPaymentVerificationStatus() != MarketplacePaymentVerificationStatus.SUBMITTED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+
+        User admin = currentUserService.getCurrentUser();
+        order.setPaymentVerificationStatus(MarketplacePaymentVerificationStatus.VERIFIED);
+        order.setPaymentVerifiedAt(LocalDateTime.now());
+        order.setPaymentVerifiedByUserId(admin.getId());
+        order.setPaymentVerificationNote(null);
+
+        // Auto-advance order status to PAYMENT_VERIFIED
+        if (order.getStatus() == MarketplaceOrderStatus.PAYMENT_SUBMITTED) {
+            order.setStatus(MarketplaceOrderStatus.PAYMENT_VERIFIED);
+        }
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "PAYMENT_VERIFIED", "Admin verified payment proof");
+
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Payment verified",
+                    "Payment for order " + saved.getOrderCode() + " has been verified.",
+                    "/marketplace/orders/" + saved.getId());
+        }
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Payment verified",
+                    "Payment for order " + saved.getOrderCode() + " has been verified.",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toPaymentProofResponse(saved);
+    }
+
+    @Transactional
+    public MarketplacePaymentProofResponse rejectAdminPaymentProof(
+            Long orderId,
+            MarketplaceRejectPaymentProofRequest request) {
+        MarketplaceOrder order = marketplaceOrderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        if (order.getPaymentMethod() != MarketplacePaymentMethod.BANK_TRANSFER) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        if (normalizeNullable(order.getPaymentProofStoragePath()) == null) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_PROOF_REQUIRED);
+        }
+        if (order.getPaymentVerificationStatus() != MarketplacePaymentVerificationStatus.SUBMITTED) {
+            throw new AppException(ErrorCode.MARKETPLACE_PAYMENT_VERIFICATION_INVALID);
+        }
+        String reason = normalizeNullable(request.reason());
+        if (reason == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        User admin = currentUserService.getCurrentUser();
+        order.setPaymentVerificationStatus(MarketplacePaymentVerificationStatus.REJECTED);
+        order.setPaymentVerifiedAt(LocalDateTime.now());
+        order.setPaymentVerifiedByUserId(admin.getId());
+        order.setPaymentVerificationNote(reason);
+
+        MarketplaceOrder saved = marketplaceOrderRepository.save(order);
+        auditOrderOperation(saved, "PAYMENT_REJECTED", "Admin rejected payment proof: " + reason);
+
+        if (saved.getBuyerUser() != null) {
+            notifyUser(
+                    saved.getBuyerUser().getId(),
+                    "Payment rejected",
+                    "Payment for order " + saved.getOrderCode() + " was rejected. Reason: " + reason,
+                    "/marketplace/orders/" + saved.getId());
+        }
+        if (saved.getFarmerUser() != null) {
+            notifyUser(
+                    saved.getFarmerUser().getId(),
+                    "Payment rejected",
+                    "Payment for order " + saved.getOrderCode() + " was rejected.",
+                    "/farmer/marketplace-orders/" + saved.getId());
+        }
+        return toPaymentProofResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
     public List<MarketplaceAddressResponse> listAddresses() {
         Long userId = currentUserService.getCurrentUserId();
-        return marketplaceAddressRepository.findAllByUser_IdOrderByIsDefaultDescIdDesc(userId).stream()
+        return marketplaceAddressRepository.findAllByUser_IdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(userId).stream()
                 .map(this::toAddressResponse)
                 .toList();
     }
@@ -792,7 +1271,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceAddressResponse createAddress(MarketplaceAddressUpsertRequest request) {
         User user = currentUserService.getCurrentUser();
-        boolean shouldSetDefault = Boolean.TRUE.equals(request.isDefault()) || !marketplaceAddressRepository.existsByUser_Id(user.getId());
+        boolean shouldSetDefault = Boolean.TRUE.equals(request.isDefault()) || !marketplaceAddressRepository.existsByUser_IdAndDeletedAtIsNull(user.getId());
         if (shouldSetDefault) {
             marketplaceAddressRepository.clearDefaultByUserId(user.getId());
         }
@@ -816,7 +1295,7 @@ public class MarketplaceService {
     @Transactional
     public MarketplaceAddressResponse updateAddress(Long addressId, MarketplaceAddressUpsertRequest request) {
         Long userId = currentUserService.getCurrentUserId();
-        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_Id(addressId, userId)
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.isDefault())) {
@@ -839,14 +1318,16 @@ public class MarketplaceService {
     @Transactional
     public void deleteAddress(Long addressId) {
         Long userId = currentUserService.getCurrentUserId();
-        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_Id(addressId, userId)
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
 
         boolean wasDefault = Boolean.TRUE.equals(address.getIsDefault());
-        marketplaceAddressRepository.delete(address);
+        address.setIsDefault(false);
+        address.setDeletedAt(LocalDateTime.now());
+        marketplaceAddressRepository.save(address);
 
         if (wasDefault) {
-            List<MarketplaceAddress> remaining = marketplaceAddressRepository.findAllByUser_IdOrderByIsDefaultDescIdDesc(userId);
+            List<MarketplaceAddress> remaining = marketplaceAddressRepository.findAllByUser_IdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(userId);
             if (!remaining.isEmpty()) {
                 MarketplaceAddress first = remaining.getFirst();
                 first.setIsDefault(true);
@@ -856,45 +1337,19 @@ public class MarketplaceService {
     }
 
     @Transactional
-    public MarketplaceReviewResponse createReview(MarketplaceCreateReviewRequest request) {
-        User buyer = currentUserService.getCurrentUser();
-        if (request.rating() < 1 || request.rating() > 5) {
-            throw new AppException(ErrorCode.MARKETPLACE_INVALID_RATING);
-        }
+    public MarketplaceAddressResponse setDefaultAddress(Long addressId) {
+        Long userId = currentUserService.getCurrentUserId();
+        MarketplaceAddress address = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(addressId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
 
-        MarketplaceProduct product = marketplaceProductRepository.findById(request.productId())
-                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
-        MarketplaceOrder order = marketplaceOrderRepository.findByIdAndBuyerUserIdWithItems(request.orderId(), buyer.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ORDER_NOT_FOUND));
+        marketplaceAddressRepository.clearDefaultByUserId(userId);
+        address.setIsDefault(true);
 
-        if (order.getStatus() != MarketplaceOrderStatus.COMPLETED) {
-            throw new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_ALLOWED);
-        }
-
-        boolean orderContainsProduct = order.getItems().stream()
-                .anyMatch(item -> Objects.equals(item.getProduct().getId(), request.productId()));
-        if (!orderContainsProduct) {
-            throw new AppException(ErrorCode.MARKETPLACE_REVIEW_NOT_ALLOWED);
-        }
-
-        boolean duplicated = marketplaceProductReviewRepository.existsByProduct_IdAndOrder_IdAndBuyerUser_Id(
-                request.productId(),
-                request.orderId(),
-                buyer.getId());
-        if (duplicated) {
-            throw new AppException(ErrorCode.MARKETPLACE_REVIEW_ALREADY_EXISTS);
-        }
-
-        MarketplaceProductReview review = MarketplaceProductReview.builder()
-                .product(product)
-                .order(order)
-                .buyerUser(buyer)
-                .rating(request.rating())
-                .comment(request.comment().trim())
-                .build();
-
-        return toReviewResponse(marketplaceProductReviewRepository.save(review));
+        return toAddressResponse(marketplaceAddressRepository.save(address));
     }
+
+
+
 
     @Transactional(readOnly = true)
     public MarketplaceFarmerDashboardResponse getFarmerDashboard() {
@@ -1386,10 +1841,10 @@ public class MarketplaceService {
     private ShippingSnapshot resolveShippingSnapshot(Long userId, MarketplaceCreateOrderRequest request) {
         MarketplaceAddress selectedAddress = null;
         if (request.addressId() != null) {
-            selectedAddress = marketplaceAddressRepository.findByIdAndUser_Id(request.addressId(), userId)
+            selectedAddress = marketplaceAddressRepository.findByIdAndUser_IdAndDeletedAtIsNull(request.addressId(), userId)
                     .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_ADDRESS_NOT_FOUND));
         } else {
-            selectedAddress = marketplaceAddressRepository.findFirstByUser_IdAndIsDefaultTrueOrderByIdDesc(userId)
+            selectedAddress = marketplaceAddressRepository.findFirstByUser_IdAndIsDefaultTrueAndDeletedAtIsNullOrderByIdDesc(userId)
                     .orElse(null);
         }
 
@@ -2007,6 +2462,21 @@ public class MarketplaceService {
                 order.getPaymentVerificationNote());
     }
 
+    private MarketplacePaymentProofResponse toPaymentProofResponse(MarketplaceOrder order) {
+        return new MarketplacePaymentProofResponse(
+                order.getId(),
+                order.getOrderCode(),
+                order.getBuyerUser() == null ? null : order.getBuyerUser().getId(),
+                order.getPaymentProofFileName(),
+                order.getPaymentProofContentType(),
+                order.getPaymentProofStoragePath(),
+                order.getPaymentProofUploadedAt(),
+                order.getPaymentVerificationStatus(),
+                order.getPaymentVerificationNote(),
+                order.getPaymentVerifiedAt(),
+                order.getPaymentVerifiedByUserId());
+    }
+
     private MarketplaceAddressResponse toAddressResponse(MarketplaceAddress address) {
         return new MarketplaceAddressResponse(
                 address.getId(),
@@ -2028,11 +2498,44 @@ public class MarketplaceService {
                 review.getId(),
                 review.getProduct() == null ? null : review.getProduct().getId(),
                 review.getOrder() == null ? null : review.getOrder().getId(),
+                review.getOrderItem() == null ? null : review.getOrderItem().getId(),
                 buyer == null ? null : buyer.getId(),
                 buyer == null ? null : defaultDisplayName(buyer),
                 review.getRating(),
                 review.getComment(),
-                review.getCreatedAt());
+                Boolean.TRUE.equals(review.getHidden()),
+                review.getCreatedAt(),
+                review.getUpdatedAt());
+    }
+
+    private void recalculateProductRating(Long productId) {
+        if (productId == null) return;
+        MarketplaceProduct product = marketplaceProductRepository.findById(productId).orElse(null);
+        if (product == null) return;
+
+        MarketplaceProductReviewRepository.SingleProductRatingProjection projection =
+                marketplaceProductReviewRepository.aggregateRatingByProductId(productId);
+        double avg = projection == null || projection.getAverageRating() == null ? 0.0 : projection.getAverageRating();
+        long count = projection == null || projection.getRatingCount() == null ? 0L : projection.getRatingCount();
+
+        product.setAverageRating(Math.round(avg * 100.0) / 100.0);
+        product.setRatingCount((int) count);
+        marketplaceProductRepository.save(product);
+    }
+
+    private void recalculateFarmRating(Integer farmId) {
+        if (farmId == null) return;
+        Farm farm = farmRepository.findById(farmId).orElse(null);
+        if (farm == null) return;
+
+        MarketplaceProductReviewRepository.SingleProductRatingProjection projection =
+                marketplaceProductReviewRepository.aggregateRatingByFarmId(farmId);
+        double avg = projection == null || projection.getAverageRating() == null ? 0.0 : projection.getAverageRating();
+        long count = projection == null || projection.getRatingCount() == null ? 0L : projection.getRatingCount();
+
+        farm.setAverageRating(Math.round(avg * 100.0) / 100.0);
+        farm.setRatingCount((int) count);
+        farmRepository.save(farm);
     }
 
     private MarketplaceOrderAuditLogResponse toOrderAuditLogResponse(AuditLog auditLog) {

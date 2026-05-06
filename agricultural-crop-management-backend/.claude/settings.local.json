@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./mvnw test *)",
       "Bash(git commit -m ' *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(python *)"
     ]
   }
 }
