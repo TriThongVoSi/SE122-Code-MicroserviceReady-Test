@@ -92,7 +92,11 @@ function ProductsNavItem() {
     const rect = trigger.getBoundingClientRect();
     const viewportPadding = 16;
     const gap = 10;
-    const preferredWidth = Math.min(560, window.innerWidth - viewportPadding * 2);
+    const preferredWidth = Math.min(
+      680,
+      window.innerWidth * 0.92,
+      window.innerWidth - viewportPadding * 2,
+    );
     const left = Math.min(
       Math.max(rect.left, viewportPadding),
       window.innerWidth - preferredWidth - viewportPadding,
