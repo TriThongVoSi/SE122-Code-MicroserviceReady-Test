@@ -88,13 +88,13 @@ export function PasswordChangeForm({ onSave }: PasswordChangeFormProps) {
               clearError('currentPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10"
+            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
             onClick={() => setShowCurrentPassword((value) => !value)}
             disabled={isSubmitting}
             aria-label={showCurrentPassword ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'}
@@ -120,13 +120,13 @@ export function PasswordChangeForm({ onSave }: PasswordChangeFormProps) {
               clearError('newPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10"
+            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
             onClick={() => setShowNewPassword((value) => !value)}
             disabled={isSubmitting}
             aria-label={showNewPassword ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'}
@@ -152,13 +152,13 @@ export function PasswordChangeForm({ onSave }: PasswordChangeFormProps) {
               clearError('confirmPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10"
+            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
             onClick={() => setShowConfirmPassword((value) => !value)}
             disabled={isSubmitting}
             aria-label={showConfirmPassword ? 'Ẩn xác nhận mật khẩu' : 'Hiện xác nhận mật khẩu'}
