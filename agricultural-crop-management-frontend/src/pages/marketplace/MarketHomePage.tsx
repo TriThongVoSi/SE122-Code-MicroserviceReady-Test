@@ -92,9 +92,6 @@ export function MarketHomePage() {
                   Mua sắm ngay
                   <ArrowRight size={18} aria-hidden="true" />
                 </Link>
-                <Link to="/marketplace/traceability" className="fb-cta-ghost">
-                  Tìm hiểu truy xuất
-                </Link>
               </div>
 
               <ul className="fb-trust-strip" aria-label="Cam kết">
@@ -289,9 +286,7 @@ export function MarketHomePage() {
                     <div className="mb-4 text-sm text-muted-foreground">
                       <span className="font-medium text-foreground">Khu vực:</span> {farm.region ?? "Đang cập nhật"}
                     </div>
-                    <Link to={`/marketplace/farms/${farm.id}`} className="mt-auto inline-block font-medium text-primary hover:underline">
-                      Xem nông trại →
-                    </Link>
+
                   </CardContent>
                 </Card>
               ))}
