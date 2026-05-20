@@ -3,10 +3,12 @@ import { Users, Boxes, Map, Sprout } from 'lucide-react';
 import {
   adminDashboardStatsApi,
   dashboardStatsKeys,
+  type AdminPendingApprovalItem,
   type DashboardStats,
 } from '@/services/api.admin';
 import {
   type RiskLevel,
+  type RiskDataCoverage,
   type TransformedRiskySeason,
 } from '../types';
 
@@ -96,7 +98,10 @@ const transformDashboardData = (data: DashboardStats) => {
     riskLevel: getRiskLevel(s.riskScore),
   }));
 
-  return { kpiMetrics, charts, risks };
+  const riskDataCoverage: RiskDataCoverage = data.dataCoverage;
+  const riskDataLimited = !riskDataCoverage.incidentDataAvailable || !riskDataCoverage.taskDataAvailable;
+
+  return { kpiMetrics, charts, risks, riskDataCoverage, riskDataLimited };
 };
 
 /**
@@ -108,7 +113,7 @@ const transformDashboardData = (data: DashboardStats) => {
  * - Transforms API data to UI-friendly format via select
  */
 export const useAdminDashboard = () => {
-  const query = useQuery({
+  const statsQuery = useQuery({
     queryKey: dashboardStatsKeys.stats(),
     queryFn: adminDashboardStatsApi.getStats,
     refetchInterval: 30_000, // Real-time: poll every 30s
@@ -117,20 +122,40 @@ export const useAdminDashboard = () => {
     select: transformDashboardData,
   });
 
+  const pendingApprovalsQuery = useQuery({
+    queryKey: dashboardStatsKeys.pendingApprovals(10),
+    queryFn: () => adminDashboardStatsApi.getPendingApprovals({ limit: 10 }),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const refetch = async () => {
+    await Promise.all([statsQuery.refetch(), pendingApprovalsQuery.refetch()]);
+  };
+
   return {
     // Query state
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    isFetching: query.isFetching, // Background refetch indicator
+    isLoading: statsQuery.isLoading,
+    isError: statsQuery.isError,
+    error: statsQuery.error,
+    isFetching: statsQuery.isFetching || pendingApprovalsQuery.isFetching, // Background refetch indicator
 
     // Transformed data (undefined when loading)
-    kpiMetrics: query.data?.kpiMetrics ?? [],
-    charts: query.data?.charts ?? { userRoles: [], userStatus: [], seasonStatus: [] },
-    risks: query.data?.risks ?? [],
+    kpiMetrics: statsQuery.data?.kpiMetrics ?? [],
+    charts: statsQuery.data?.charts ?? { userRoles: [], userStatus: [], seasonStatus: [] },
+    risks: statsQuery.data?.risks ?? [],
+    riskDataCoverage: statsQuery.data?.riskDataCoverage,
+    riskDataLimited: statsQuery.data?.riskDataLimited ?? false,
+    pendingApprovals: pendingApprovalsQuery.data ?? [],
+    pendingApprovalsLoading: pendingApprovalsQuery.isLoading,
+    pendingApprovalsError: pendingApprovalsQuery.isError
+      ? (pendingApprovalsQuery.error as Error)
+      : null,
     // Refetch manually if needed
-    refetch: query.refetch,
+    refetch,
   };
 };
 
 export type UseAdminDashboardReturn = ReturnType<typeof useAdminDashboard>;
+export type AdminDashboardPendingApproval = AdminPendingApprovalItem;

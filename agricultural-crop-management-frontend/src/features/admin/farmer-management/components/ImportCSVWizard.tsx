@@ -23,6 +23,8 @@ interface ImportCSVWizardProps {
     validationErrors: ValidationError[];
     onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onImportConfirm: () => void;
+    canImport?: boolean;
+    importUnsupportedMessage?: string;
 }
 
 export function ImportCSVWizard({
@@ -34,6 +36,8 @@ export function ImportCSVWizard({
     validationErrors,
     onFileUpload,
     onImportConfirm,
+    canImport = false,
+    importUnsupportedMessage = 'Farmer import API is not available yet.',
 }: ImportCSVWizardProps) {
     const validEntriesCount = csvPreview.length - validationErrors.length;
 
@@ -169,6 +173,9 @@ export function ImportCSVWizard({
                             {validEntriesCount} valid entries will be imported.
                             Rows with errors will be skipped.
                         </p>
+                        {!canImport && (
+                            <p className="text-sm text-destructive">{importUnsupportedMessage}</p>
+                        )}
                     </div>
                 )}
 
@@ -189,7 +196,7 @@ export function ImportCSVWizard({
                         <Button
                             className="bg-[#2563EB] hover:bg-[#1E40AF]"
                             onClick={onImportConfirm}
-                            disabled={validEntriesCount === 0}
+                            disabled={validEntriesCount === 0 || !canImport}
                         >
                             Import {validEntriesCount} Farmer{validEntriesCount > 1 ? 's' : ''}
                         </Button>

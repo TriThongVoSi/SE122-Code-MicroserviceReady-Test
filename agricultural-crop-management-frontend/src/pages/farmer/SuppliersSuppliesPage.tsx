@@ -183,7 +183,7 @@ export function SuppliersSuppliesPage() {
                   variant="default"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  {t("common.stockIn", "Stock IN")}
+                  {t("common.stockIn")}
                 </Button>
               }
             />
@@ -235,7 +235,7 @@ export function SuppliersSuppliesPage() {
                       setPage(0);
                     }}
                   />
-                  Restricted only
+                  {t("suppliers.filters.restrictedOnly")}
                 </label>
               </>
             )}
@@ -350,7 +350,10 @@ export function SuppliersSuppliesPage() {
                 {t("common.previous")}
               </button>
               <span>
-                Page {page + 1} of {currentData.totalPages || 1}
+                {t("suppliers.pagination.summary", {
+                  page: page + 1,
+                  totalPages: currentData.totalPages || 1,
+                })}
               </span>
               <button
                 disabled={page >= currentData.totalPages - 1}
@@ -427,11 +430,11 @@ function SuppliersTable({
       <table className="supplies-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th className="numeric-cell">License No</th>
-            <th className="numeric-cell">Phone</th>
-            <th>Email</th>
-            <th className="actions-cell">Actions</th>
+            <th>{t("suppliers.table.name")}</th>
+            <th className="numeric-cell">{t("suppliers.table.licenseNo")}</th>
+            <th className="numeric-cell">{t("suppliers.table.phone")}</th>
+            <th>{t("suppliers.table.email")}</th>
+            <th className="actions-cell">{t("suppliers.table.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -444,21 +447,21 @@ function SuppliersTable({
               <td className="actions-cell">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="action-btn" title="Actions">
+                    <button className="action-btn" title={t("suppliers.actions.menu")}>
                       <MoreVertical className="w-4 h-4" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onEdit(supplier)}>
                       <Pencil className="w-4 h-4 mr-2" />
-                      Edit
+                      {t("suppliers.actions.edit")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(supplier)}
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
+                      {t("suppliers.actions.delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -495,10 +498,10 @@ function SupplyItemsTable({ data, loading }: SupplyItemsTableProps) {
       <table className="supplies-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Active Ingredient</th>
-            <th>Unit</th>
-            <th>Restricted</th>
+            <th>{t("suppliers.itemsTable.name")}</th>
+            <th>{t("suppliers.itemsTable.activeIngredient")}</th>
+            <th>{t("suppliers.itemsTable.unit")}</th>
+            <th>{t("suppliers.itemsTable.restricted")}</th>
           </tr>
         </thead>
         <tbody>
@@ -509,9 +512,9 @@ function SupplyItemsTable({ data, loading }: SupplyItemsTableProps) {
               <td>{item.unit || "-"}</td>
               <td>
                 {item.restrictedFlag ? (
-                  <span className="badge badge-restricted">Restricted</span>
+                  <span className="badge badge-restricted">{t("suppliers.itemsTable.restrictedBadge")}</span>
                 ) : (
-                  <span className="badge badge-normal">Normal</span>
+                  <span className="badge badge-normal">{t("suppliers.itemsTable.normalBadge")}</span>
                 )}
               </td>
             </tr>
@@ -532,7 +535,7 @@ interface SupplyLotsTableProps {
 }
 
 function SupplyLotsTable({ data, loading }: SupplyLotsTableProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (loading) {
     return <div className="loading-state">{t("suppliers.loadingLots")}</div>;
   }
@@ -545,7 +548,7 @@ function SupplyLotsTable({ data, loading }: SupplyLotsTableProps) {
     if (!dateStr) return "-";
     try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString("vi-VN");
+      return date.toLocaleDateString(locale);
     } catch {
       return dateStr;
     }
@@ -570,11 +573,11 @@ function SupplyLotsTable({ data, loading }: SupplyLotsTableProps) {
       <table className="supplies-table">
         <thead>
           <tr>
-            <th>Batch Code</th>
-            <th>Item</th>
-            <th>Supplier</th>
-            <th className="numeric-cell">Expiry Date</th>
-            <th>Status</th>
+            <th>{t("suppliers.lotsTable.batchCode")}</th>
+            <th>{t("suppliers.lotsTable.item")}</th>
+            <th>{t("suppliers.lotsTable.supplier")}</th>
+            <th className="numeric-cell">{t("suppliers.lotsTable.expiryDate")}</th>
+            <th>{t("suppliers.lotsTable.status")}</th>
           </tr>
         </thead>
         <tbody>
@@ -593,7 +596,7 @@ function SupplyLotsTable({ data, loading }: SupplyLotsTableProps) {
               >
                 {formatDate(lot.expiryDate)}
                 {isExpiringSoon(lot.expiryDate) && (
-                  <span className="expiry-warning">⚠️ Soon</span>
+                  <span className="expiry-warning">{t("suppliers.lotsTable.expiringSoon")}</span>
                 )}
               </td>
               <td>
@@ -683,7 +686,7 @@ function StockInModal({
 
   const handleSubmit = async () => {
     if (!warehouseId || !supplierId || !supplyItemId || quantity <= 0) {
-      setError("Please fill all required fields");
+      setError(t("suppliers.validation.required"));
       return;
     }
 
@@ -711,7 +714,7 @@ function StockInModal({
       });
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to record Stock IN");
+      setError(e instanceof Error ? e.message : t("suppliers.stockIn.errors.recordFailed"));
     }
   };
 
@@ -721,7 +724,7 @@ function StockInModal({
         className="modal-content stock-in-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2>Stock IN</h2>
+        <h2>{t("suppliers.stockIn.title")}</h2>
 
         {/* Stepper */}
         <div className="stepper">
@@ -729,19 +732,19 @@ function StockInModal({
             className={`step ${step >= 1 ? "active" : ""} ${step > 1 ? "completed" : ""}`}
           >
             <span className="step-number">1</span>
-            <span className="step-label">Warehouse</span>
+            <span className="step-label">{t("suppliers.stockIn.steps.warehouse")}</span>
           </div>
           <div className="step-line" />
           <div
             className={`step ${step >= 2 ? "active" : ""} ${step > 2 ? "completed" : ""}`}
           >
             <span className="step-number">2</span>
-            <span className="step-label">Supplier & Item</span>
+            <span className="step-label">{t("suppliers.stockIn.steps.supplierItem")}</span>
           </div>
           <div className="step-line" />
           <div className={`step ${step >= 3 ? "active" : ""}`}>
             <span className="step-number">3</span>
-            <span className="step-label">Batch Info</span>
+            <span className="step-label">{t("suppliers.stockIn.steps.batchInfo")}</span>
           </div>
         </div>
 
@@ -751,7 +754,7 @@ function StockInModal({
         {step === 1 && (
           <div className="step-content">
             <div className="form-group">
-              <label>Warehouse *</label>
+              <label>{t("suppliers.stockIn.form.warehouse")} *</label>
               <select
                 value={warehouseId || ""}
                 onChange={(e) => {
@@ -761,7 +764,7 @@ function StockInModal({
                   setLocationId(null);
                 }}
               >
-                <option value="">Select warehouse...</option>
+                <option value="">{t("suppliers.stockIn.form.selectWarehouse")}</option>
                 {warehouses?.map((w: Warehouse) => (
                   <option key={w.id} value={w.id}>
                     {w.name} {w.farmName ? `(${w.farmName})` : ""}
@@ -771,7 +774,7 @@ function StockInModal({
             </div>
 
             <div className="form-group">
-              <label>Location (Optional)</label>
+              <label>{t("suppliers.stockIn.form.locationOptional")}</label>
               <select
                 value={locationId || ""}
                 onChange={(e) =>
@@ -779,10 +782,10 @@ function StockInModal({
                 }
                 disabled={!warehouseId}
               >
-                <option value="">Any location</option>
+                <option value="">{t("suppliers.stockIn.form.anyLocation")}</option>
                 {locations?.map((loc: StockLocation) => (
                   <option key={loc.id} value={loc.id}>
-                    {loc.label || `Location ${loc.id}`}
+                    {loc.label || t("suppliers.stockIn.form.locationFallback", { id: loc.id })}
                   </option>
                 ))}
               </select>
@@ -794,14 +797,14 @@ function StockInModal({
         {step === 2 && (
           <div className="step-content">
             <div className="form-group">
-              <label>Supplier *</label>
+              <label>{t("suppliers.stockIn.form.supplier")} *</label>
               <select
                 value={supplierId || ""}
                 onChange={(e) =>
                   setSupplierId(e.target.value ? Number(e.target.value) : null)
                 }
               >
-                <option value="">Select supplier...</option>
+                <option value="">{t("suppliers.stockIn.form.selectSupplier")}</option>
                 {suppliers?.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -811,7 +814,7 @@ function StockInModal({
             </div>
 
             <div className="form-group">
-              <label>Supply Item *</label>
+              <label>{t("suppliers.stockIn.form.supplyItem")} *</label>
               <select
                 value={supplyItemId || ""}
                 onChange={(e) => {
@@ -821,11 +824,11 @@ function StockInModal({
                   setConfirmRestricted(false);
                 }}
               >
-                <option value="">Select item...</option>
+                <option value="">{t("suppliers.stockIn.form.selectItem")}</option>
                 {items?.map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.name} {i.unit ? `(${i.unit})` : ""}{" "}
-                    {i.restrictedFlag ? "⚠️ RESTRICTED" : ""}
+                    {i.restrictedFlag ? t("suppliers.stockIn.form.restrictedTag") : ""}
                   </option>
                 ))}
               </select>
@@ -833,15 +836,15 @@ function StockInModal({
 
             {isRestricted && (
               <div className="warning-banner">
-                <strong>⚠️ Restricted Supply</strong>
-                <p>This item requires special handling authorization.</p>
+                <strong>{t("suppliers.stockIn.form.restrictedTitle")}</strong>
+                <p>{t("suppliers.stockIn.form.restrictedDescription")}</p>
                 <label className="confirm-checkbox">
                   <input
                     type="checkbox"
                     checked={confirmRestricted}
                     onChange={(e) => setConfirmRestricted(e.target.checked)}
                   />
-                  I confirm I'm authorized to handle restricted supplies
+                  {t("suppliers.stockIn.form.restrictedConfirm")}
                 </label>
               </div>
             )}
@@ -852,17 +855,17 @@ function StockInModal({
         {step === 3 && (
           <div className="step-content">
             <div className="form-group">
-              <label>Batch Code</label>
+              <label>{t("suppliers.stockIn.form.batchCode")}</label>
               <input
                 type="text"
                 value={batchCode}
                 onChange={(e) => setBatchCode(e.target.value)}
-                placeholder="e.g., NPK-2025-01"
+                placeholder={t("suppliers.stockIn.form.batchCodePlaceholder")}
               />
             </div>
 
             <div className="form-group">
-              <label>Expiry Date</label>
+              <label>{t("suppliers.stockIn.form.expiryDate")}</label>
               <input
                 type="date"
                 value={expiryDate}
@@ -873,14 +876,14 @@ function StockInModal({
               />
               {isExpiryPast && (
                 <div className="warning-banner small">
-                  <strong>⚠️ Past expiry date</strong>
+                  <strong>{t("suppliers.stockIn.form.pastExpiryTitle")}</strong>
                   <label className="confirm-checkbox">
                     <input
                       type="checkbox"
                       checked={confirmExpiry}
                       onChange={(e) => setConfirmExpiry(e.target.checked)}
                     />
-                    I confirm the expiry date is correct
+                    {t("suppliers.stockIn.form.pastExpiryConfirm")}
                   </label>
                 </div>
               )}
@@ -888,7 +891,7 @@ function StockInModal({
 
             <div className="form-group">
               <label>
-                Quantity * {selectedItem?.unit ? `(${selectedItem.unit})` : ""}
+                {t("suppliers.stockIn.form.quantity")} * {selectedItem?.unit ? `(${selectedItem.unit})` : ""}
               </label>
               <input
                 type="number"
@@ -896,16 +899,16 @@ function StockInModal({
                 step="0.001"
                 value={quantity || ""}
                 onChange={(e) => setQuantity(Number(e.target.value))}
-                placeholder="Enter quantity"
+                placeholder={t("suppliers.stockIn.form.quantityPlaceholder")}
               />
             </div>
 
             <div className="form-group">
-              <label>Note (Optional)</label>
+              <label>{t("suppliers.stockIn.form.noteOptional")}</label>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Additional notes..."
+                placeholder={t("suppliers.stockIn.form.notePlaceholder")}
               />
             </div>
           </div>
@@ -923,7 +926,7 @@ function StockInModal({
                 onClick={handleBack}
                 disabled={isPending}
               >
-                Back
+                {t("suppliers.stockIn.actions.back")}
               </button>
             )}
             {step < 3 ? (
@@ -932,7 +935,7 @@ function StockInModal({
                 onClick={handleNext}
                 disabled={step === 1 ? !canGoToStep2 : !canGoToStep3}
               >
-                Next
+                {t("suppliers.stockIn.actions.next")}
               </button>
             ) : (
               <button
@@ -940,7 +943,7 @@ function StockInModal({
                 onClick={handleSubmit}
                 disabled={isPending || !canSubmit}
               >
-                {isPending ? "Processing..." : "Confirm Stock IN"}
+                {isPending ? t("common.processing") : t("suppliers.stockIn.actions.confirm")}
               </button>
             )}
           </div>
@@ -1055,45 +1058,45 @@ function SupplierFormDialog({
 
         <div className="space-y-4">
           <div className="form-group">
-            <label className="text-sm font-medium">Name *</label>
+            <label className="text-sm font-medium">{t("suppliers.form.name")} *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Supplier name"
+              placeholder={t("suppliers.form.namePlaceholder")}
               className="w-full px-3 py-2 border border-border rounded-md"
             />
           </div>
 
           <div className="form-group">
-            <label className="text-sm font-medium">License No</label>
+            <label className="text-sm font-medium">{t("suppliers.form.licenseNo")}</label>
             <input
               type="text"
               value={licenseNo}
               onChange={(e) => setLicenseNo(e.target.value)}
-              placeholder="License number (optional)"
+              placeholder={t("suppliers.form.licenseNoPlaceholder")}
               className="w-full px-3 py-2 border border-border rounded-md"
             />
           </div>
 
           <div className="form-group">
-            <label className="text-sm font-medium">Phone</label>
+            <label className="text-sm font-medium">{t("suppliers.form.phone")}</label>
             <input
               type="text"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
-              placeholder="Contact phone (optional)"
+              placeholder={t("suppliers.form.phonePlaceholder")}
               className="w-full px-3 py-2 border border-border rounded-md"
             />
           </div>
 
           <div className="form-group">
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-medium">{t("suppliers.form.email")}</label>
             <input
               type="email"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="Contact email (optional)"
+              placeholder={t("suppliers.form.emailPlaceholder")}
               className="w-full px-3 py-2 border border-border rounded-md"
             />
           </div>

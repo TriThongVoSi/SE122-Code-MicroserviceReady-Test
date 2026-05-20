@@ -25,15 +25,6 @@ export const getAlertBadge = (severity: SystemAlert['severity']) => {
     return colors[severity];
 };
 
-export const getHealthStatus = (status: string) => {
-    const colors = {
-        excellent: 'text-emerald-600',
-        good: 'text-blue-600',
-        warning: 'text-amber-600',
-    };
-    return colors[status as keyof typeof colors] || 'text-gray-600';
-};
-
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // DATE UTILITIES (Timezone-safe)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

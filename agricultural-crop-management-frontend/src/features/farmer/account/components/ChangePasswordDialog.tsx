@@ -68,7 +68,8 @@ export function ChangePasswordDialog({
   const onSubmit = async (data: ChangePasswordFormData) => {
     try {
       await changePassword.mutateAsync({
-        password: data.newPassword,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
       });
 
       toast.success(t("auth.changePassword.toast.success"), {

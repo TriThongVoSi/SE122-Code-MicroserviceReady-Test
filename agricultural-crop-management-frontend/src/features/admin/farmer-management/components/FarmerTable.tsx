@@ -37,7 +37,7 @@ interface FarmerTableProps {
     onEdit: (farmer: Farmer) => void;
     onLock: (id: string) => void;
     onDelete: (id: string) => void;
-    onResetPassword: () => void;
+    onResetPassword: (id: string) => void;
     onViewHistory: () => void;
 }
 
@@ -200,7 +200,7 @@ export function FarmerTable({
                                                     <Lock className="w-4 h-4 mr-2" />
                                                     {farmer.status === 'locked' ? 'Unlock' : 'Lock'}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={onResetPassword}>
+                                                <DropdownMenuItem onClick={() => onResetPassword(farmer.id)}>
                                                     <Key className="w-4 h-4 mr-2" />
                                                     Reset Password
                                                 </DropdownMenuItem>

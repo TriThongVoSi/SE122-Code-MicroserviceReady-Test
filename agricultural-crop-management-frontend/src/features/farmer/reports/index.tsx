@@ -11,6 +11,7 @@ import { PerformanceTab } from "./components/PerformanceTab";
 import { PesticideTab } from "./components/PesticideTab";
 import { FilterDrawer } from "./components/FilterDrawer";
 import { ExportModal } from "./components/ExportModal";
+import { useI18n } from "@/hooks/useI18n";
 import type { ReportSection } from "./types";
 
 export type SeasonReportMode = "interim" | "final";
@@ -28,6 +29,7 @@ export function Reports({
     reportMode,
     harvestProgressPercent,
 }: ReportsProps) {
+    const { t } = useI18n();
     const {
         activeSection, selectedSeason, yieldViewMode, isFilterDrawerOpen,
         isExportModalOpen, isExporting, exportFormat, includeCharts,
@@ -36,6 +38,7 @@ export function Reports({
         setExportFormat, setIncludeCharts, setIncludeNotes, setFilters,
         handleExport, handleApplyFilters, handleClearFilters,
         getYieldChartData, getPesticideStatusBadge, isLoading, hasError, kpiData,
+        taskPerformance, pesticideRecords,
         costOptimizationSummary, costOptimizationSummaryLoading,
         costOptimizationSummaryError, refetchCostOptimizationSummary,
         costOptimizationAiSuggestion, costOptimizationAiLoading,
@@ -53,19 +56,19 @@ export function Reports({
         : undefined;
 
     const tabConfig = [
-        { value: "yield", icon: Wheat, label: "Yield" },
-        { value: "cost", icon: DollarSign, label: "Cost" },
-        { value: "performance", icon: CheckCircle2, label: "Tasks" },
-        { value: "pesticide", icon: AlertTriangle, label: "Pesticide" },
+        { value: "yield", icon: Wheat, label: t("reports.tabs.yield") },
+        { value: "cost", icon: DollarSign, label: t("reports.tabs.cost") },
+        { value: "performance", icon: CheckCircle2, label: t("reports.tabs.tasks") },
+        { value: "pesticide", icon: AlertTriangle, label: t("reports.tabs.pesticide") },
     ];
 
     const resolvedMode: SeasonReportMode = reportMode ?? "final";
     const reportTitle = resolvedMode === "final"
-        ? "Báo cáo tổng kết mùa vụ"
-        : "Báo cáo tạm tính";
+        ? t("reports.header.titleFinal")
+        : t("reports.header.titleInterim");
     const reportSubtitle = resolvedMode === "final"
-        ? "Bộ số liệu đã được chốt theo mùa vụ hoàn tất."
-        : "Dữ liệu được cập nhật theo tiến độ thu hoạch, các chỉ số có thể thay đổi.";
+        ? t("reports.header.subtitleFinal")
+        : t("reports.header.subtitleInterim");
 
     return (
         <div className="min-h-screen acm-main-content pb-20">
@@ -88,7 +91,7 @@ export function Reports({
                         {hasError && (
                             <Card className="mb-4 border-destructive/20 bg-destructive/5">
                                 <CardContent className="py-3 text-sm text-destructive">
-                                    Failed to load report data. Please try again.
+                                    {t("reports.error.loadFailed")}
                                 </CardContent>
                             </Card>
                         )}
@@ -117,7 +120,7 @@ export function Reports({
 
                                     <TabsContent value="yield" className="mt-0">
                                         {isLoading ? (
-                                            <p className="text-sm text-muted-foreground py-8">Loading report data...</p>
+                                            <p className="text-sm text-muted-foreground py-8">{t("reports.loading")}</p>
                                         ) : (
                                             <YieldTab yieldViewMode={yieldViewMode} onViewModeChange={setYieldViewMode} chartData={getYieldChartData()} />
                                         )}
@@ -135,10 +138,13 @@ export function Reports({
                                         />
                                     </TabsContent>
                                     <TabsContent value="performance" className="mt-0">
-                                        <PerformanceTab />
+                                        <PerformanceTab data={taskPerformance} />
                                     </TabsContent>
                                     <TabsContent value="pesticide" className="mt-0">
-                                        <PesticideTab getPesticideStatusBadge={getPesticideStatusBadge} />
+                                        <PesticideTab
+                                            records={pesticideRecords}
+                                            getPesticideStatusBadge={getPesticideStatusBadge}
+                                        />
                                     </TabsContent>
                                 </Tabs>
                             </CardContent>

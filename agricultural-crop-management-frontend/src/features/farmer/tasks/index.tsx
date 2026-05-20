@@ -11,6 +11,7 @@ import { CalendarView } from './components/CalendarView';
 import { CreateTaskDialog } from './components/CreateTaskDialog';
 import { ReassignDialog } from './components/ReassignDialog';
 import { BulkActionToolbar } from './components/BulkActionToolbar';
+import { DueDateDialog } from './components/DueDateDialog';
 
 export function TaskWorkspace() {
   const [searchParams] = useSearchParams();
@@ -31,6 +32,8 @@ export function TaskWorkspace() {
     setCreateTaskOpen,
     reassignOpen,
     setReassignOpen,
+    dueDateOpen,
+    setDueDateOpen,
     filteredTasks,
     uniqueAssignees,
     uniquePlots,
@@ -41,6 +44,7 @@ export function TaskWorkspace() {
     handleSelectAll,
     handleSelectTask,
     handleReassign,
+    handleBulkDueDateChange,
     handleCreateTask,
     seasonId,
     isSeasonWriteLocked,
@@ -116,7 +120,7 @@ export function TaskWorkspace() {
             selectedCount={selectedTasks.length}
             onComplete={handleBulkComplete}
             onReassign={() => setReassignOpen(true)}
-            onChangeDueDate={() => {}}
+            onChangeDueDate={() => setDueDateOpen(true)}
             onClose={() => setSelectedTasks([])}
           />
         )}
@@ -138,7 +142,16 @@ export function TaskWorkspace() {
           onOpenChange={setReassignOpen}
           selectedCount={selectedTasks.length}
           onReassign={handleReassign}
-          uniqueAssignees={uniqueAssignees}
+          assigneeOptions={assigneeOptions}
+          disabled={isSeasonWriteLocked}
+          disabledReason={seasonWriteLockReason}
+        />
+
+        <DueDateDialog
+          open={dueDateOpen}
+          onOpenChange={setDueDateOpen}
+          selectedCount={selectedTasks.length}
+          onChangeDueDate={handleBulkDueDateChange}
           disabled={isSeasonWriteLocked}
           disabledReason={seasonWriteLockReason}
         />

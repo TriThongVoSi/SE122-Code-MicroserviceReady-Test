@@ -44,7 +44,7 @@ interface BuyerTableProps {
     onSort: (column: keyof Buyer) => void;
     onViewEdit: (buyer: Buyer) => void;
     onToggleSuspend: (id: string) => void;
-    onResetPassword: () => void;
+    onResetPassword: (id: string) => void;
     onDelete: (id: string) => void;
     getRoleBadge: (role: BuyerRole) => string;
     getKYCBadge: (status: KYCStatus) => string;
@@ -221,7 +221,7 @@ export function BuyerTable({
                                                     <Ban className="w-4 h-4 mr-2" />
                                                     {buyer.accountStatus === 'suspended' ? 'Activate' : 'Suspend'}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={onResetPassword}>
+                                                <DropdownMenuItem onClick={() => onResetPassword(buyer.id)}>
                                                     <Key className="w-4 h-4 mr-2" />
                                                     Reset Password
                                                 </DropdownMenuItem>

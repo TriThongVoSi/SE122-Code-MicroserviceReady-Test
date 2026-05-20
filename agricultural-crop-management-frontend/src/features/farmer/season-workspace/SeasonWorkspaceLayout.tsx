@@ -1,4 +1,4 @@
-﻿import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -560,7 +560,7 @@ export function SeasonWorkspaceLayout() {
         <CardContent className="p-6 space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
-              <p className="acm-body-text text-muted-foreground">Workspace mùa vụ</p>
+              <p className="acm-body-text text-muted-foreground">WORKSPACE MÙA VỤ</p>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                   {isSeasonLoading ? t("common.loading") : season?.seasonName ?? `Mùa vụ #${seasonIdNumber}`}
@@ -696,9 +696,14 @@ export function SeasonWorkspaceLayout() {
                 <Button
                   variant="outline"
                   className={`rounded-xl border acm-hover-surface acm-body-text transition-all duration-200 ${isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-md opacity-100"
+                    ? "shadow-md opacity-100"
                     : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground opacity-90 hover:opacity-100"
                     }`}
+                  style={isActive ? {
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-foreground)',
+                    borderColor: 'var(--primary)',
+                  } : undefined}
                 >
                   <Icon className="w-4 h-4 mr-2" />
                   {label}

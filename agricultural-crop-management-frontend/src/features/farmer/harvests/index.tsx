@@ -55,7 +55,7 @@ export function HarvestManagement() {
     selectedBatch,
     isDetailsDrawerOpen,
     setIsDetailsDrawerOpen,
-    batches,
+    selectedBatchIds,
     formData,
     setFormData,
 
@@ -77,6 +77,9 @@ export function HarvestManagement() {
     // Handlers
     handleAddBatch,
     handleDeleteBatch,
+    handleDeleteSelectedBatches,
+    handleToggleBatchSelection,
+    handleToggleAllSelection,
     resetForm,
     handleViewDetails,
     handleQuickAction,
@@ -293,8 +296,12 @@ export function HarvestManagement() {
             <HarvestTable
               batches={filteredBySearch}
               totalBatches={filteredBatches.length}
+              selectedBatchIds={selectedBatchIds}
               onViewDetails={handleViewDetails}
               onDeleteBatch={handleDeleteBatch}
+              onDeleteSelected={handleDeleteSelectedBatches}
+              onToggleBatchSelection={handleToggleBatchSelection}
+              onToggleAllSelection={handleToggleAllSelection}
               onExport={handleExport}
               onPrint={handlePrint}
               getStatusBadge={getStatusBadge}

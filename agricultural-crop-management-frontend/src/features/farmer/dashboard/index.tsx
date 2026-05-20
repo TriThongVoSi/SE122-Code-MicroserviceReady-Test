@@ -14,7 +14,10 @@ import { FdnAssistantPanel } from './components/FdnAssistantPanel';
 import { FdnHistoryChart } from './components/FdnHistoryChart';
 import { FdnKpiCards } from './components/FdnKpiCards';
 import { FieldSustainabilityMap } from './components/FieldSustainabilityMap';
+import { IncidentAlerts } from './components/IncidentAlerts';
+import { InventoryAlertsPanel } from './components/InventoryAlertsPanel';
 import { NitrogenInputBreakdown } from './components/NitrogenInputBreakdown';
+import { RecentActivityTimeline } from './components/RecentActivityTimeline';
 import { SeasonTaskPanels } from './components/SeasonTaskPanels';
 import { useFarmerDashboard } from './hooks/useFarmerDashboard';
 
@@ -25,18 +28,33 @@ export function FarmerDashboard() {
     setSelectedSeason,
     seasonOptions,
     overview,
-    fieldMapItems,
+    fieldMap,
+    mapLoading,
     todayTasks,
     upcomingTasks,
+    dataCompletenessWarnings,
+    incidentAlerts,
+    recentActivities,
+    inventoryAlerts,
+    inventoryAlertsSummary,
     isCriticalLoading,
     isDataLoading,
+    overviewLoading,
     hasNoSeasons,
     seasonsError,
     overviewError,
     mapError,
     todayTasksError,
     upcomingTasksError,
+    dataCompletenessWarningsError,
+    incidentAlertsError,
+    recentActivitiesError,
+    inventoryAlertsError,
   } = useFarmerDashboard();
+
+  const weatherSeasonId = selectedSeason
+    ? Number.parseInt(selectedSeason, 10)
+    : undefined;
 
   if (isCriticalLoading) {
     return (
@@ -102,6 +120,10 @@ export function FarmerDashboard() {
     mapError,
     todayTasksError,
     upcomingTasksError,
+    dataCompletenessWarningsError,
+    incidentAlertsError,
+    recentActivitiesError,
+    inventoryAlertsError,
   ].filter((error): error is Error => Boolean(error));
 
   return (
@@ -151,29 +173,81 @@ export function FarmerDashboard() {
                     defaultValue: 'Weather summary',
                   })}
                 </span>
-                <WeatherWidget variant="compact" />
+                <WeatherWidget
+                  variant="compact"
+                  seasonId={Number.isNaN(weatherSeasonId) ? undefined : weatherSeasonId}
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <FdnKpiCards overview={overview} isLoading={isDataLoading} />
+        <FdnKpiCards
+          overview={overview}
+          isLoading={overviewLoading}
+          errorMessage={overviewError?.message ?? null}
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
-          <NitrogenInputBreakdown overview={overview} isLoading={isDataLoading} />
-          <FdnAssistantPanel overview={overview} isLoading={isDataLoading} />
+          <NitrogenInputBreakdown
+            overview={overview}
+            isLoading={overviewLoading}
+            errorMessage={overviewError?.message ?? null}
+          />
+          <FdnAssistantPanel
+            overview={overview}
+            isLoading={overviewLoading}
+            errorMessage={overviewError?.message ?? null}
+          />
         </div>
 
-        <FieldSustainabilityMap items={fieldMapItems} isLoading={isDataLoading} />
+        <FieldSustainabilityMap
+          mapData={fieldMap}
+          isLoading={mapLoading}
+          apiErrorMessage={mapError?.message ?? null}
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
-          <FdnHistoryChart history={overview?.historicalTrend ?? []} isLoading={isDataLoading} />
+          <FdnHistoryChart
+            overview={overview}
+            isLoading={overviewLoading}
+            errorMessage={overviewError?.message ?? null}
+          />
           <SeasonTaskPanels
             todayTasks={todayTasks}
             upcomingTasks={upcomingTasks}
+            dataCompletenessWarnings={dataCompletenessWarnings}
             isLoading={isDataLoading}
+            errorMessage={
+              partialErrors.length > 0
+                ? t('dashboard.dataLoadError', {
+                  defaultValue: 'Some data failed to load',
+                })
+                : null
+            }
           />
         </div>
+
+        <IncidentAlerts
+          alerts={incidentAlerts}
+          isLoading={isDataLoading}
+          errorMessage={incidentAlertsError?.message ?? null}
+        />
+
+        <div id="recent-activity">
+          <RecentActivityTimeline
+            activities={recentActivities}
+            isLoading={isDataLoading}
+            errorMessage={recentActivitiesError?.message ?? null}
+          />
+        </div>
+
+        <InventoryAlertsPanel
+          alerts={inventoryAlerts}
+          summary={inventoryAlertsSummary}
+          isLoading={isDataLoading}
+          errorMessage={inventoryAlertsError?.message ?? null}
+        />
       </div>
     </div>
   );

@@ -6,7 +6,6 @@ import type { DateRange, UserActivityFilter, KPIData } from '../types';
 import {
     USER_ACTIVITY_DATA,
     SYSTEM_ALERTS,
-    SYSTEM_HEALTH,
 } from '../constants';
 import {
     adminReportsApi,
@@ -344,7 +343,6 @@ export const useReportsAnalytics = () => {
         expensesData,
         metricsData,
         systemAlerts: SYSTEM_ALERTS,
-        systemHealth: SYSTEM_HEALTH,
         filteredUserActivityData,
 
         // Loading states

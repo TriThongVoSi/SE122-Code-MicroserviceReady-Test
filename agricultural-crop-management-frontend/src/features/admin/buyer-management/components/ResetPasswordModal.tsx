@@ -8,33 +8,18 @@ import {
   DialogTitle,
 } from "@/shared/ui";
 import { Key, Mail } from "lucide-react";
-import { toast } from "sonner";
 
 interface ResetPasswordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onResetPassword: (method: "email" | "temp") => void;
 }
 
 export function ResetPasswordModal({
   open,
   onOpenChange,
+  onResetPassword,
 }: ResetPasswordModalProps) {
-  const handleSendEmailLink = () => {
-    toast.success("Reset link sent", {
-      description: "Password reset link has been sent to buyer's email.",
-    });
-    onOpenChange(false);
-  };
-
-  const handleGenerateTempPassword = () => {
-    const tempPassword = "Temp" + Math.random().toString(36).slice(-8);
-    navigator.clipboard.writeText(tempPassword);
-    toast.success("Temporary password generated", {
-      description: `Password "${tempPassword}" copied to clipboard.`,
-    });
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -52,7 +37,7 @@ export function ResetPasswordModal({
           <Button
             variant="outline"
             className="w-full justify-start h-auto p-4"
-            onClick={handleSendEmailLink}
+            onClick={() => onResetPassword("email")}
           >
             <div className="flex items-start gap-3">
               <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -71,7 +56,7 @@ export function ResetPasswordModal({
           <Button
             variant="outline"
             className="w-full justify-start h-auto p-4"
-            onClick={handleGenerateTempPassword}
+            onClick={() => onResetPassword("temp")}
           >
             <div className="flex items-start gap-3">
               <Key className="w-5 h-5 text-cyan-600 mt-0.5" />
