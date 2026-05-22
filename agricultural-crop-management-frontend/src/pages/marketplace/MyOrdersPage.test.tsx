@@ -188,18 +188,18 @@ describe("MyOrdersPage", () => {
     const calls: Array<Record<string, unknown> | undefined> = [];
     mockedUseMarketplaceOrders.mockImplementation((query) => {
       calls.push(query as Record<string, unknown> | undefined);
-      return createOrdersHookResult([createOrder(2, "PAYMENT_SUBMITTED")]);
+      return createOrdersHookResult([createOrder(2, "CONFIRMED")]);
     });
     const user = userEvent.setup();
 
     renderPage();
 
     expect(calls.at(-1)).toMatchObject({ status: undefined, page: 0, size: 10 });
-    await user.click(screen.getByRole("button", { name: "Payment submitted" }));
+    await user.click(screen.getByRole("button", { name: "Confirmed" }));
 
     await waitFor(() => {
       expect(calls.at(-1)).toMatchObject({
-        status: "PAYMENT_SUBMITTED",
+        status: "CONFIRMED",
         page: 0,
         size: 10,
       });
