@@ -176,6 +176,11 @@ describe("MyOrdersPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("#ORD-1")).toBeInTheDocument();
     expect(screen.getByTestId("order-status-1")).toHaveTextContent("Pending payment");
+    expect(screen.getByText("Group: Payment").parentElement!).toHaveClass("rounded-lg");
+    expect(screen.getByText("Eligible for cancellation").parentElement!).toHaveClass("rounded-lg");
+    expect(screen.getByText("Payment: Bank transfer - Submitted").parentElement!).toHaveClass(
+      "rounded-lg",
+    );
     expect(screen.queryByText("PENDING_PAYMENT")).not.toBeInTheDocument();
   });
 
