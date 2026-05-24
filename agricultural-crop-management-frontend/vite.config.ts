@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig(({ mode }) => {
@@ -11,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8080';
 
   return {
-    plugins: [react()],
+    plugins: [tailwindcss(), react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {

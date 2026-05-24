@@ -113,6 +113,38 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void resetPassword_withGoogleOnlyUser_setsLocalPasswordAndMarksUsed() {
+        String rawToken = "reset-token";
+        String hash = hashToken(rawToken);
+
+        User user = User.builder()
+                .id(2L)
+                .status(UserStatus.ACTIVE)
+                .googleId("google-123")
+                .password(null)
+                .build();
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .id(20L)
+                .user(user)
+                .tokenHash(hash)
+                .createdAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        when(tokenRepository.findFirstByTokenHashAndUsedAtIsNullAndExpiresAtAfter(eq(hash), any()))
+                .thenReturn(Optional.of(resetToken));
+        when(passwordEncoder.encode("newpassword")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tokenRepository.save(any(PasswordResetToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        passwordResetService.resetPassword(rawToken, "newpassword", "newpassword", "127.0.0.1");
+
+        assertEquals("encoded", user.getPassword());
+        assertNotNull(resetToken.getUsedAt());
+    }
+
+    @Test
     void resetPassword_withInvalidToken_throwsAppException() {
         String rawToken = "invalid-token";
         String hash = hashToken(rawToken);

@@ -181,6 +181,30 @@
     }
   },
   "auth": {
+    "shell": {
+      "visualLabel": "Fresh agricultural field background",
+      "brandKicker": "Fresh agriculture",
+      "eyebrow": "Sustainable crop operations",
+      "heroTitle": "Grow, sell, and manage harvests in one fresh workspace",
+      "heroDescription": "ACM connects farm operations, traceability, and marketplace workflows with a calm nature-first experience for every role.",
+      "formBadge": "Nature-first access",
+      "languageLabel": "Choose language",
+      "footerNote": "Protected access for farmers, buyers, employees, and administrators.",
+      "benefits": {
+        "harvest": {
+          "title": "Harvest ready",
+          "description": "Move from field records to sellable products with confidence."
+        },
+        "traceability": {
+          "title": "Traceable flow",
+          "description": "Keep farm, season, and product context connected."
+        },
+        "weather": {
+          "title": "Fresh insights",
+          "description": "Bring daily operations closer to weather and field signals."
+        }
+      }
+    },
     "signIn": {
       "title": "Sign In",
       "subtitle": "Enter your email and password to sign in!",
@@ -197,7 +221,9 @@
       "orSignInWith": "or sign in with",
       "continueWithGoogle": "Continue with Google",
       "showPassword": "Show password",
-      "hidePassword": "Hide password"
+      "hidePassword": "Hide password",
+      "continueAsGuest": "Continue to marketplace as guest",
+      "guestMarketplaceHint": "Guests can browse products only. Create an account to place orders."
     },
     "signUp": {
       "title": "Create Account",
@@ -218,6 +244,16 @@
       "selectRole": "Select your role",
       "roleFarmer": "Farmer",
       "roleBuyer": "Buyer",
+      "roleFarmerDescription": "Manage crops and sell harvest products",
+      "roleBuyerDescription": "Browse and purchase farm products",
+      "passwordRules": {
+        "title": "Password strength",
+        "minLength": "At least 8 characters",
+        "uppercase": "One uppercase letter",
+        "lowercase": "One lowercase letter",
+        "number": "One number",
+        "special": "One special character"
+      },
       "termsPrefix": "I agree to the",
       "termsLink": "Terms and Conditions",
       "privacyLink": "Privacy Policy",

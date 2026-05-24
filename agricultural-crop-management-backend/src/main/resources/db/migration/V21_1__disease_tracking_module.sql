@@ -1,4 +1,4 @@
--- V21__disease_tracking_module.sql
+-- V21_1__disease_tracking_module.sql
 -- Disease tracking module for season management
 
 CREATE TABLE IF NOT EXISTS disease_records (

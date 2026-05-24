@@ -18,6 +18,7 @@ import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.identity.repository.InvalidatedTokenRepository;
 import org.example.QuanLyMuaVu.module.identity.repository.UserRepository;
+import org.example.QuanLyMuaVu.module.identity.service.AuthenticationResponseFactory;
 import org.example.QuanLyMuaVu.module.identity.service.AuthenticationService;
 import org.example.QuanLyMuaVu.module.identity.service.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -70,8 +70,8 @@ public class AuthenticationServiceUnitTest {
     @Mock
     private JwtTokenService jwtTokenService;
 
-    @InjectMocks
     private AuthenticationService authenticationService;
+    private AuthenticationResponseFactory authenticationResponseFactory;
 
     // Test fixtures
     private User activeUserWithFarmerRole;
@@ -87,6 +87,14 @@ public class AuthenticationServiceUnitTest {
 
     @BeforeEach
     void setUp() {
+        authenticationResponseFactory = new AuthenticationResponseFactory(jwtTokenService);
+        authenticationService = new AuthenticationService(
+                userRepository,
+                invalidatedTokenRepository,
+                passwordEncoder,
+                jwtTokenService,
+                authenticationResponseFactory);
+
         // Arrange: Create test roles
         farmerRole = Role.builder()
                 .id(2L)
@@ -323,6 +331,36 @@ public class AuthenticationServiceUnitTest {
                     "Should throw AppException when password wrong");
 
             assertEquals(ErrorCode.INVALID_CREDENTIALS, exception.getErrorCode());
+            verify(jwtTokenService, never()).generateToken(any(), any());
+        }
+
+        @Test
+        @DisplayName("Negative Case: Throws PASSWORD_NOT_SET when user has no local password")
+        void authenticate_WhenLocalPasswordMissing_ThrowsPasswordNotSet() {
+            AuthenticationRequest request = AuthenticationRequest.builder()
+                    .email("buyer@test.com")
+                    .password("password")
+                    .build();
+
+            User googleOnlyUser = User.builder()
+                    .id(8L)
+                    .email("buyer@test.com")
+                    .username("buyer_user")
+                    .password(null)
+                    .googleId("google-123")
+                    .status(UserStatus.ACTIVE)
+                    .roles(Set.of(buyerRole))
+                    .build();
+
+            when(userRepository.findByIdentifierWithRoles("buyer@test.com"))
+                    .thenReturn(Optional.of(googleOnlyUser));
+
+            AppException exception = assertThrows(AppException.class,
+                    () -> authenticationService.authenticate(request),
+                    "Should reject password login when account has no local password");
+
+            assertEquals(ErrorCode.PASSWORD_NOT_SET, exception.getErrorCode());
+            verify(passwordEncoder, never()).matches(anyString(), anyString());
             verify(jwtTokenService, never()).generateToken(any(), any());
         }
 

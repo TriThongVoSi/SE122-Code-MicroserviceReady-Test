@@ -5,51 +5,50 @@
 
 import type { SignInProps } from "./types";
 import { useSignIn } from "./hooks/useSignIn";
+import { AuthPageShell } from "../auth/AuthPageShell";
 import { SignInHeader } from "./components/SignInHeader";
 import { GoogleSignInButton } from "./components/GoogleSignInButton";
 import { SignInForm } from "./components/SignInForm";
 
 
-export function SignIn({ onSignIn }: SignInProps) {
+export function SignIn({ onSignIn, onGoogleSignIn }: SignInProps) {
     const {
         email,
         password,
         keepLoggedIn,
         showPassword,
         isLoading,
+        isGoogleLoading,
         setEmail,
         setPassword,
         handleSubmit,
-        handleGoogleSignIn,
+        handleGoogleCredential,
         toggleShowPassword,
         toggleKeepLoggedIn,
-    } = useSignIn({ onSignIn });
+    } = useSignIn({ onSignIn, onGoogleSignIn });
 
     return (
-        <div
-            className="bg-white relative min-h-screen flex items-center justify-center"
-            data-name="a.1 Sign in"
-        >
-            <div className="w-[410px] relative">
-                <SignInHeader />
+        <AuthPageShell mode="sign-in">
+            <SignInHeader />
 
-                <GoogleSignInButton onClick={handleGoogleSignIn} />
+            <GoogleSignInButton
+                onCredential={handleGoogleCredential}
+                isLoading={isGoogleLoading}
+                disabled={isLoading}
+            />
 
-                <SignInForm
-                    email={email}
-                    password={password}
-                    keepLoggedIn={keepLoggedIn}
-                    showPassword={showPassword}
-                    isLoading={isLoading}
-                    onEmailChange={setEmail}
-                    onPasswordChange={setPassword}
-                    onToggleKeepLoggedIn={toggleKeepLoggedIn}
-                    onToggleShowPassword={toggleShowPassword}
-                    onSubmit={handleSubmit}
-                />
-
-
-            </div>
-        </div>
+            <SignInForm
+                email={email}
+                password={password}
+                keepLoggedIn={keepLoggedIn}
+                showPassword={showPassword}
+                isLoading={isLoading}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+                onToggleKeepLoggedIn={toggleKeepLoggedIn}
+                onToggleShowPassword={toggleShowPassword}
+                onSubmit={handleSubmit}
+            />
+        </AuthPageShell>
     );
 }

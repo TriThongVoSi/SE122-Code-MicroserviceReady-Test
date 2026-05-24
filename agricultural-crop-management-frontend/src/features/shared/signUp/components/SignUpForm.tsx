@@ -1,11 +1,13 @@
 /**
  * Sign Up Form Component
- * Compact single-column layout matching Sign In style
+ * Responsive account creation layout for the shared auth shell.
  */
 
-import { useI18n } from "@/hooks/useI18n";
-import { Eye, EyeOff } from "lucide-react";
-import type { BaseSyntheticEvent } from "react";
+import { useI18n } from "@/shared/lib/hooks/useI18n";
+import { cn } from "@/shared/lib";
+import { Button, Checkbox, Input, Label } from "@/shared/ui";
+import { Check, Eye, EyeOff, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import type { BaseSyntheticEvent, ReactNode } from "react";
 import { Controller, type UseFormReturn } from "react-hook-form";
 import { Link } from "react-router-dom";
 import type { SignUpFormData } from "../types";
@@ -32,89 +34,95 @@ export function SignUpForm({
   const {
     register,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = form;
 
-  const inputClass = (hasError: boolean) => `
-    w-full h-12 px-4 rounded-xl border text-sm text-slate-700 placeholder:text-slate-400
-    transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500
-    disabled:bg-slate-50 disabled:text-slate-400
-    ${hasError ? "border-red-300" : "border-slate-200 hover:border-slate-300"}
-  `;
+  const passwordValue = watch("password") ?? "";
+  const passwordRules = [
+    { key: "minLength", met: passwordValue.length >= 8 },
+    { key: "uppercase", met: /[A-Z]/.test(passwordValue) },
+    { key: "lowercase", met: /[a-z]/.test(passwordValue) },
+    { key: "number", met: /\d/.test(passwordValue) },
+    { key: "special", met: /[@$!%*?&]/.test(passwordValue) },
+  ];
+
+  const inputClass = (hasError: boolean) =>
+    cn(
+      "h-12 rounded-2xl border-[#dce8df] !bg-white/95 pl-11 pr-4 !text-[#173422] shadow-sm placeholder:!text-[#91a497] transition-all hover:border-[#b9dcc6] focus-visible:border-[#3BA55D] focus-visible:ring-[#3BA55D]/20 disabled:!bg-[#f4f8f5]",
+      hasError && "border-[#E74C3C] focus-visible:border-[#E74C3C] focus-visible:ring-[#E74C3C]/20",
+    );
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-md mx-auto space-y-4">
-      {/* Full Name */}
-      <div>
-        <label
-          htmlFor="fullName"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
-        >
-          {t('auth.signUp.fullName')}<span className="text-red-500 ml-0.5">*</span>
-        </label>
-        <input
-          type="text"
+    <form onSubmit={onSubmit} className="max-w-full space-y-4">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+        <FieldShell
           id="fullName"
-          autoComplete="name"
-          placeholder={t('auth.signUp.fullNamePlaceholder')}
-          className={inputClass(!!errors.fullName)}
-          disabled={isSubmitting}
-          {...register("fullName")}
-        />
-        {errors.fullName && (
-          <p className="mt-1 text-xs text-red-500">{errors.fullName.message}</p>
-        )}
-      </div>
-
-      {/* Email */}
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
+          label={t("auth.signUp.fullName")}
+          required
+          error={errors.fullName?.message}
         >
-          {t('auth.signUp.email')}<span className="text-red-500 ml-0.5">*</span>
-        </label>
-        <input
-          type="email"
+          <UserRound
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#3BA55D]"
+            aria-hidden="true"
+          />
+          <Input
+            type="text"
+            id="fullName"
+            autoComplete="name"
+            placeholder={t("auth.signUp.fullNamePlaceholder")}
+            className={inputClass(!!errors.fullName)}
+            aria-invalid={!!errors.fullName}
+            disabled={isSubmitting}
+            {...register("fullName")}
+          />
+        </FieldShell>
+
+        <FieldShell
           id="email"
-          autoComplete="email"
-          placeholder={t('auth.signUp.emailPlaceholder')}
-          className={inputClass(!!errors.email)}
-          disabled={isSubmitting}
-          {...register("email")}
-        />
-        {errors.email && (
-          <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-        )}
+          label={t("auth.signUp.email")}
+          required
+          error={errors.email?.message}
+        >
+          <Mail
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#3BA55D]"
+            aria-hidden="true"
+          />
+          <Input
+            type="email"
+            id="email"
+            autoComplete="email"
+            placeholder={t("auth.signUp.emailPlaceholder")}
+            className={inputClass(!!errors.email)}
+            aria-invalid={!!errors.email}
+            disabled={isSubmitting}
+            {...register("email")}
+          />
+        </FieldShell>
       </div>
 
-      {/* Phone Number */}
-      <div>
-        <label
-          htmlFor="phoneNumber"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
-        >
-          {t('auth.signUp.phoneNumber')}{" "}
-          <span className="text-slate-400 font-normal">({t('common.optional')})</span>
-        </label>
-        <input
+      <FieldShell
+        id="phoneNumber"
+        label={t("auth.signUp.phoneNumber")}
+        optionalText={t("common.optional")}
+        error={errors.phoneNumber?.message}
+      >
+        <Phone
+          className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#3BA55D]"
+          aria-hidden="true"
+        />
+        <Input
           type="tel"
           id="phoneNumber"
           autoComplete="tel"
-          placeholder={t('auth.signUp.phoneNumberPlaceholder')}
+          placeholder={t("auth.signUp.phoneNumberPlaceholder")}
           className={inputClass(!!errors.phoneNumber)}
+          aria-invalid={!!errors.phoneNumber}
           disabled={isSubmitting}
           {...register("phoneNumber")}
         />
-        {errors.phoneNumber && (
-          <p className="mt-1 text-xs text-red-500">
-            {errors.phoneNumber.message}
-          </p>
-        )}
-      </div>
+      </FieldShell>
 
-      {/* Role Selector */}
       <Controller
         control={control}
         name="role"
@@ -129,175 +137,210 @@ export function SignUpForm({
         )}
       />
 
-      {/* Password */}
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+        <FieldShell
+          id="password"
+          label={t("auth.signUp.password")}
+          required
+          error={errors.password?.message}
         >
-          {t('auth.signUp.password')}<span className="text-red-500 ml-0.5">*</span>
-        </label>
-        <div className="relative">
-          <input
+          <LockKeyhole
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#3BA55D]"
+            aria-hidden="true"
+          />
+          <Input
             type={showPassword ? "text" : "password"}
             id="password"
             autoComplete="new-password"
-            placeholder={t('auth.signUp.passwordPlaceholder')}
+            placeholder={t("auth.signUp.passwordPlaceholder")}
             className={`${inputClass(!!errors.password)} pr-12`}
+            aria-invalid={!!errors.password}
             disabled={isSubmitting}
             {...register("password")}
           />
-          <button
-            type="button"
-            onClick={onToggleShowPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-            aria-label={showPassword ? t('auth.signIn.hidePassword') : t('auth.signIn.showPassword')}
-          >
-            {showPassword ? (
-              <EyeOff className="w-5 h-5" />
-            ) : (
-              <Eye className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-        {errors.password && (
-          <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
-        )}
-      </div>
+          <PasswordToggle
+            showPassword={showPassword}
+            onToggle={onToggleShowPassword}
+            disabled={isSubmitting}
+            label={showPassword ? t("auth.signIn.hidePassword") : t("auth.signIn.showPassword")}
+          />
+        </FieldShell>
 
-      {/* Confirm Password */}
-      <div>
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-slate-700 mb-1.5"
+        <FieldShell
+          id="confirmPassword"
+          label={t("auth.signUp.confirmPassword")}
+          required
+          error={errors.confirmPassword?.message}
         >
-          {t('auth.signUp.confirmPassword')}<span className="text-red-500 ml-0.5">*</span>
-        </label>
-        <div className="relative">
-          <input
+          <LockKeyhole
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#3BA55D]"
+            aria-hidden="true"
+          />
+          <Input
             type={showConfirmPassword ? "text" : "password"}
             id="confirmPassword"
             autoComplete="new-password"
-            placeholder={t('auth.signUp.confirmPasswordPlaceholder')}
+            placeholder={t("auth.signUp.confirmPasswordPlaceholder")}
             className={`${inputClass(!!errors.confirmPassword)} pr-12`}
+            aria-invalid={!!errors.confirmPassword}
             disabled={isSubmitting}
             {...register("confirmPassword")}
           />
-          <button
-            type="button"
-            onClick={onToggleShowConfirmPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-            aria-label={showConfirmPassword ? t('auth.signIn.hidePassword') : t('auth.signIn.showPassword')}
-          >
-            {showConfirmPassword ? (
-              <EyeOff className="w-5 h-5" />
-            ) : (
-              <Eye className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-        {errors.confirmPassword && (
-          <p className="mt-1 text-xs text-red-500">
-            {errors.confirmPassword.message}
-          </p>
-        )}
+          <PasswordToggle
+            showPassword={showConfirmPassword}
+            onToggle={onToggleShowConfirmPassword}
+            disabled={isSubmitting}
+            label={showConfirmPassword ? t("auth.signIn.hidePassword") : t("auth.signIn.showPassword")}
+          />
+        </FieldShell>
       </div>
 
-      {/* Terms Checkbox */}
-      <div className="pt-2">
+      <div className="rounded-2xl border border-[#dce8df] bg-[#f8fcf9] p-4">
+        <p className="text-sm font-bold text-[#244332]">{t("auth.signUp.passwordRules.title")}</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {passwordRules.map((rule) => (
+            <div
+              key={rule.key}
+              className={cn(
+                "flex items-center gap-2 text-xs font-medium",
+                rule.met ? "text-[#2f8f4f]" : "text-[#789083]",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-4 items-center justify-center rounded-full border",
+                  rule.met ? "border-[#3BA55D] bg-[#3BA55D] text-white" : "border-[#c9dbcf] bg-white",
+                )}
+              >
+                {rule.met && <Check className="size-3" aria-hidden="true" />}
+              </span>
+              {t(`auth.signUp.passwordRules.${rule.key}`)}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <Controller
           control={control}
           name="termsAccepted"
-          render={({ field: { onChange, value, ref } }) => (
-            <div className="flex items-start gap-3">
-              <button
-                type="button"
-                ref={ref}
-                onClick={() => onChange(!value)}
+          render={({ field: { onChange, value } }) => (
+            <div className="flex items-start gap-3 rounded-2xl bg-[#f7faf8] px-4 py-3">
+              <Checkbox
+                checked={value === true}
+                onCheckedChange={(checked) => onChange(checked === true)}
                 disabled={isSubmitting}
-                style={{
-                  backgroundColor: value === true ? "#10b981" : "#ffffff",
-                  borderColor: value === true ? "#10b981" : errors.termsAccepted ? "#f87171" : "#cbd5e1",
-                }}
-                className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 hover:border-slate-400"
-                aria-checked={value === true}
-                role="checkbox"
-              >
-                {value === true && (
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="#ffffff"
-                    strokeWidth={3}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </button>
+                aria-invalid={!!errors.termsAccepted}
+                className="mt-0.5 size-5 rounded-md border-[#bcdcc7] data-[state=checked]:border-[#3BA55D] data-[state=checked]:bg-[#3BA55D]"
+              />
               <span
-                className="text-sm text-slate-600 leading-relaxed cursor-pointer"
+                className="text-sm leading-6 text-[#45634f]"
                 onClick={() => onChange(!value)}
               >
-                {t('auth.signUp.termsPrefix')}{" "}
+                {t("auth.signUp.termsPrefix")}{" "}
                 <Link
                   to="/terms"
-                  className="text-emerald-600 font-medium hover:underline"
-                  onClick={(e) => e.stopPropagation()}
+                  className="font-bold text-[#2f8f4f] hover:underline"
+                  onClick={(event) => event.stopPropagation()}
                 >
-                  {t('auth.signUp.termsLink')}
+                  {t("auth.signUp.termsLink")}
                 </Link>{" "}
-                {t('common.and')}{" "}
+                {t("common.and")}{" "}
                 <Link
                   to="/privacy"
-                  className="text-emerald-600 font-medium hover:underline"
-                  onClick={(e) => e.stopPropagation()}
+                  className="font-bold text-[#2f8f4f] hover:underline"
+                  onClick={(event) => event.stopPropagation()}
                 >
-                  {t('auth.signUp.privacyLink')}
+                  {t("auth.signUp.privacyLink")}
                 </Link>
-                <span className="text-red-500 ml-0.5">*</span>
+                <span className="ml-0.5 text-[#E74C3C]">*</span>
               </span>
             </div>
           )}
         />
         {errors.termsAccepted && (
-          <p className="mt-1 text-xs text-red-500 ml-8">
+          <p className="mt-2 text-xs font-medium text-[#E74C3C]">
             {errors.termsAccepted.message}
           </p>
         )}
       </div>
 
-      {/* Submit Button */}
-      <button
+      <Button
+        variant="ghost"
         type="submit"
         disabled={isSubmitting}
-        className={`
-          w-full h-12 rounded-xl font-semibold text-sm text-white mt-2
-          flex items-center justify-center gap-2 transition-all
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
-          ${isSubmitting ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}
-        `}
+        className="h-12 w-full rounded-2xl bg-[#3BA55D] text-sm font-bold text-white shadow-[0_14px_30px_rgba(59,165,93,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#2f8f4f] hover:shadow-[0_18px_34px_rgba(59,165,93,0.38)] focus-visible:ring-[#3BA55D]/35 disabled:translate-y-0 disabled:bg-[#9fd4b0] disabled:text-white"
       >
-        {isSubmitting && (
-          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        )}
-        {isSubmitting ? t('auth.signUp.creatingAccount') : t('auth.signUp.createAccount')}
-      </button>
+        {isSubmitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+        {isSubmitting ? t("auth.signUp.creatingAccount") : t("auth.signUp.createAccount")}
+      </Button>
 
-      {/* Sign In Link */}
-      <p className="text-sm text-slate-600 text-center pt-4">
-        {t('auth.signUp.hasAccount')}{" "}
+      <p className="text-center text-sm text-[#45634f]">
+        {t("auth.signUp.hasAccount")}{" "}
         <Link
           to="/sign-in"
-          className="text-emerald-600 font-semibold hover:underline"
+          className="font-bold text-[#2f8f4f] transition-colors hover:text-[#246f3d] hover:underline"
         >
-          {t('auth.signUp.signIn')}
+          {t("auth.signUp.signIn")}
         </Link>
       </p>
     </form>
+  );
+}
+
+function FieldShell({
+  id,
+  label,
+  required,
+  optionalText,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  optionalText?: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id} className="text-sm font-bold text-[#244332]">
+        {label}
+        {required && <span className="text-[#E74C3C]">*</span>}
+        {optionalText && <span className="ml-1 font-medium text-[#789083]">({optionalText})</span>}
+      </Label>
+      <div className="relative">{children}</div>
+      {error && <p className="text-xs font-medium text-[#E74C3C]">{error}</p>}
+    </div>
+  );
+}
+
+function PasswordToggle({
+  showPassword,
+  onToggle,
+  disabled,
+  label,
+}: {
+  showPassword: boolean;
+  onToggle: () => void;
+  disabled: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="absolute right-3 top-1/2 rounded-full p-2 text-[#7b9082] transition-colors hover:bg-[#ecf9f1] hover:text-[#267241] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3BA55D]/30"
+      aria-label={label}
+      aria-pressed={showPassword}
+      disabled={disabled}
+    >
+      {showPassword ? (
+        <EyeOff className="size-4" aria-hidden="true" />
+      ) : (
+        <Eye className="size-4" aria-hidden="true" />
+      )}
+    </button>
   );
 }

@@ -3,12 +3,10 @@ package org.example.QuanLyMuaVu.module.identity.service;
 import com.nimbusds.jose.*;
 import java.text.ParseException;
 import java.util.Date;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.example.QuanLyMuaVu.Enums.UserStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.identity.dto.request.AuthenticationRequest;
@@ -18,7 +16,6 @@ import org.example.QuanLyMuaVu.module.identity.dto.request.RefreshRequest;
 import org.example.QuanLyMuaVu.module.identity.dto.response.AuthenticationResponse;
 import org.example.QuanLyMuaVu.module.identity.dto.response.IntrospectResponse;
 import org.example.QuanLyMuaVu.module.identity.entity.InvalidatedToken;
-import org.example.QuanLyMuaVu.module.identity.entity.Role;
 import org.example.QuanLyMuaVu.module.identity.entity.User;
 import org.example.QuanLyMuaVu.module.identity.repository.InvalidatedTokenRepository;
 import org.example.QuanLyMuaVu.module.identity.repository.UserRepository;
@@ -27,7 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 /**
  * Authentication service handling login, logout, token refresh, and
@@ -48,6 +44,7 @@ public class AuthenticationService {
     InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
     JwtTokenService jwtTokenService;
+    AuthenticationResponseFactory authenticationResponseFactory;
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
@@ -85,38 +82,25 @@ public class AuthenticationService {
                     return new AppException(ErrorCode.INVALID_CREDENTIALS);
                 });
 
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            log.warn("Authentication failed - local password not set for identifier: {}", identifier);
+            throw new AppException(ErrorCode.PASSWORD_NOT_SET);
+        }
+
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!authenticated) {
             log.warn("Authentication failed - invalid password for identifier: {}", identifier);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // Check user status and return appropriate error
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("Authentication failed - user not active. Identifier: {}, Status: {}",
-                    identifier, user.getStatus());
-            
-            // Return specific error based on status
-            if (user.getStatus() == UserStatus.LOCKED) {
-                throw new AppException(ErrorCode.USER_LOCKED);
-            } else if (user.getStatus() == UserStatus.INACTIVE) {
-                throw new AppException(ErrorCode.USER_INACTIVE);
-            } else {
-                throw new AppException(ErrorCode.USER_LOCKED);
-            }
-        }
+        authenticationResponseFactory.validateUserCanAuthenticate(user, identifier);
 
-        if (CollectionUtils.isEmpty(user.getRoles())) {
-            log.warn("Authentication failed - no roles assigned to user: {}", identifier);
-            throw new AppException(ErrorCode.ROLE_MISSING);
-        }
-
-        String primaryRole = determinePrimaryRole(user);
+        String primaryRole = authenticationResponseFactory.determinePrimaryRole(user);
         var token = jwtTokenService.generateToken(user, primaryRole);
         log.info("Authentication successful for identifier: {} - token generated, role: {}",
                 identifier, primaryRole);
 
-        return buildAuthResponse(user, primaryRole, token);
+        return authenticationResponseFactory.buildAuthResponse(user, primaryRole, token);
     }
 
     /**
@@ -133,14 +117,11 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        user = userRepository.findByIdentifierWithRoles(user.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        String primaryRole = determinePrimaryRole(user);
-        return buildAuthResponse(user, primaryRole, null);
+        String primaryRole = authenticationResponseFactory.determinePrimaryRole(user);
+        return authenticationResponseFactory.buildAuthResponse(user, primaryRole, null);
     }
 
     /**
@@ -233,91 +214,11 @@ public class AuthenticationService {
         var user = userRepository.findByIdentifierWithRoles(identifier)
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        String primaryRole = determinePrimaryRole(user);
+        authenticationResponseFactory.validateUserCanAuthenticate(user, identifier);
+        String primaryRole = authenticationResponseFactory.determinePrimaryRole(user);
         var token = jwtTokenService.generateToken(user, primaryRole);
         log.info("Token refreshed successfully for identifier: {}", identifier);
 
-        return buildAuthResponse(user, primaryRole, token);
-    }
-
-    // =========================================================================
-    // PRIVATE HELPERS
-    // =========================================================================
-
-    /**
-     * Determine primary role for a user.
-     * Business rule: prefer FARMER over BUYER, otherwise take first role.
-     */
-    private String determinePrimaryRole(User user) {
-        List<String> roleCodes = user.getRoles().stream()
-                .map(Role::getCode)
-                .toList();
-
-        // ADMIN has highest priority
-        if (roleCodes.contains("ADMIN")) {
-            return "ADMIN";
-        }
-        if (roleCodes.contains("FARMER")) {
-            return "FARMER";
-        }
-        if (roleCodes.contains("EMPLOYEE")) {
-            return "EMPLOYEE";
-        }
-        if (roleCodes.contains("BUYER")) {
-            return "BUYER";
-        }
-        return roleCodes.isEmpty() ? null : roleCodes.get(0);
-    }
-
-    /**
-     * Determine redirect path based on role.
-     */
-    private String determineRedirectPath(String role) {
-        if ("ADMIN".equalsIgnoreCase(role)) {
-            return "/admin";
-        }
-        if ("FARMER".equalsIgnoreCase(role)) {
-            return "/farmer";
-        }
-        if ("EMPLOYEE".equalsIgnoreCase(role)) {
-            return "/employee";
-        }
-        if ("BUYER".equalsIgnoreCase(role)) {
-            return "/marketplace";
-        }
-        return "/";
-    }
-
-    /**
-     * Build authentication response.
-     */
-    private AuthenticationResponse buildAuthResponse(User user, String primaryRole, String token) {
-        AuthenticationResponse.ProfileInfo profile = AuthenticationResponse.ProfileInfo.builder()
-                .id(user.getId())
-                .fullName(user.getFullName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .status(user.getStatus() != null ? user.getStatus().name() : null)
-                .joinedDate(user.getJoinedDate() != null ? user.getJoinedDate().toString() : null)
-                .provinceId(user.getProvince() != null ? user.getProvince().getId() : null)
-                .wardId(user.getWard() != null ? user.getWard().getId() : null)
-                .build();
-
-        var builder = AuthenticationResponse.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .username(user.getUsername())
-                .roles(user.getRoles().stream().map(Role::getCode).toList())
-                .role(primaryRole)
-                .profile(profile)
-                .redirectTo(determineRedirectPath(primaryRole));
-
-        if (token != null) {
-            builder.token(token)
-                    .tokenType("Bearer")
-                    .expiresIn(jwtTokenService.getValidDuration());
-        }
-
-        return builder.build();
+        return authenticationResponseFactory.buildAuthResponse(user, primaryRole, token);
     }
 }

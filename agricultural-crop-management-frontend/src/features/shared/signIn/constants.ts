@@ -29,8 +29,4 @@ export const MESSAGES = {
         title: "No role assigned",
         description: "Your account has no role assigned. Please contact support.",
     },
-    googleSignIn: {
-        title: "Google Sign-In",
-        description: "Google authentication is not configured in demo mode",
-    },
 } as const;

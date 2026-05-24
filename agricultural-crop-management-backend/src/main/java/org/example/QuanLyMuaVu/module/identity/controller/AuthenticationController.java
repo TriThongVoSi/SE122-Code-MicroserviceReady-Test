@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.example.QuanLyMuaVu.DTO.Common.ApiResponse;
 import org.example.QuanLyMuaVu.module.identity.dto.request.AuthenticationRequest;
+import org.example.QuanLyMuaVu.module.identity.dto.request.GoogleAuthRequest;
 import org.example.QuanLyMuaVu.module.identity.dto.request.IntrospectRequest;
 import org.example.QuanLyMuaVu.module.identity.dto.request.LogoutRequest;
 import org.example.QuanLyMuaVu.module.identity.dto.request.RefreshRequest;
@@ -23,6 +24,7 @@ import org.example.QuanLyMuaVu.module.identity.dto.response.AuthenticationRespon
 import org.example.QuanLyMuaVu.module.identity.dto.response.FarmerResponse;
 import org.example.QuanLyMuaVu.module.identity.dto.response.IntrospectResponse;
 import org.example.QuanLyMuaVu.module.identity.service.AuthenticationService;
+import org.example.QuanLyMuaVu.module.identity.service.GoogleAuthService;
 import org.example.QuanLyMuaVu.module.identity.service.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +54,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
         AuthenticationService authenticationService;
+        GoogleAuthService googleAuthService;
         UserService userService;
 
         /**
@@ -108,6 +111,14 @@ public class AuthenticationController {
                                         }
                                         """))) @Valid @RequestBody AuthenticationRequest request) {
                 var result = authenticationService.authenticate(request);
+                return ApiResponse.success(result);
+        }
+
+        @PostMapping("/google")
+        @Operation(summary = "Sign in with Google", description = "Authenticate with a Google ID token and return the internal JWT/session response.")
+        ApiResponse<AuthenticationResponse> authenticateWithGoogle(
+                        @Valid @RequestBody GoogleAuthRequest request) {
+                var result = googleAuthService.authenticate(request);
                 return ApiResponse.success(result);
         }
 

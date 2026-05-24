@@ -4,6 +4,7 @@ import {
     AuthSignUpResponseSchema,
     AuthSignInRequestSchema,
     AuthSignInResponseSchema,
+    AuthGoogleSignInRequestSchema,
     AuthSignOutRequestSchema,
     AuthRefreshRequestSchema,
     AuthRefreshResponseSchema,
@@ -17,6 +18,7 @@ import type {
     AuthSignUpResponse,
     AuthSignInRequest,
     AuthSignInResponse,
+    AuthGoogleSignInRequest,
     AuthSignOutRequest,
     AuthRefreshRequest,
     AuthRefreshResponse,
@@ -62,6 +64,15 @@ export const sessionApi = {
         };
         const validatedPayload = AuthSignInRequestSchema.parse(payload);
         const response = await httpClient.post('/api/v1/auth/sign-in', validatedPayload);
+        return AuthSignInResponseSchema.parse(response.data);
+    },
+
+    /**
+     * Sign in with a Google ID token issued by Google Identity Services.
+     */
+    googleSignIn: async (data: AuthGoogleSignInRequest): Promise<AuthSignInResponse> => {
+        const validatedPayload = AuthGoogleSignInRequestSchema.parse(data);
+        const response = await httpClient.post('/api/v1/auth/google', validatedPayload);
         return AuthSignInResponseSchema.parse(response.data);
     },
 

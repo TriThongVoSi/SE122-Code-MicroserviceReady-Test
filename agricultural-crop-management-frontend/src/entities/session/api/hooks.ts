@@ -11,6 +11,7 @@ import type {
     AuthSignUpResponse,
     AuthSignInRequest,
     AuthSignInResponse,
+    AuthGoogleSignInRequest,
     AuthSignOutRequest,
     AuthRefreshRequest,
     AuthRefreshResponse,
@@ -35,6 +36,14 @@ export const useAuthSignIn = (
 ) => useMutation({
     mutationKey: sessionKeys.signIn(),
     mutationFn: sessionApi.signIn,
+    ...options,
+});
+
+export const useAuthGoogleSignIn = (
+    options?: UseMutationOptions<AuthSignInResponse, Error, AuthGoogleSignInRequest>
+) => useMutation({
+    mutationKey: [...sessionKeys.signIn(), 'google'] as const,
+    mutationFn: sessionApi.googleSignIn,
     ...options,
 });
 

@@ -49,6 +49,11 @@ public enum ErrorCode {
         ROLE_MISSING("ROLE_MISSING", "User has no assigned role.", HttpStatus.FORBIDDEN),
         NOT_OWNER("NOT_OWNER", "Access denied: you do not own this resource.", HttpStatus.FORBIDDEN),
         IDENTIFIER_REQUIRED("IDENTIFIER_REQUIRED", "Email or username is required for login.", HttpStatus.BAD_REQUEST),
+        GOOGLE_AUTH_FAILED("GOOGLE_AUTH_FAILED", "Unable to authenticate with Google.", HttpStatus.UNAUTHORIZED),
+        GOOGLE_EMAIL_NOT_VERIFIED("GOOGLE_EMAIL_NOT_VERIFIED", "Google account email is not verified.", HttpStatus.FORBIDDEN),
+        GOOGLE_ACCOUNT_CONFLICT("GOOGLE_ACCOUNT_CONFLICT", "This email is already linked to another Google account.", HttpStatus.CONFLICT),
+        GOOGLE_AUTH_NOT_CONFIGURED("GOOGLE_AUTH_NOT_CONFIGURED", "Google authentication is not configured.", HttpStatus.SERVICE_UNAVAILABLE),
+        GOOGLE_DEFAULT_ROLE_MISSING("GOOGLE_DEFAULT_ROLE_MISSING", "Default Google sign-in role is not configured.", HttpStatus.INTERNAL_SERVER_ERROR),
 
         // Farm / Plot errors
         PLOT_NOT_FOUND("ERR_PLOT_NOT_FOUND", "Plot not found", HttpStatus.NOT_FOUND),

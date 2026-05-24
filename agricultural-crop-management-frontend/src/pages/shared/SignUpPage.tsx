@@ -7,12 +7,17 @@ import { SignUp } from '@/features/shared/signUp';
 import { useSignUpPage } from './hooks';
 
 export function SignUpPage() {
-  const { isAuthenticated, handleSignUp } = useSignUpPage();
+  const { isAuthenticated, handleSignUp, handleGoogleSignIn } = useSignUpPage();
 
   // Don't render signup if already authenticated (redirect will happen via hook)
   if (isAuthenticated) {
     return null;
   }
 
-  return <SignUp onSignUp={handleSignUp} />;
+  return (
+    <SignUp
+      onSignUp={handleSignUp}
+      onGoogleSignIn={handleGoogleSignIn}
+    />
+  );
 }
