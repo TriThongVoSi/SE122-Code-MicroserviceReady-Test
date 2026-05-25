@@ -23,6 +23,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
         @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id = :id")
         Optional<User> findByIdWithRoles(@Param("id") Long id);
 
+        @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.googleId = :googleId")
+        Optional<User> findByGoogleIdWithRoles(@Param("googleId") String googleId);
+
         List<User> findAllByRoles_Code(String roleCode);
 
         Page<User> findAllByRoles_Code(String roleCode, Pageable pageable);

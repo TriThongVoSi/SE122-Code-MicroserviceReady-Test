@@ -53,6 +53,7 @@ class AuthenticationControllerTest {
     private PasswordEncoder passwordEncoder;
 
     private static final String SIGN_IN_URL = "/api/v1/auth/sign-in";
+    private static final String GOOGLE_SIGN_IN_URL = "/api/v1/auth/google";
     private static final String TEST_EMAIL = "test@acm.local";
     private static final String TEST_PASSWORD = "testpassword123";
 
@@ -99,6 +100,15 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.result.email").value(TEST_EMAIL))
                 .andExpect(jsonPath("$.result.username").value("testuser"))
                 .andExpect(jsonPath("$.result.roles[0]").value("FARMER"));
+    }
+
+    @Test
+    @DisplayName("Google sign-in endpoint is public and validates missing ID token")
+    void googleSignIn_WithMissingIdToken_Returns400() throws Exception {
+        mockMvc.perform(post(GOOGLE_SIGN_IN_URL)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

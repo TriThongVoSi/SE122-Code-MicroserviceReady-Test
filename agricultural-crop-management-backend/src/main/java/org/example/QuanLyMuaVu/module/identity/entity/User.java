@@ -48,13 +48,16 @@ public class User {
     @Column(name = "email", unique = true)
     String email;
 
+    @Column(name = "google_id", unique = true)
+    String googleId;
+
     @Column(name = "phone", length = 30)
     String phone;
 
     @Column(name = "full_name")
     String fullName;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", nullable = true)
     String password;
 
     /**

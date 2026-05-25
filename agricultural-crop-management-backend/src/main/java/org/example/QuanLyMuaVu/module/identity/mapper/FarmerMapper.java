@@ -13,6 +13,7 @@ public interface FarmerMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
+    @Mapping(target = "googleId", ignore = true)
     @Mapping(target = "phone", ignore = true)
     @Mapping(target = "fullName", ignore = true)
     @Mapping(target = "status", ignore = true)
@@ -39,6 +40,7 @@ public interface FarmerMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "username", ignore = true)
     @Mapping(target = "email", ignore = true)
+    @Mapping(target = "googleId", ignore = true)
     @Mapping(target = "phone", ignore = true)
     @Mapping(target = "fullName", ignore = true)
     @Mapping(target = "status", ignore = true)

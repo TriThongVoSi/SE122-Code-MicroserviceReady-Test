@@ -7,10 +7,9 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
 import { SignUpFormSchema, type SignUpFormData, type SignUpProps } from '../types';
 
-export function useSignUp({ onSignUp }: SignUpProps) {
+export function useSignUp({ onSignUp, onGoogleSignIn }: SignUpProps) {
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(SignUpFormSchema),
     mode: 'onChange',
@@ -28,6 +27,7 @@ export function useSignUp({ onSignUp }: SignUpProps) {
   // UI state
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
@@ -37,10 +37,13 @@ export function useSignUp({ onSignUp }: SignUpProps) {
     }
   });
 
-  const handleGoogleSignUp = () => {
-    toast.info('Google Sign Up', {
-      description: 'Google OAuth integration coming soon!',
-    });
+  const handleGoogleCredential = async (idToken: string) => {
+    setIsGoogleLoading(true);
+    try {
+      await onGoogleSignIn(idToken, false);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const toggleShowPassword = () => {
@@ -55,8 +58,9 @@ export function useSignUp({ onSignUp }: SignUpProps) {
     form,
     showPassword,
     showConfirmPassword,
+    isGoogleLoading,
     handleSubmit,
-    handleGoogleSignUp,
+    handleGoogleCredential,
     toggleShowPassword,
     toggleShowConfirmPassword,
   };

@@ -7,13 +7,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { SignInProps } from "../types";
-import { INITIAL_FORM_STATE, MESSAGES } from "../constants";
+import { INITIAL_FORM_STATE } from "../constants";
 
 interface UseSignInProps {
     onSignIn: SignInProps['onSignIn'];
+    onGoogleSignIn: SignInProps['onGoogleSignIn'];
 }
 
-export function useSignIn({ onSignIn }: UseSignInProps) {
+export function useSignIn({ onSignIn, onGoogleSignIn }: UseSignInProps) {
     const [email, setEmail] = useState(INITIAL_FORM_STATE.email);
     const [password, setPassword] = useState(INITIAL_FORM_STATE.password);
     const [keepLoggedIn, setKeepLoggedIn] = useState(
@@ -21,6 +22,7 @@ export function useSignIn({ onSignIn }: UseSignInProps) {
     );
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,10 +45,13 @@ export function useSignIn({ onSignIn }: UseSignInProps) {
         }
     };
 
-    const handleGoogleSignIn = () => {
-        toast.info(MESSAGES.googleSignIn.title, {
-            description: MESSAGES.googleSignIn.description,
-        });
+    const handleGoogleCredential = async (idToken: string) => {
+        setIsGoogleLoading(true);
+        try {
+            await onGoogleSignIn(idToken, keepLoggedIn);
+        } finally {
+            setIsGoogleLoading(false);
+        }
     };
 
     const toggleShowPassword = () => {
@@ -64,6 +69,7 @@ export function useSignIn({ onSignIn }: UseSignInProps) {
         keepLoggedIn,
         showPassword,
         isLoading,
+        isGoogleLoading,
 
         // State setters
         setEmail,
@@ -71,7 +77,7 @@ export function useSignIn({ onSignIn }: UseSignInProps) {
 
         // Handlers
         handleSubmit,
-        handleGoogleSignIn,
+        handleGoogleCredential,
         toggleShowPassword,
         toggleKeepLoggedIn,
     };

@@ -7,6 +7,7 @@ export type {
     AuthSignUpResponse,
     AuthSignInRequest,
     AuthSignInResponse,
+    AuthGoogleSignInRequest,
     AuthSignOutRequest,
     AuthRefreshRequest,
     AuthRefreshResponse,
@@ -24,6 +25,7 @@ export {
     AuthSignUpResponseSchema,
     AuthSignInRequestSchema,
     AuthSignInResponseSchema,
+    AuthGoogleSignInRequestSchema,
     AuthSignOutRequestSchema,
     AuthRefreshRequestSchema,
     AuthRefreshResponseSchema,
@@ -45,6 +47,7 @@ export { sessionApi } from './api/client';
 export {
     useAuthSignUp,
     useAuthSignIn,
+    useAuthGoogleSignIn,
     useAuthSignOut,
     useAuthRefresh,
     useAuthResetPassword,

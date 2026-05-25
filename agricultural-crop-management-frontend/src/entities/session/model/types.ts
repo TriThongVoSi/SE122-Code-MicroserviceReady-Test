@@ -4,6 +4,7 @@ export type {
     AuthSignUpResponse,
     AuthSignInRequest,
     AuthSignInResponse,
+    AuthGoogleSignInRequest,
     AuthSignOutRequest,
     AuthRefreshRequest,
     AuthRefreshResponse,

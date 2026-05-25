@@ -4,39 +4,41 @@
  */
 
 import { GoogleSignUpButton } from "./components/GoogleSignUpButton";
+import { AuthPageShell } from "../auth/AuthPageShell";
 import { SignUpForm } from "./components/SignUpForm";
 import { SignUpHeader } from "./components/SignUpHeader";
 import { useSignUp } from "./hooks/useSignUp";
 import type { SignUpProps } from "./types";
 
-export function SignUp({ onSignUp }: SignUpProps) {
+export function SignUp({ onSignUp, onGoogleSignIn }: SignUpProps) {
   const {
     form,
     showPassword,
     showConfirmPassword,
+    isGoogleLoading,
     handleSubmit,
-    handleGoogleSignUp,
+    handleGoogleCredential,
     toggleShowPassword,
     toggleShowConfirmPassword,
-  } = useSignUp({ onSignUp });
+  } = useSignUp({ onSignUp, onGoogleSignIn });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 flex items-center justify-center py-8 px-4">
-      {/* Centered Card Container */}
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-100 p-6 sm:p-8">
-        <SignUpHeader />
+    <AuthPageShell mode="sign-up">
+      <SignUpHeader />
 
-        <GoogleSignUpButton onClick={handleGoogleSignUp} />
+      <GoogleSignUpButton
+        onCredential={handleGoogleCredential}
+        isLoading={isGoogleLoading}
+      />
 
-        <SignUpForm
-          form={form}
-          showPassword={showPassword}
-          showConfirmPassword={showConfirmPassword}
-          onToggleShowPassword={toggleShowPassword}
-          onToggleShowConfirmPassword={toggleShowConfirmPassword}
-          onSubmit={handleSubmit}
-        />
-      </div>
-    </div>
+      <SignUpForm
+        form={form}
+        showPassword={showPassword}
+        showConfirmPassword={showConfirmPassword}
+        onToggleShowPassword={toggleShowPassword}
+        onToggleShowConfirmPassword={toggleShowConfirmPassword}
+        onSubmit={handleSubmit}
+      />
+    </AuthPageShell>
   );
 }

@@ -62,6 +62,10 @@ export const AuthSignInRequestSchema = z.object({
     rememberMe: z.boolean().optional().default(false),
 });
 
+export const AuthGoogleSignInRequestSchema = z.object({
+    idToken: z.string().min(1, "Google ID token is required"),
+}).strict();
+
 /**
  * Sign-in response with profile and redirect info as per Feature 0.1 spec.
  */
@@ -85,6 +89,7 @@ export const AuthSignInResponseSchema = z.object({
 
 export type AuthSignInRequest = z.infer<typeof AuthSignInRequestSchema>;
 export type AuthSignInResponse = z.infer<typeof AuthSignInResponseSchema>;
+export type AuthGoogleSignInRequest = z.infer<typeof AuthGoogleSignInRequestSchema>;
 
 // ═══════════════════════════════════════════════════════════════
 // ME (GET /api/v1/auth/me) - Current user endpoint

@@ -40,7 +40,12 @@ interface AuthStorageShape {
 export type AuthErrorType =
   | "invalid_credentials" // 401 INVALID_CREDENTIALS
   | "user_locked" // 403 USER_LOCKED
+  | "user_inactive" // 403 ERR_USER_INACTIVE
   | "role_missing" // 403 ROLE_MISSING
+  | "google_auth_failed"
+  | "google_email_not_verified"
+  | "google_account_conflict"
+  | "google_auth_not_configured"
   | "network_error" // Network connectivity issue
   | "server_error" // 5xx errors
   | "api_not_found"; // 404 (API endpoint not found)
@@ -58,6 +63,10 @@ export interface AuthContextType {
   login: (
     identifier: string,
     password: string,
+    rememberMe?: boolean,
+  ) => Promise<{ success: boolean; error?: AuthError; redirectTo?: string }>;
+  loginWithGoogle: (
+    idToken: string,
     rememberMe?: boolean,
   ) => Promise<{ success: boolean; error?: AuthError; redirectTo?: string }>;
   logout: () => Promise<void>;
@@ -171,10 +180,50 @@ function mapBackendError(
     };
   }
 
+  if (code === "ERR_USER_INACTIVE") {
+    return {
+      type: "user_inactive",
+      message: "Your account is not active. Please contact support.",
+      code,
+    };
+  }
+
   if (code === "ROLE_MISSING") {
     return {
       type: "role_missing",
       message: "No role assigned to your account. Please contact support.",
+      code,
+    };
+  }
+
+  if (code === "GOOGLE_AUTH_FAILED") {
+    return {
+      type: "google_auth_failed",
+      message: "Unable to sign in with Google. Please try again.",
+      code,
+    };
+  }
+
+  if (code === "GOOGLE_EMAIL_NOT_VERIFIED") {
+    return {
+      type: "google_email_not_verified",
+      message: "Your Google account email is not verified.",
+      code,
+    };
+  }
+
+  if (code === "GOOGLE_ACCOUNT_CONFLICT") {
+    return {
+      type: "google_account_conflict",
+      message: "This email is already linked to another Google account.",
+      code,
+    };
+  }
+
+  if (code === "GOOGLE_AUTH_NOT_CONFIGURED") {
+    return {
+      type: "google_auth_not_configured",
+      message: "Google sign-in is not configured for this environment.",
       code,
     };
   }
@@ -210,6 +259,44 @@ function mapBackendError(
     message: message || "An unexpected error occurred. Please try again.",
     code,
   };
+}
+
+function mapAuthFailure(error: unknown): AuthError {
+  if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      return {
+        type: "network_error",
+        message: "Cannot connect to server. Please check your network connection.",
+        code: "ERR_NETWORK",
+      };
+    }
+
+    const status = error.response.status || 0;
+    const responseData = error.response.data as
+      | { code?: string; message?: string }
+      | undefined;
+
+    return mapBackendError(status, responseData?.code, responseData?.message);
+  }
+
+  return {
+    type: "server_error",
+    message: "An unexpected error occurred. Please try again.",
+  };
+}
+
+function getNormalizedRedirect(primaryRole: UserRole, redirectTo?: string): string {
+  if (
+    redirectTo === "/admin" ||
+    redirectTo === "/farmer" ||
+    redirectTo === "/marketplace" ||
+    redirectTo === "/buyer" ||
+    redirectTo === "/employee"
+  ) {
+    return redirectTo === "/buyer" ? "/marketplace" : redirectTo;
+  }
+
+  return primaryRole === "buyer" ? "/marketplace" : `/${primaryRole}`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -316,29 +403,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, [refreshUserFromToken]);
 
-  /**
-   * Login with username/email and password.
-   *
-   * @param identifier - Username or email
-   * @param password - User password
-   * @param rememberMe - Whether to persist session in localStorage
-   * @returns Result with success status, error (if failed), and redirectTo path
-   */
-  const login = async (
-    identifier: string,
-    password: string,
-    rememberMe: boolean = false,
-  ): Promise<{ success: boolean; error?: AuthError; redirectTo?: string }> => {
-    try {
-      // Call backend with identifier-based login
-      const authResponse: AuthSignInResponse = await sessionApi.signIn({
-        identifier,
-        password,
-        rememberMe,
-      });
-
-      // Extract user info from the response
-      const { result } = authResponse;
+  const applyAuthResponse = useCallback(
+    (
+      authResponse: AuthSignInResponse,
+      rememberMe: boolean,
+      emailFallback?: string,
+    ): { success: true; redirectTo: string } | { success: false; error: AuthError } => {
       const {
         token,
         username,
@@ -348,14 +418,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         profile,
         redirectTo,
-      } = result;
+        email,
+      } = authResponse.result;
 
-      // Decode JWT to get user ID if not in response
       const jwtPayload = decodeJwtPayload(token);
       const userIdFromToken =
         jwtPayload?.user_id || jwtPayload?.userId || jwtPayload?.sub;
 
-      // Use primary role from response or fall back to first role
       const primaryRole = normalizeRole(role || roles[0]);
       if (!primaryRole) {
         return {
@@ -372,81 +441,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username,
         name: profile?.fullName || username,
         role: primaryRole,
-        email: identifier.includes("@") ? identifier : undefined,
+        email: email || profile?.email || emailFallback,
         profile,
       };
 
-      // Calculate expiration time (use expiresIn from response or default 24h)
       const expirationMs = (expiresIn ?? 24 * 60 * 60) * 1000;
-
       const storage: AuthStorageShape = {
         token,
-        refreshToken: token, // Using same token as refresh for now
+        refreshToken: token,
         expiresAt: Date.now() + expirationMs,
         user: mappedUser,
       };
 
       setUser(mappedUser);
       saveStoredAuth(storage, rememberMe);
-
-      // Prefetch profile for instant profile page loads
       prefetchProfile();
-
-      const normalizedRedirect =
-        redirectTo === "/admin" ||
-        redirectTo === "/farmer" ||
-        redirectTo === "/marketplace" ||
-        redirectTo === "/buyer" ||
-        redirectTo === "/employee"
-          ? redirectTo === "/buyer"
-            ? "/marketplace"
-            : redirectTo
-          : primaryRole === "buyer"
-            ? "/marketplace"
-            : `/${primaryRole}`;
 
       return {
         success: true,
-        redirectTo: normalizedRedirect,
+        redirectTo: getNormalizedRedirect(primaryRole, redirectTo),
       };
+    },
+    [prefetchProfile],
+  );
+
+  /**
+   * Login with username/email and password.
+   *
+   * @param identifier - Username or email
+   * @param password - User password
+   * @param rememberMe - Whether to persist session in localStorage
+   * @returns Result with success status, error (if failed), and redirectTo path
+   */
+  const login = async (
+    identifier: string,
+    password: string,
+    rememberMe: boolean = false,
+  ): Promise<{ success: boolean; error?: AuthError; redirectTo?: string }> => {
+    try {
+      const authResponse: AuthSignInResponse = await sessionApi.signIn({
+        identifier,
+        password,
+        rememberMe,
+      });
+
+      return applyAuthResponse(
+        authResponse,
+        rememberMe,
+        identifier.includes("@") ? identifier : undefined,
+      );
     } catch (error) {
       console.error("Failed to login:", error);
-
-      // Parse error to provide specific feedback
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status || 0;
-        const responseData = error.response?.data as
-          | { code?: string; message?: string }
-          | undefined;
-
-        if (!error.response) {
-          return {
-            success: false,
-            error: {
-              type: "network_error",
-              message:
-                "Cannot connect to server. Please check your network connection.",
-              code: "ERR_NETWORK",
-            },
-          };
-        }
-
-        return {
-          success: false,
-          error: mapBackendError(
-            status,
-            responseData?.code,
-            responseData?.message,
-          ),
-        };
-      }
-
       return {
         success: false,
-        error: {
-          type: "server_error",
-          message: "An unexpected error occurred. Please try again.",
-        },
+        error: mapAuthFailure(error),
+      };
+    }
+  };
+
+  const loginWithGoogle = async (
+    idToken: string,
+    rememberMe: boolean = false,
+  ): Promise<{ success: boolean; error?: AuthError; redirectTo?: string }> => {
+    try {
+      const authResponse = await sessionApi.googleSignIn({ idToken });
+      return applyAuthResponse(authResponse, rememberMe);
+    } catch (error) {
+      console.error("Failed to login with Google:", error);
+      return {
+        success: false,
+        error: mapAuthFailure(error),
       };
     }
   };
@@ -534,6 +598,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     logout,
     getUserRole,
     refreshUserFromToken,

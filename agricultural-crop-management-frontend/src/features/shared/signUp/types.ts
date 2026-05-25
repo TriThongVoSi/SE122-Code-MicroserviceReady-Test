@@ -50,4 +50,5 @@ export type SignUpFormData = z.infer<typeof SignUpFormSchema>;
 
 export interface SignUpProps {
   onSignUp: (formData: SignUpFormData) => Promise<void>;
+  onGoogleSignIn: (idToken: string, rememberMe: boolean) => Promise<void>;
 }
