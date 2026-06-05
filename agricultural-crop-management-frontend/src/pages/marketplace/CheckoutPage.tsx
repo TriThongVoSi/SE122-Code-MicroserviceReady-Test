@@ -140,12 +140,21 @@ export function CheckoutPage() {
 
   const splitOrderGroups = useMemo(() => {
     if (!cart) return [];
+    /* Prefer API-provided sellerGroups (includes farmerName, farmName) */
+    if (cart.sellerGroups && cart.sellerGroups.length > 0) {
+      return cart.sellerGroups.map((group) => ({
+        farmerUserId: group.farmerUserId,
+        farmerName: group.farmerName,
+        items: group.items,
+      }));
+    }
+    /* Fallback: manual grouping for backward compatibility */
     const groups = new Map<number, typeof cart.items>();
     cart.items.forEach((item) => {
       groups.set(item.farmerUserId, [...(groups.get(item.farmerUserId) ?? []), item]);
     });
-    return Array.from(groups.entries()).map(([farmerUserId, items]) => ({ farmerUserId, items }));
-  }, [cart?.items]);
+    return Array.from(groups.entries()).map(([farmerUserId, items]) => ({ farmerUserId, farmerName: null as string | null, items }));
+  }, [cart]);
 
   useEffect(() => {
     if (cartFingerprint !== lastCartFingerprintRef.current) {
@@ -693,7 +702,9 @@ export function CheckoutPage() {
                   <div className="mt-3 space-y-2">
                     {splitOrderGroups.map((group, index) => (
                       <div key={group.farmerUserId} className="rounded-lg bg-card p-3 text-sm text-foreground">
-                        <div className="font-medium text-foreground">Đơn {index + 1}</div>
+                        <div className="font-medium text-foreground">
+                          Đơn {index + 1}{group.farmerName ? ` — ${group.farmerName}` : ''}
+                        </div>
                         <div>{group.items.length} sản phẩm · {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}</div>
                       </div>
                     ))}

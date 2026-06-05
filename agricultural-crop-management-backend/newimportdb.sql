@@ -644,7 +644,7 @@ CREATE TABLE password_reset_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_products (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     version BIGINT NOT NULL DEFAULT 0,
     slug VARCHAR(191) NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -676,7 +676,7 @@ CREATE TABLE marketplace_products (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_carts (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -685,7 +685,7 @@ CREATE TABLE marketplace_carts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_cart_items (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     cart_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     quantity DECIMAL(19,3) NOT NULL,
@@ -698,7 +698,7 @@ CREATE TABLE marketplace_cart_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_order_groups (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     group_code VARCHAR(64) NOT NULL,
     buyer_user_id BIGINT NOT NULL,
     idempotency_key VARCHAR(128) NOT NULL,
@@ -710,7 +710,7 @@ CREATE TABLE marketplace_order_groups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_orders (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     order_group_id BIGINT NOT NULL,
     order_code VARCHAR(64) NOT NULL,
     buyer_user_id BIGINT NOT NULL,
@@ -741,7 +741,7 @@ CREATE TABLE marketplace_orders (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_order_items (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     product_name_snapshot VARCHAR(255) NOT NULL,
@@ -762,7 +762,7 @@ CREATE TABLE marketplace_order_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_addresses (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(30) NOT NULL,
@@ -780,7 +780,7 @@ CREATE TABLE marketplace_addresses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE marketplace_product_reviews (
-    id BIGINT NOT NULL PRIMARY KEY,
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT NOT NULL,
     order_id BIGINT NOT NULL,
     order_item_id BIGINT NULL,

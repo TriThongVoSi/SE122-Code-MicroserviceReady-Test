@@ -17,6 +17,7 @@ export type {
   MarketplaceAddCartItemRequest,
   MarketplaceCart,
   MarketplaceCartItem,
+  MarketplaceCartSellerGroup,
   MarketplaceCreateOrderRequest,
   MarketplaceCreateOrderResult,
   MarketplaceCreateReviewRequest,

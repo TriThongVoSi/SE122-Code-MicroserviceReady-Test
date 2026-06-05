@@ -216,14 +216,20 @@ export function CartPage() {
   const isMutating = updateItemMutation.isPending || removeItemMutation.isPending;
   const total = (cart.subtotal ?? 0) + SHIPPING_FEE;
 
-  const sellerGroups = cart.items.reduce<
-    Array<{ farmerUserId: number; items: typeof cart.items }>
-  >((groups, item) => {
-    const existing = groups.find((group) => group.farmerUserId === item.farmerUserId);
-    if (existing) existing.items.push(item);
-    else groups.push({ farmerUserId: item.farmerUserId, items: [item] });
-    return groups;
-  }, []);
+  /* Use seller groups from API (contains farmerName, farmName).
+     Fall back to manual grouping for backward compatibility with
+     older API responses that may not include sellerGroups. */
+  const sellerGroups =
+    cart.sellerGroups && cart.sellerGroups.length > 0
+      ? cart.sellerGroups
+      : cart.items.reduce<
+          Array<{ farmerUserId: number; farmerName: string | null; farmName: string | null; items: typeof cart.items }>
+        >((groups, item) => {
+          const existing = groups.find((group) => group.farmerUserId === item.farmerUserId);
+          if (existing) existing.items.push(item);
+          else groups.push({ farmerUserId: item.farmerUserId, farmerName: null, farmName: null, items: [item] });
+          return groups;
+        }, []);
 
   const handleUpdate = async (productId: number, quantity: number) => {
     await updateItemMutation.mutateAsync({ productId, request: { quantity } });
@@ -265,8 +271,13 @@ export function CartPage() {
               <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-4 py-2.5">
                 <Store size={16} className="text-muted-foreground" />
                 <h2 className="text-sm font-semibold text-foreground">
-                  Người bán #{group.farmerUserId}
+                  {group.farmerName ?? `Người bán #${group.farmerUserId}`}
                 </h2>
+                {group.farmName && (
+                  <span className="text-xs text-muted-foreground">
+                    — {group.farmName}
+                  </span>
+                )}
                 <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
                   {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}
                 </span>
