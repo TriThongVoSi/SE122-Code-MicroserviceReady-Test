@@ -1,6 +1,6 @@
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Card, CardContent } from "@/shared/ui";
+import { BackButton, Button, Card, CardContent } from "@/shared/ui";
 import {
   useMarketplaceCart,
   useMarketplaceRemoveCartItemMutation,
@@ -20,6 +20,7 @@ export function CartPage() {
   if (cartQuery.isLoading) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6">
+        <BackButton to="/marketplace/products" className="mb-4 w-fit" />
         <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
           Đang tải giỏ hàng...
         </div>
@@ -30,6 +31,7 @@ export function CartPage() {
   if (cartQuery.isError) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6">
+        <BackButton to="/marketplace/products" className="mb-4 w-fit" />
         <div className="rounded-xl border border-dashed border-destructive/30 bg-card p-8 text-center text-sm text-destructive">
           Không thể tải giỏ hàng từ máy chủ.
         </div>
@@ -42,6 +44,7 @@ export function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6 text-center py-12">
+        <BackButton to="/marketplace/products" className="mb-4 w-fit" />
         <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
           <ShoppingCart size={48} className="text-muted-foreground/50" />
         </div>
@@ -64,6 +67,7 @@ export function CartPage() {
 
   return (
     <div className="max-w-[1800px] mx-auto px-6 pt-6">
+      <BackButton to="/marketplace/products" className="mb-4 w-fit" />
       <h1 className="mb-8 text-3xl font-bold text-foreground">Giỏ hàng của bạn</h1>
 
       <div className="flex flex-col gap-8 lg:flex-row">

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
+import { BackButton, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 import type {
   MarketplaceAddress,
   MarketplaceAddressUpsertRequest,
@@ -187,6 +187,20 @@ export function CheckoutPage() {
     currentAddressMutation.error instanceof Error ? currentAddressMutation.error.message : null;
   const deleteAddressError =
     deleteAddressMutation.error instanceof Error ? deleteAddressMutation.error.message : null;
+  const addressFormBaseline = useMemo(() => {
+    const editingAddress = addressesQuery.data?.find((item) => item.id === editingAddressId);
+    return editingAddress ? toAddressForm(editingAddress) : emptyAddressForm();
+  }, [addressesQuery.data, editingAddressId]);
+  const isAddressFormDirty =
+    addressMode === "new" &&
+    JSON.stringify(addressForm) !== JSON.stringify(addressFormBaseline);
+  const isCheckoutDirty =
+    isAddressFormDirty ||
+    recipientName.trim().length > 0 ||
+    phone.trim().length > 0 ||
+    addressLine.trim().length > 0 ||
+    note.trim().length > 0 ||
+    paymentMethod !== "COD";
   const draftAddressLine = resolveDraftShippingAddressLine(addressForm);
   const effectiveRecipientName =
     recipientName.trim() ||
@@ -204,6 +218,7 @@ export function CheckoutPage() {
   if (cartQuery.isLoading) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6">
+        <BackButton to="/marketplace/cart" className="mb-4 w-fit" />
         <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t("marketplaceBuyer.checkout.loadingCart")}
         </div>
@@ -214,6 +229,7 @@ export function CheckoutPage() {
   if (cartQuery.isError) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6">
+        <BackButton to="/marketplace/cart" className="mb-4 w-fit" />
         <div className="rounded-xl border border-dashed border-destructive/30 bg-card p-8 text-center text-sm text-destructive">
           {t("marketplaceBuyer.checkout.errorCart")}
         </div>
@@ -224,6 +240,7 @@ export function CheckoutPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="max-w-[1800px] mx-auto px-6 pt-6">
+        <BackButton to="/marketplace/cart" className="mb-4 w-fit" />
         <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
           <h1 className="text-xl font-semibold text-foreground">{t("marketplaceBuyer.checkout.emptyCartTitle")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -275,8 +292,41 @@ export function CheckoutPage() {
     }
   }
 
+  function closeAddressForm() {
+    if (
+      isAddressFormDirty &&
+      !window.confirm(t("common.unsavedChangesConfirm", "You have unsaved changes. Leave this page?"))
+    ) {
+      return;
+    }
+
+    setAddressMode("saved");
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm());
+    setAddressFormMessage(null);
+  }
+
+  function startNewAddressForm() {
+    if (
+      isAddressFormDirty &&
+      !window.confirm(t("common.unsavedChangesConfirm", "You have unsaved changes. Leave this page?"))
+    ) {
+      return;
+    }
+
+    setAddressMode("new");
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm());
+    setAddressFormMessage(null);
+  }
+
   return (
     <div className="max-w-[1800px] mx-auto px-6 pt-6">
+      <BackButton
+        to="/marketplace/cart"
+        confirmOnLeave={isCheckoutDirty}
+        className="mb-4 w-fit"
+      />
       <h1 className="mb-10 text-3xl font-bold text-foreground">{t("marketplaceBuyer.checkout.title")}</h1>
 
       <div className="flex flex-col gap-10 lg:flex-row">
@@ -292,24 +342,14 @@ export function CheckoutPage() {
                   <Button
                     variant={addressMode === "saved" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => {
-                      setAddressMode("saved");
-                      setEditingAddressId(null);
-                      setAddressForm(emptyAddressForm());
-                      setAddressFormMessage(null);
-                    }}
+                    onClick={closeAddressForm}
                   >
                     {t("marketplaceBuyer.checkout.savedAddresses")}
                   </Button>
                   <Button
                     variant={addressMode === "new" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => {
-                      setAddressMode("new");
-                      setEditingAddressId(null);
-                      setAddressForm(emptyAddressForm());
-                      setAddressFormMessage(null);
-                    }}
+                    onClick={startNewAddressForm}
                   >
                     <Plus size={16} />
                     {t("marketplaceBuyer.checkout.newAddress")}
@@ -407,6 +447,10 @@ export function CheckoutPage() {
                 </div>
               ) : (
                 <div className="space-y-5 rounded-lg border border-border bg-muted/50 p-5">
+                  <BackButton
+                    onClick={closeAddressForm}
+                    className="w-fit"
+                  />
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-foreground">{t("marketplaceBuyer.checkout.addressForm.recipientName")}</label>
@@ -529,12 +573,7 @@ export function CheckoutPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        setAddressMode("saved");
-                        setEditingAddressId(null);
-                        setAddressForm(emptyAddressForm());
-                        setAddressFormMessage(null);
-                      }}
+                      onClick={closeAddressForm}
                     >
                       {t("marketplaceBuyer.checkout.addressForm.cancel")}
                     </Button>
