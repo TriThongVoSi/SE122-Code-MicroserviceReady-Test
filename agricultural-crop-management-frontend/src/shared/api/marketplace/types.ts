@@ -142,9 +142,19 @@ export type MarketplaceCartItem = {
   traceable: boolean;
 };
 
+export type MarketplaceCartSellerGroup = {
+  farmerUserId: number;
+  farmerName: string | null;
+  farmId: number | null;
+  farmName: string | null;
+  items: MarketplaceCartItem[];
+  subtotal: number;
+};
+
 export type MarketplaceCart = {
   userId: number;
   items: MarketplaceCartItem[];
+  sellerGroups: MarketplaceCartSellerGroup[];
   itemCount: number;
   subtotal: number;
   currency: "VND";
@@ -156,6 +166,7 @@ export type MarketplaceAddress = {
   fullName: string;
   phone: string;
   province: string;
+  /** @deprecated Backend requires this field but has no district data. Auto-filled with ward value. */
   district: string;
   ward: string;
   street: string;
@@ -325,6 +336,7 @@ export type MarketplaceAddressUpsertRequest = {
   fullName: string;
   phone: string;
   province: string;
+  /** @deprecated Backend requires this field but has no district data. Auto-filled with ward value. */
   district: string;
   ward: string;
   street: string;

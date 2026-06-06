@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BackButton, Button, Card, CardContent, CardHeader, ConfirmDialog } from '@/shared/ui';
+import { Button, ConfirmDialog } from '@/shared/ui';
 import { AddressCard } from '../components/AddressCard';
 import { AddressForm } from '../components/AddressForm';
 import {
@@ -9,14 +9,13 @@ import {
   useMarketplaceDeleteAddressMutation,
 } from '@/features/marketplace/hooks';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin, Plus } from 'lucide-react';
 import type { MarketplaceAddress, MarketplaceAddressUpsertRequest } from '@/shared/api';
 
 interface AddressFormData {
   name: string;
   phone: string;
   province: string;
-  district: string;
   ward: string;
   street: string;
   detail?: string;
@@ -29,7 +28,6 @@ interface AddressCardData {
   name: string;
   phone: string;
   province: string;
-  district: string;
   ward: string;
   street: string;
   detail?: string;
@@ -43,25 +41,10 @@ function toAddressCardData(address: MarketplaceAddress): AddressCardData {
     name: address.fullName,
     phone: address.phone,
     province: address.province,
-    district: address.district,
     ward: address.ward,
     street: address.street,
     detail: address.detail || undefined,
     label: address.label === 'home' ? 'HOME' : address.label === 'office' ? 'OFFICE' : 'HOME',
-    isDefault: address.isDefault,
-  };
-}
-
-function toAddressUpsertRequest(address: AddressCardData): MarketplaceAddressUpsertRequest {
-  return {
-    fullName: address.name,
-    phone: address.phone,
-    province: address.province,
-    district: address.district,
-    ward: address.ward,
-    street: address.street,
-    detail: address.detail,
-    label: address.label === 'HOME' ? 'home' : address.label === 'OFFICE' ? 'office' : 'other',
     isDefault: address.isDefault,
   };
 }
@@ -71,7 +54,7 @@ function toMarketplaceAddressUpsertRequest(address: MarketplaceAddress): Marketp
     fullName: address.fullName,
     phone: address.phone,
     province: address.province,
-    district: address.district,
+    district: address.ward, // Backend requires district; auto-fill with ward
     ward: address.ward,
     street: address.street,
     detail: address.detail || undefined,
@@ -97,7 +80,7 @@ export function AddressBookPage() {
         fullName: data.name,
         phone: data.phone,
         province: data.province,
-        district: data.district,
+        district: data.ward, // Backend requires district; auto-fill with ward
         ward: data.ward,
         street: data.street,
         detail: data.detail,
@@ -159,77 +142,109 @@ export function AddressBookPage() {
   };
 
   const handleAddClick = () => {
-    setEditingAddress(null); // Close edit form if open
+    setEditingAddress(null);
     setShowAddForm(true);
   };
 
   const handleEditClick = (address: AddressCardData) => {
-    setShowAddForm(false); // Close add form if open
+    setShowAddForm(false);
     setEditingAddress(address);
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   if (isError) {
-    return <div className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-600">Không thể tải sổ địa chỉ.</div>;
+    return (
+      <div className="rounded-2xl border border-red-100 bg-white p-8 text-center text-sm text-red-600 shadow-sm">
+        Không thể tải sổ địa chỉ.
+      </div>
+    );
   }
 
   const addressCardData = addresses?.map(toAddressCardData) || [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <BackButton
-        to="/marketplace"
-        confirmOnLeave={showAddForm || !!editingAddress}
-        className="w-fit"
-      />
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <h2 className="text-xl font-bold">Sổ địa chỉ</h2>
-          <Button onClick={handleAddClick}>+ Thêm địa chỉ</Button>
-        </CardHeader>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Sổ địa chỉ</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Quản lý địa chỉ giao hàng của bạn
+          </p>
+        </div>
+        <Button
+          onClick={handleAddClick}
+          className="gap-2 rounded-xl bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+        >
+          <Plus className="h-4 w-4" />
+          Thêm địa chỉ
+        </Button>
+      </div>
 
-        <CardContent className="space-y-4">
-          {showAddForm && (
-            <AddressForm
-              mode="add"
-              onSave={handleSave}
-              onCancel={() => setShowAddForm(false)}
-            />
-          )}
+      {/* Add Form */}
+      {showAddForm && (
+        <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+          <AddressForm
+            mode="add"
+            onSave={handleSave}
+            onCancel={() => setShowAddForm(false)}
+          />
+        </div>
+      )}
 
-          {editingAddress && (
-            <AddressForm
-              mode="edit"
-              initialData={editingAddress}
-              onSave={handleSave}
-              onCancel={() => setEditingAddress(null)}
-            />
-          )}
+      {/* Edit Form */}
+      {editingAddress && (
+        <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+          <AddressForm
+            mode="edit"
+            initialData={editingAddress}
+            onSave={handleSave}
+            onCancel={() => setEditingAddress(null)}
+          />
+        </div>
+      )}
 
-          {addressCardData.map((address) => (
-            <AddressCard
-              key={address.id}
-              address={address}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-              onSetDefault={handleSetDefault}
-            />
-          ))}
+      {/* Address List */}
+      <div className="space-y-3">
+        {addressCardData.map((address) => (
+          <AddressCard
+            key={address.id}
+            address={address}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onSetDefault={handleSetDefault}
+          />
+        ))}
+      </div>
 
-          {!addressCardData.length && !showAddForm && (
-            <p className="py-8 text-center text-gray-500">
-              Chưa có địa chỉ nào. Thêm địa chỉ đầu tiên của bạn.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Empty State */}
+      {!addressCardData.length && !showAddForm && (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-50">
+            <MapPin className="h-7 w-7 text-gray-300" />
+          </div>
+          <h3 className="mt-4 text-sm font-medium text-gray-900">
+            Chưa có địa chỉ nào
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Thêm địa chỉ đầu tiên để giao hàng nhanh hơn.
+          </p>
+          <Button
+            onClick={handleAddClick}
+            className="mt-5 gap-2 rounded-xl bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            Thêm địa chỉ mới
+          </Button>
+        </div>
+      )}
 
       <ConfirmDialog
         open={deleteConfirmOpen}

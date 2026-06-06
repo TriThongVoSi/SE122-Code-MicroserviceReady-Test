@@ -40,6 +40,7 @@ function createCart(): MarketplaceCart {
     currency: 'VND',
     itemCount: 3,
     subtotal: 90_000,
+    sellerGroups: [],
     items: [
       {
         productId: 1,

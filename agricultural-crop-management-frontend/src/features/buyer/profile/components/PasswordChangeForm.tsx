@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button, Input, Label } from '@/shared/ui';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import type { ChangePasswordPayload } from '@/entities/user';
 
 interface PasswordChangeFormProps {
@@ -9,6 +9,25 @@ interface PasswordChangeFormProps {
 }
 
 type PasswordErrors = Partial<Record<keyof ChangePasswordPayload | 'confirmPassword', string>>;
+
+/** Simple password strength calculator */
+function getPasswordStrength(password: string): {
+  level: 0 | 1 | 2 | 3;
+  label: string;
+  color: string;
+  bgColor: string;
+} {
+  if (!password) return { level: 0, label: '', color: '', bgColor: 'bg-gray-200' };
+
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { level: 1, label: 'Yếu', color: 'text-red-500', bgColor: 'bg-red-400' };
+  if (score === 2) return { level: 2, label: 'Trung bình', color: 'text-amber-500', bgColor: 'bg-amber-400' };
+  return { level: 3, label: 'Mạnh', color: 'text-emerald-600', bgColor: 'bg-emerald-500' };
+}
 
 export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeFormProps) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -19,10 +38,13 @@ export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeForm
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<PasswordErrors>({});
+
   const isDirty =
     currentPassword.length > 0 ||
     newPassword.length > 0 ||
     confirmPassword.length > 0;
+
+  const strength = useMemo(() => getPasswordStrength(newPassword), [newPassword]);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -82,11 +104,20 @@ export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeForm
     }
   };
 
+  const inputClass =
+    'h-11 rounded-xl border-gray-200 bg-white text-gray-900 pr-10 transition-colors focus-visible:border-emerald-400 focus-visible:ring-emerald-400/20';
+
+  const toggleBtnClass =
+    'absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600';
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-md space-y-5">
+      {/* Current Password */}
       <div>
-        <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
-        <div className="relative mt-1">
+        <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-700">
+          Mật khẩu hiện tại
+        </Label>
+        <div className="relative mt-1.5">
           <Input
             id="currentPassword"
             type={showCurrentPassword ? 'text' : 'password'}
@@ -97,28 +128,29 @@ export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeForm
               clearError('currentPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className={inputClass}
           />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
-            onClick={() => setShowCurrentPassword((value) => !value)}
+            className={toggleBtnClass}
+            onClick={() => setShowCurrentPassword((v) => !v)}
             disabled={isSubmitting}
             aria-label={showCurrentPassword ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'}
           >
             {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
+          </button>
         </div>
         {errors.currentPassword && (
-          <p className="mt-1 text-sm text-red-500">{errors.currentPassword}</p>
+          <p className="mt-1.5 text-sm text-red-500">{errors.currentPassword}</p>
         )}
       </div>
 
+      {/* New Password */}
       <div>
-        <Label htmlFor="newPassword">Mật khẩu mới</Label>
-        <div className="relative mt-1">
+        <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
+          Mật khẩu mới
+        </Label>
+        <div className="relative mt-1.5">
           <Input
             id="newPassword"
             type={showNewPassword ? 'text' : 'password'}
@@ -129,28 +161,48 @@ export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeForm
               clearError('newPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className={inputClass}
           />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
-            onClick={() => setShowNewPassword((value) => !value)}
+            className={toggleBtnClass}
+            onClick={() => setShowNewPassword((v) => !v)}
             disabled={isSubmitting}
             aria-label={showNewPassword ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'}
           >
             {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
+          </button>
         </div>
         {errors.newPassword && (
-          <p className="mt-1 text-sm text-red-500">{errors.newPassword}</p>
+          <p className="mt-1.5 text-sm text-red-500">{errors.newPassword}</p>
+        )}
+
+        {/* Strength Indicator */}
+        {newPassword.length > 0 && (
+          <div className="mt-2 space-y-1.5">
+            <div className="flex gap-1">
+              {[1, 2, 3].map((level) => (
+                <div
+                  key={level}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    level <= strength.level ? strength.bgColor : 'bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className={`text-xs font-medium ${strength.color}`}>
+              {strength.label}
+            </p>
+          </div>
         )}
       </div>
 
+      {/* Confirm Password */}
       <div>
-        <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
-        <div className="relative mt-1">
+        <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+          Xác nhận mật khẩu mới
+        </Label>
+        <div className="relative mt-1.5">
           <Input
             id="confirmPassword"
             type={showConfirmPassword ? 'text' : 'password'}
@@ -161,26 +213,35 @@ export function PasswordChangeForm({ onSave, onDirtyChange }: PasswordChangeForm
               clearError('confirmPassword');
             }}
             disabled={isSubmitting}
-            className="pr-10 bg-white text-slate-900 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className={inputClass}
           />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-slate-700 hover:text-slate-900"
-            onClick={() => setShowConfirmPassword((value) => !value)}
+            className={toggleBtnClass}
+            onClick={() => setShowConfirmPassword((v) => !v)}
             disabled={isSubmitting}
             aria-label={showConfirmPassword ? 'Ẩn xác nhận mật khẩu' : 'Hiện xác nhận mật khẩu'}
           >
             {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
+          </button>
         </div>
         {errors.confirmPassword && (
-          <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+          <p className="mt-1.5 text-sm text-red-500">{errors.confirmPassword}</p>
+        )}
+        {/* Match indicator */}
+        {confirmPassword.length > 0 && newPassword === confirmPassword && !errors.confirmPassword && (
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-emerald-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Mật khẩu xác nhận khớp
+          </p>
         )}
       </div>
 
-      <Button type="submit" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="rounded-xl bg-emerald-600 px-6 text-white shadow-sm hover:bg-emerald-700"
+      >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Cập nhật mật khẩu
       </Button>
