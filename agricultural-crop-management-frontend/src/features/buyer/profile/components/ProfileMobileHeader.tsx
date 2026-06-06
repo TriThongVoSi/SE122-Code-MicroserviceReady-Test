@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { User, MapPin, Shield } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage, Badge } from '@/shared/ui';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
 interface ProfileMobileHeaderProps {
@@ -34,21 +34,23 @@ export function ProfileMobileHeader({ user }: ProfileMobileHeaderProps) {
   const initials = getInitials(user.name);
 
   return (
-    <div className="border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-3 p-4">
-        <Avatar className="h-12 w-12 bg-emerald-600">
+    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700">
+      {/* User Info */}
+      <div className="flex items-center gap-3 px-4 pb-5 pt-4">
+        <Avatar className="h-14 w-14 ring-2 ring-white/30">
           {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-          <AvatarFallback className="bg-emerald-600 text-sm font-semibold text-white">
+          <AvatarFallback className="bg-white/20 text-base font-semibold text-white">
             {initials}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <h2 className="font-semibold text-gray-900">{user.name}</h2>
-          <Badge className="mt-1 bg-emerald-600 text-xs text-white">Buyer</Badge>
+        <div className="flex-1 min-w-0">
+          <h2 className="truncate font-semibold text-white">{user.name}</h2>
+          <p className="truncate text-sm text-emerald-100">{user.email}</p>
         </div>
       </div>
 
-      <nav className="flex border-t border-gray-200">
+      {/* Tab Navigation */}
+      <nav className="flex px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -57,10 +59,10 @@ export function ProfileMobileHeader({ user }: ProfileMobileHeaderProps) {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-1 flex-col items-center gap-1 border-b-2 py-3 text-xs font-medium transition-colors',
+                  'flex flex-1 flex-col items-center gap-1 rounded-t-xl px-2 py-2.5 text-xs font-medium transition-all',
                   isActive
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-gray-500'
+                    ? 'bg-gradient-to-br from-[#f0faf3] via-[#f6faf7] to-[#f8faf9] text-emerald-700'
+                    : 'text-emerald-100 hover:text-white'
                 )
               }
             >

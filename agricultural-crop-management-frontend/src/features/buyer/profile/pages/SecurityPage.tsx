@@ -1,5 +1,4 @@
 import { type ChangePasswordPayload, useProfileChangePassword } from '@/entities/user';
-import { BackButton, Card, CardContent, CardHeader } from '@/shared/ui';
 import axios from 'axios';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -39,24 +38,29 @@ export function SecurityPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <BackButton
-        to="/marketplace"
-        confirmOnLeave={isPasswordFormDirty}
-        className="w-fit"
-      />
-      <Card>
-        <CardHeader>
-          <h2 className="text-xl font-bold">Đổi mật khẩu</h2>
-        </CardHeader>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-semibold text-gray-900">Bảo mật</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Thay đổi mật khẩu đăng nhập của bạn
+        </p>
+      </div>
 
-        <CardContent>
+      {/* Password Change Card */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-gray-900">Đổi mật khẩu</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Mật khẩu phải có ít nhất 8 ký tự
+        </p>
+
+        <div className="mt-6">
           <PasswordChangeForm
             onSave={handlePasswordChange}
             onDirtyChange={setIsPasswordFormDirty}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -17,10 +17,12 @@ interface ProfileSidebarProps {
 
 export function ProfileSidebar({ user, stats, isLoading }: ProfileSidebarProps) {
   return (
-    <aside className="w-80 shrink-0 border-r border-gray-200 bg-white">
-      <div className="sticky top-0 space-y-6 p-6">
+    <aside className="w-72 shrink-0">
+      <div className="sticky top-24 space-y-4">
         <ProfileUserCard user={user} stats={stats} isLoading={isLoading} />
-        <ProfileNavigation />
+        <div className="rounded-2xl border border-gray-100 bg-white p-2 shadow-sm">
+          <ProfileNavigation />
+        </div>
       </div>
     </aside>
   );

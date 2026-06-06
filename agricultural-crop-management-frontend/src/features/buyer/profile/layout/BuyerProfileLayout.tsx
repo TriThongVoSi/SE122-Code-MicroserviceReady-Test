@@ -29,7 +29,7 @@ export function BuyerProfileLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#f0faf3] via-[#f6faf7] to-[#f8faf9]">
       {isMobile ? (
         <>
           <ProfileMobileHeader user={userData} />
@@ -38,9 +38,9 @@ export function BuyerProfileLayout() {
           </main>
         </>
       ) : (
-        <div className="flex">
+        <div className="mx-auto flex max-w-7xl gap-6 px-6 py-6 lg:px-8">
           <ProfileSidebar user={userData} stats={stats} isLoading={statsLoading} />
-          <main className="flex-1 p-8">
+          <main className="min-w-0 flex-1">
             <Outlet />
           </main>
         </div>
