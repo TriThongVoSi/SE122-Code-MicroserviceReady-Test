@@ -142,14 +142,11 @@ export function ChatWidget({
             selectedConversationId={widget.selectedConversationId}
             searchQuery={widget.searchQuery}
             filter={widget.filter}
-            currentUid={widget.currentUid}
             isLoading={widget.isLoading}
-            isStartingConversation={widget.isStartingConversation}
             error={widget.error}
             onSearchChange={widget.setSearchQuery}
             onFilterChange={widget.setFilter}
             onSelectConversation={handleSelectConversation}
-            onStartConversation={widget.startConversation}
           />
         </div>
 

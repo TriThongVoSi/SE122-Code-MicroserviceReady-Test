@@ -9,6 +9,7 @@ const ChatContactProfileSchema = z.object({
   displayName: z.string().min(1),
   representativeName: z.string().min(1),
   farmName: z.string().nullable(),
+  farmId: z.number().int().positive().nullable().optional().default(null),
   address: z.string().nullable(),
   role: z.string().nullable().default(null),
   avatarUrl: z
@@ -16,6 +17,8 @@ const ChatContactProfileSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value?.trim() || null),
+  ratingAverage: z.number().nullable().optional().default(null),
+  ratingCount: z.number().int().nonnegative().nullable().optional().default(null),
 });
 
 const ChatContactProfileListSchema = z.array(ChatContactProfileSchema);

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { readFileSync } from "node:fs";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -12,8 +13,16 @@ const widgetHookMocks = vi.hoisted(() => ({
   useChatWidget: vi.fn(),
 }));
 
+const marketplaceHookMocks = vi.hoisted(() => ({
+  useMarketplaceFarmDetail: vi.fn(),
+}));
+
 vi.mock("../hooks/useChatWidget", () => ({
   useChatWidget: widgetHookMocks.useChatWidget,
+}));
+
+vi.mock("@/features/marketplace/hooks", () => ({
+  useMarketplaceFarmDetail: marketplaceHookMocks.useMarketplaceFarmDetail,
 }));
 
 vi.mock("@/features/auth/context/AuthContext", () => ({
@@ -170,9 +179,48 @@ function renderFloatingButton() {
 beforeEach(() => {
   HTMLElement.prototype.scrollIntoView = vi.fn();
   widgetHookMocks.useChatWidget.mockImplementation(useMockChatWidget);
+  marketplaceHookMocks.useMarketplaceFarmDetail.mockReturnValue({
+    data: {
+      id: 31,
+      name: "Nong trai An Phu",
+      ratingAverage: 4.6,
+      ratingCount: 12,
+    },
+    isLoading: false,
+    isError: false,
+  });
 });
 
 describe("Floating chat widget", () => {
+  it("uses friendly Vietnamese copy in the widget controls", async () => {
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <ChatWidget isOpen onMinimize={vi.fn()} onClose={vi.fn()} onExpand={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByPlaceholderText("Tìm hội thoại...")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Tất cả" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Chưa đọc" })).toBeInTheDocument();
+  });
+
+  it("anchors the popup close to the bottom-right viewport edge on desktop", () => {
+    const css = readFileSync("src/features/chat/components/ChatWidget.css", "utf8");
+
+    expect(css).toContain("right: max(8px, env(safe-area-inset-right));");
+    expect(css).toContain("bottom: max(8px, env(safe-area-inset-bottom));");
+  });
+
+  it("keeps the desktop widget balanced with a stable sidebar and composer", () => {
+    const css = readFileSync("src/features/chat/components/ChatWidget.css", "utf8");
+
+    expect(css).toContain("width: clamp(780px, 52vw, 920px);");
+    expect(css).toContain("height: min(680px, calc(100vh - 24px));");
+    expect(css).toContain("grid-template-columns: 320px minmax(0, 1fr);");
+    expect(css).toContain("padding: 16px 18px 14px;");
+    expect(css).toContain("min-height: 92px;");
+  });
+
   it("shows unread badge on the floating button and opens the popup", async () => {
     const user = userEvent.setup();
     renderFloatingButton();
@@ -228,13 +276,47 @@ describe("Floating chat widget", () => {
     expect(screen.getAllByText("Don hang da san sang.").length).toBeGreaterThan(0);
 
     const input = screen.getByRole("textbox", { name: /message input/i });
+    expect(input).toHaveAttribute("placeholder", "Nhập nội dung tin nhắn");
     await user.type(input, "  Giao giup minh sau 15h  ");
     await user.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("Giao giup minh sau 15h").length).toBeGreaterThan(0);
     });
+    expect(screen.getByText("Bạn")).toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: /chat/i })).toBeInTheDocument();
+  });
+
+  it("renders the refined farm chat layout with API rating and a single farm action", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <ChatWidget isOpen onMinimize={vi.fn()} onClose={vi.fn()} onExpand={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: /open conversation with Nong trai An Phu/i }),
+    );
+
+    expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /Xem nông trại/i })).toHaveAttribute(
+      "href",
+      "/marketplace/farms/31",
+    );
+    expect(screen.queryByRole("link", { name: /Xem sản phẩm/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Đang hoạt động")).not.toBeInTheDocument();
+    expect(screen.queryByText("Không hoạt động")).not.toBeInTheDocument();
+    expect(screen.getByText("4.6")).toBeInTheDocument();
+    expect(screen.getByText("(12 đánh giá)")).toBeInTheDocument();
+    expect(screen.queryByText("4.8")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("2 unread")).toBeInTheDocument();
+
+    const css = readFileSync("src/features/chat/components/ChatWidget.css", "utf8");
+    expect(css).toContain("min-height: 86px;");
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr) 84px;");
+    expect(css).toContain("border-radius: 999px;");
+    expect(css).toContain("min-height: 92px;");
   });
 
   it("supports list-detail-back flow for small screens", async () => {
