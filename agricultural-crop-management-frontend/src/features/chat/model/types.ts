@@ -6,9 +6,13 @@ export type ChatContactProfile = {
   displayName: string;
   representativeName: string;
   farmName: string | null;
+  farmId?: number | null;
   address: string | null;
   role: string | null;
   avatarUrl?: string | null;
+  ratingAverage?: number | null;
+  ratingCount?: number | null;
+  isOnline?: boolean | null;
 };
 
 export type ChatConversation = {

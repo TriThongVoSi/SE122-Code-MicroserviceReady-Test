@@ -15,7 +15,7 @@ export function ChatWidgetMessageBubble({
   peerLabel,
 }: ChatWidgetMessageBubbleProps) {
   const isMine = currentUid === message.senderUid;
-  const senderLabel = isMine ? "Ban" : (peerLabel ?? "Nguoi ban");
+  const senderLabel = isMine ? "Bạn" : (peerLabel ?? "Người bạn");
 
   return (
     <div className={cn("chat-widget-message", isMine && "chat-widget-message--mine")}>

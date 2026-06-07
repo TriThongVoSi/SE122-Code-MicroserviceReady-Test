@@ -8,21 +8,17 @@ import {
 } from "../lib/chatDisplayHelpers";
 import type { ChatConversation } from "../model/types";
 import type { ChatWidgetFilter } from "../model/widgetTypes";
-import { ChatContactSearch } from "./ChatContactSearch";
 
 type ChatWidgetConversationListProps = {
   conversations: ChatConversation[];
   selectedConversationId: string | null;
   searchQuery: string;
   filter: ChatWidgetFilter;
-  currentUid: string | null;
   isLoading: boolean;
-  isStartingConversation: boolean;
   error: string | null;
   onSearchChange: (query: string) => void;
   onFilterChange: (filter: ChatWidgetFilter) => void;
   onSelectConversation: (conversationId: string) => void;
-  onStartConversation: (peerUserId: number) => Promise<void>;
 };
 
 function getAvatarLabel(conversation: ChatConversation): string {
@@ -40,19 +36,20 @@ function getConversationSubtitle(conversation: ChatConversation): string | null 
   return joinDefinedParts([getChatSubtitle(profile), profile.address], " - ");
 }
 
+function isConversationActive(conversation: ChatConversation): boolean {
+  return conversation.peerProfile?.isOnline ?? true;
+}
+
 export function ChatWidgetConversationList({
   conversations,
   selectedConversationId,
   searchQuery,
   filter,
-  currentUid,
   isLoading,
-  isStartingConversation,
   error,
   onSearchChange,
   onFilterChange,
   onSelectConversation,
-  onStartConversation,
 }: ChatWidgetConversationListProps) {
   return (
     <aside className="chat-widget-sidebar" aria-label="Conversations">
@@ -81,18 +78,6 @@ export function ChatWidgetConversationList({
         </label>
       </div>
 
-      {currentUid ? (
-        <div className="chat-widget-contact-search">
-          <ChatContactSearch
-            currentUid={currentUid}
-            conversations={conversations}
-            onStartConversation={onStartConversation}
-            onOpenExistingConversation={onSelectConversation}
-            isStartingConversation={isStartingConversation}
-          />
-        </div>
-      ) : null}
-
       <div className="chat-widget-sidebar__list">
         {isLoading ? <p className="chat-widget-muted">Đang tải hội thoại...</p> : null}
         {error ? <p className="chat-widget-error">{error}</p> : null}
@@ -109,6 +94,7 @@ export function ChatWidgetConversationList({
           );
           const subtitle = getConversationSubtitle(conversation);
           const timeLabel = formatChatTime(conversation.lastMessageAt);
+          const isActive = isConversationActive(conversation);
 
           return (
             <button
@@ -132,6 +118,12 @@ export function ChatWidgetConversationList({
                 ) : (
                   getAvatarLabel(conversation)
                 )}
+                <span
+                  className={cn(
+                    "chat-widget-avatar__status-dot",
+                    !isActive && "chat-widget-avatar__status-dot--offline",
+                  )}
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="chat-widget-conversation__top">
@@ -145,6 +137,16 @@ export function ChatWidgetConversationList({
                 {subtitle ? (
                   <span className="chat-widget-conversation__subtitle">{subtitle}</span>
                 ) : null}
+                <span
+                  className={cn(
+                    "chat-widget-conversation__status",
+                    isActive
+                      ? "chat-widget-conversation__status--active"
+                      : "chat-widget-conversation__status--offline",
+                  )}
+                >
+                  {isActive ? "Đang hoạt động" : "Không hoạt động"}
+                </span>
                 <p>{conversation.lastMessageText || "Chưa có tin nhắn nào."}</p>
               </div>
               {conversation.unreadCount > 0 ? (

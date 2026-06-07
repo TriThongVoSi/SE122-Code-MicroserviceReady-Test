@@ -193,6 +193,16 @@ describe("Floating chat widget", () => {
     expect(css).toContain("bottom: max(8px, env(safe-area-inset-bottom));");
   });
 
+  it("keeps the desktop widget balanced with a stable sidebar and composer", () => {
+    const css = readFileSync("src/features/chat/components/ChatWidget.css", "utf8");
+
+    expect(css).toContain("width: clamp(780px, 52vw, 920px);");
+    expect(css).toContain("height: min(680px, calc(100vh - 24px));");
+    expect(css).toContain("grid-template-columns: 320px minmax(0, 1fr);");
+    expect(css).toContain("padding: 16px 18px 14px;");
+    expect(css).toContain("min-height: 92px;");
+  });
+
   it("shows unread badge on the floating button and opens the popup", async () => {
     const user = userEvent.setup();
     renderFloatingButton();
@@ -248,13 +258,46 @@ describe("Floating chat widget", () => {
     expect(screen.getAllByText("Don hang da san sang.").length).toBeGreaterThan(0);
 
     const input = screen.getByRole("textbox", { name: /message input/i });
+    expect(input).toHaveAttribute("placeholder", "Nhập nội dung tin nhắn");
     await user.type(input, "  Giao giup minh sau 15h  ");
     await user.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("Giao giup minh sau 15h").length).toBeGreaterThan(0);
     });
+    expect(screen.getByText("Bạn")).toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: /chat/i })).toBeInTheDocument();
+  });
+
+  it("renders the refined farm chat layout with one sidebar search and farm actions", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <ChatWidget isOpen onMinimize={vi.fn()} onClose={vi.fn()} onExpand={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", { name: /open conversation with Nong trai An Phu/i }),
+    );
+
+    expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /Xem nông trại/i })).toHaveAttribute(
+      "href",
+      "/marketplace/farms/31",
+    );
+    expect(screen.getByRole("link", { name: /Xem sản phẩm/i })).toHaveAttribute(
+      "href",
+      "/marketplace/products?farmId=31",
+    );
+    expect(screen.getAllByText("Đang hoạt động").length).toBeGreaterThan(0);
+    expect(screen.getByText("4.8")).toBeInTheDocument();
+    expect(screen.getByLabelText("2 unread")).toBeInTheDocument();
+
+    const css = readFileSync("src/features/chat/components/ChatWidget.css", "utf8");
+    expect(css).toContain("min-height: 86px;");
+    expect(css).toContain("font-size: 16px;");
+    expect(css).toContain("min-height: 92px;");
   });
 
   it("supports list-detail-back flow for small screens", async () => {

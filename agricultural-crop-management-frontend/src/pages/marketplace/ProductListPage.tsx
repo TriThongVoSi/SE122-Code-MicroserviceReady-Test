@@ -58,6 +58,7 @@ type PriceRangeValue = "" | (typeof PRICE_RANGES)[number]["value"];
 
 type FilterState = {
   q: string;
+  farmId: number | null;
   category: string;
   region: string;
   priceRange: PriceRangeValue;
@@ -69,6 +70,7 @@ type FilterChipKey = keyof FilterState;
 
 const DEFAULT_FILTERS: FilterState = {
   q: "",
+  farmId: null,
   category: "",
   region: "",
   priceRange: "",
@@ -107,9 +109,11 @@ function priceRangeFromParams(searchParams: URLSearchParams): PriceRangeValue {
 
 function parseFilters(searchParams: URLSearchParams): FilterState {
   const sortParam = searchParams.get("sort");
+  const farmId = toPositiveInt(searchParams.get("farmId"), 0);
 
   return {
     q: searchParams.get("q") ?? "",
+    farmId: farmId > 0 ? farmId : null,
     category: searchParams.get("category") ?? "",
     region: searchParams.get("region") ?? "",
     priceRange: priceRangeFromParams(searchParams),
@@ -125,6 +129,7 @@ function buildSearchParams(filters: FilterState, page = "1") {
   const priceBounds = getPriceBounds(filters.priceRange);
 
   if (q) params.set("q", q);
+  if (filters.farmId) params.set("farmId", String(filters.farmId));
   if (filters.category) params.set("category", filters.category);
   if (region) params.set("region", region);
   if (filters.traceable) params.set("traceable", "true");
@@ -139,6 +144,7 @@ function buildSearchParams(filters: FilterState, page = "1") {
 function hasFilters(filters: FilterState) {
   return Boolean(
     filters.q.trim() ||
+      filters.farmId ||
       filters.category ||
       filters.region.trim() ||
       filters.priceRange ||
@@ -162,6 +168,7 @@ function activeFilterChips(filters: FilterState) {
   const sortLabel = SORT_OPTIONS.find((option) => option.value === filters.sort)?.label;
 
   if (filters.q.trim()) chips.push({ key: "q", label: `Từ khóa: ${filters.q.trim()}` });
+  if (filters.farmId) chips.push({ key: "farmId", label: `Nông trại #${filters.farmId}` });
   if (filters.category) {
     chips.push({ key: "category", label: `Danh mục: ${getCategoryLabel(filters.category)}` });
   }
@@ -596,6 +603,7 @@ export function ProductListPage() {
 
   const productsQuery = useMarketplaceProducts({
     q: appliedFilters.q.trim() || undefined,
+    farmId: appliedFilters.farmId ?? undefined,
     category: appliedFilters.category || undefined,
     region: appliedFilters.region.trim() || undefined,
     minPrice: appliedPriceBounds.minPrice,
