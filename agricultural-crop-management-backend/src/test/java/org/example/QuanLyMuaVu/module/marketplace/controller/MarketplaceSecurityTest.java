@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -19,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -182,6 +185,30 @@ public class MarketplaceSecurityTest {
     @DisplayName("Unauthenticated users cannot access buyer order list - GET /api/v1/marketplace/orders returns 401")
     void unauthenticatedCannotAccessMarketplaceBuyerOrders() throws Exception {
         mockMvc.perform(get("/api/v1/marketplace/orders"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Preflight can request checkout headers - OPTIONS /api/v1/marketplace/orders allows X-Idempotency-Key")
+    void preflightCanRequestMarketplaceCheckoutIdempotencyHeader() throws Exception {
+        mockMvc.perform(options("/api/v1/marketplace/orders")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(
+                                HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
+                                "Authorization, Content-Type, X-Idempotency-Key"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, containsString("X-Idempotency-Key")));
+    }
+
+    @Test
+    @DisplayName("Unauthenticated users cannot create marketplace orders - POST /api/v1/marketplace/orders returns 401")
+    void unauthenticatedCannotCreateMarketplaceBuyerOrder() throws Exception {
+        mockMvc.perform(post("/api/v1/marketplace/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"idempotencyKey\":\"key\"}"))
                 .andExpect(status().isUnauthorized());
     }
 

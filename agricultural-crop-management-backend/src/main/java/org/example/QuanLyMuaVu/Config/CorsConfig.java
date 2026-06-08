@@ -43,7 +43,8 @@ public class CorsConfig {
                 "Content-Type",
                 "Accept",
                 "Authorization",
-                "X-Requested-With"));
+                "X-Requested-With",
+                "X-Idempotency-Key"));
         corsConfiguration.setExposedHeaders(List.of("Authorization"));
         corsConfiguration.setMaxAge(3600L);
 
