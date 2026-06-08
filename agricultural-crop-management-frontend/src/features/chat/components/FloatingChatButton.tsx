@@ -33,6 +33,11 @@ export function FloatingChatButton() {
     };
   }, []);
 
+  useEffect(() => {
+    setIsOpen(false);
+    setActivePeerUserId(null);
+  }, [location.pathname]);
+
   const isVisible = isAuthenticated && location.pathname !== "/chat";
   const hasUnread = unreadCount > 0;
   const unreadLabel = unreadCount > 99 ? "99+" : String(unreadCount);
