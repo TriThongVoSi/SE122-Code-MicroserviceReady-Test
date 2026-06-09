@@ -559,13 +559,13 @@ chore:    Cập nhật build, config
 
 ## 📄 License
 
-Dự án này được phát triển phục vụ mục đích học tập trong khuôn khổ môn học **SE122 — Công nghệ phần mềm** tại trường Đại học.
+Dự án này được phát triển phục vụ mục đích học tập trong khuôn khổ môn học **SE122 — Đồ án 2** tại trường Đại học Công nghệ Thông tin (UIT).
 
 ---
 
 <div align="center">
 
-**Được xây dựng với ❤️ bởi nhóm phát triển SE122**
+**Được xây dựng với ❤️ bởi Võ Sĩ Trí Thông & Hồ Ngọc Quỳnh**
 
 🌾 *Nền tảng Quản lý Mùa vụ cùng Trợ lý ảo — Số hóa nông nghiệp Việt Nam* 🌾
 
