@@ -64,9 +64,24 @@ function getInitials(name: string, fallback?: string) {
 }
 
 function getFarmOwnerId(farm: MarketplaceFarmSummary) {
-  const ownerUserId = (farm as MarketplaceFarmSummary & { ownerUserId?: unknown }).ownerUserId;
-  const parsed = Number(ownerUserId);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  const ownerFields = farm as MarketplaceFarmSummary & {
+    ownerUserId?: unknown;
+    ownerId?: unknown;
+    farmerUserId?: unknown;
+    userId?: unknown;
+  };
+
+  for (const value of [
+    ownerFields.ownerUserId,
+    ownerFields.ownerId,
+    ownerFields.farmerUserId,
+    ownerFields.userId,
+  ]) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+
+  return null;
 }
 
 function matchesCategory(farmId: number, category: FarmDiscoveryCategory | ProductTypeValue) {
@@ -100,17 +115,14 @@ function FarmImage({ src, alt }: { src?: string | null; alt: string }) {
 
 type FarmCardProps = {
   farm: MarketplaceFarmSummary;
-  isAuthenticated: boolean;
   onMessage: (farm: MarketplaceFarmSummary) => void;
 };
 
-function FarmCard({ farm, isAuthenticated, onMessage }: FarmCardProps) {
+function FarmCard({ farm, onMessage }: FarmCardProps) {
   const metadata = getFarmDiscoveryMetadata(farm.id);
   const farmName = farm.name || "Nông trại";
   const region = farm.region || farm.address || "Đang cập nhật khu vực";
   const coverImageUrl = farm.coverImageUrl || metadata.coverImageUrl;
-  const ownerId = getFarmOwnerId(farm);
-  const canMessage = !isAuthenticated || ownerId !== null;
 
   return (
     <article className="farms-discovery-card" aria-label={farmName}>
@@ -175,8 +187,6 @@ function FarmCard({ farm, isAuthenticated, onMessage }: FarmCardProps) {
           <button
             type="button"
             className="farms-discovery-card__secondary"
-            disabled={!canMessage}
-            title={!canMessage ? "Nông trại chưa có thông tin liên hệ" : undefined}
             onClick={() => onMessage(farm)}
           >
             <MessageCircle aria-hidden="true" />
@@ -300,11 +310,10 @@ export function FarmsDiscoveryPage() {
     }
 
     const ownerId = getFarmOwnerId(farm);
-    if (!ownerId) return;
 
     window.dispatchEvent(
       new CustomEvent("open-chat-widget", {
-        detail: { peerUserId: ownerId },
+        detail: ownerId ? { peerUserId: ownerId } : undefined,
       }),
     );
   }
@@ -426,7 +435,6 @@ export function FarmsDiscoveryPage() {
               <FarmCard
                 key={farm.id}
                 farm={farm}
-                isAuthenticated={isAuthenticated}
                 onMessage={handleMessage}
               />
             ))}

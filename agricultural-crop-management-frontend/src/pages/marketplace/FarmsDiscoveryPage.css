@@ -99,8 +99,16 @@
 .farms-discovery-field {
   position: relative;
   display: grid;
+  height: 3rem;
   min-width: min(100%, 12rem);
   flex: 1 1 12rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border: 1px solid #dbe5ee;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0 2.5rem 0 1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
 }
 
 .farms-discovery-field--sort {
@@ -109,30 +117,27 @@
 }
 
 .farms-discovery-field span {
-  position: absolute;
-  top: 50%;
-  left: 1rem;
   z-index: 1;
   color: #64748b;
   font-size: 0.8125rem;
   pointer-events: none;
-  transform: translateY(-50%);
+  white-space: nowrap;
 }
 
 .farms-discovery-field select {
   width: 100%;
-  height: 3rem;
+  min-width: 0;
+  height: 100%;
   appearance: none;
-  border: 1px solid #dbe5ee;
-  border-radius: 0.75rem;
-  background: #ffffff;
+  border: 0;
+  background: transparent;
   color: #0f172a;
   cursor: pointer;
   font-size: 0.9375rem;
   font-weight: 700;
   outline: 0;
-  padding: 0 2.5rem 0 5.75rem;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  padding: 0 0 0 0.75rem;
+  text-overflow: ellipsis;
 }
 
 .farms-discovery-field svg {
@@ -502,11 +507,6 @@
   border-color: #047857;
   background: #ecfdf5;
   color: #047857;
-}
-
-.farms-discovery-card__secondary:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
 }
 
 .farms-discovery-card__secondary svg {

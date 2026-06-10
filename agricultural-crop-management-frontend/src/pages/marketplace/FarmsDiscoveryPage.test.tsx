@@ -1,13 +1,18 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FarmsDiscoveryPage } from "./FarmsDiscoveryPage";
 import { useMarketplaceFarms } from "@/features/marketplace/hooks";
-import type { MarketplaceFarmPage } from "@/shared/api";
+import type { MarketplaceFarmPage, MarketplaceFarmSummary } from "@/shared/api";
+
+const authState = vi.hoisted(() => ({
+  isAuthenticated: true,
+}));
 
 vi.mock("@/features/auth/context/AuthContext", () => ({
   useAuth: () => ({
-    isAuthenticated: true,
+    isAuthenticated: authState.isAuthenticated,
     user: { id: 91, role: "buyer" },
   }),
 }));
@@ -18,22 +23,32 @@ vi.mock("@/features/marketplace/hooks", () => ({
 
 const mockedUseMarketplaceFarms = vi.mocked(useMarketplaceFarms);
 
+type FarmFixtureOverrides = Partial<MarketplaceFarmSummary> & {
+  ownerUserId?: number;
+  ownerId?: number;
+  farmerUserId?: number;
+  userId?: number;
+};
+
+function farmFixture(overrides: FarmFixtureOverrides = {}): MarketplaceFarmSummary {
+  return {
+    id: 4,
+    name: "Nông trại Alpha",
+    region: "Lâm Đồng",
+    address: "Đà Lạt, Lâm Đồng",
+    coverImageUrl: "/farm-alpha.jpg",
+    productCount: 28,
+    active: true,
+    ratingAverage: 4.8,
+    ratingCount: 96,
+    hasTraceableProducts: true,
+    ...overrides,
+  } as MarketplaceFarmSummary;
+}
+
 function farmPageFixture(overrides: Partial<MarketplaceFarmPage> = {}): MarketplaceFarmPage {
   return {
-    items: [
-      {
-        id: 4,
-        name: "Nông trại Alpha",
-        region: "Lâm Đồng",
-        address: "Đà Lạt, Lâm Đồng",
-        coverImageUrl: "/farm-alpha.jpg",
-        productCount: 28,
-        active: true,
-        ratingAverage: 4.8,
-        ratingCount: 96,
-        hasTraceableProducts: true,
-      },
-    ],
+    items: [farmFixture()],
     page: 0,
     size: 24,
     totalElements: 1,
@@ -47,6 +62,7 @@ function renderFarmsPage() {
     <MemoryRouter initialEntries={["/marketplace/farms"]}>
       <Routes>
         <Route path="/marketplace/farms" element={<FarmsDiscoveryPage />} />
+        <Route path="/sign-in" element={<div>Sign in page</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -55,6 +71,7 @@ function renderFarmsPage() {
 describe("FarmsDiscoveryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.isAuthenticated = true;
     mockedUseMarketplaceFarms.mockReturnValue({
       isLoading: false,
       isError: false,
@@ -99,5 +116,58 @@ describe("FarmsDiscoveryPage", () => {
     renderFarmsPage();
 
     expect(screen.getByText("Không thể tải danh sách nông trại")).toBeInTheDocument();
+  });
+
+  it("keeps the message button enabled and opens the chat widget without an owner id", async () => {
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const user = userEvent.setup();
+
+    renderFarmsPage();
+
+    const messageButton = screen.getByRole("button", { name: "Nhắn tin" });
+    expect(messageButton).toBeEnabled();
+
+    await user.click(messageButton);
+
+    const chatEvent = dispatchSpy.mock.calls.find(([event]) => event.type === "open-chat-widget")?.[0];
+    expect(chatEvent).toBeInstanceOf(CustomEvent);
+    expect((chatEvent as CustomEvent).detail).toBeNull();
+
+    dispatchSpy.mockRestore();
+  });
+
+  it("opens the chat widget with a peer id when the farm exposes owner information", async () => {
+    mockedUseMarketplaceFarms.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: farmPageFixture({ items: [farmFixture({ ownerUserId: 37 })] }),
+    } as never);
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const user = userEvent.setup();
+
+    renderFarmsPage();
+
+    await user.click(screen.getByRole("button", { name: "Nhắn tin" }));
+
+    const chatEvent = dispatchSpy.mock.calls.find(([event]) => event.type === "open-chat-widget")?.[0];
+    expect(chatEvent).toBeInstanceOf(CustomEvent);
+    expect((chatEvent as CustomEvent).detail).toEqual({ peerUserId: 37 });
+
+    dispatchSpy.mockRestore();
+  });
+
+  it("sends signed-out users to sign in before messaging", async () => {
+    authState.isAuthenticated = false;
+    const dispatchSpy = vi.spyOn(window, "dispatchEvent");
+    const user = userEvent.setup();
+
+    renderFarmsPage();
+
+    await user.click(screen.getByRole("button", { name: "Nhắn tin" }));
+
+    expect(screen.getByText("Sign in page")).toBeInTheDocument();
+    expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({ type: "open-chat-widget" }));
+
+    dispatchSpy.mockRestore();
   });
 });
