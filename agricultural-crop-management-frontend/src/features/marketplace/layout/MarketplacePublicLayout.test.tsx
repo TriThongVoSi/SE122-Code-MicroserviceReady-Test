@@ -82,4 +82,42 @@ describe("MarketplacePublicLayout document scrolling", () => {
     expect(authMock.logout).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Sign in screen")).toBeInTheDocument();
   });
+
+  it("renders the farms nav item and marks it active on the farms page", () => {
+    render(
+      <MemoryRouter initialEntries={["/marketplace/farms"]}>
+        <Routes>
+          <Route path="/marketplace" element={<MarketplacePublicLayout />}>
+            <Route path="farms" element={<div>Farms page</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const farmsLink = screen.getByRole("link", { name: "Nông trại", hidden: true });
+
+    expect(farmsLink).toHaveAttribute("href", "/marketplace/farms");
+    expect(farmsLink).toHaveClass("fb-active");
+  });
+
+  it("includes the farms link in the mobile menu", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={["/marketplace"]}>
+        <Routes>
+          <Route path="/marketplace" element={<MarketplacePublicLayout />}>
+            <Route index element={<div>Marketplace home</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /menu/i }));
+
+    expect(screen.getByRole("link", { name: "Nông trại" })).toHaveAttribute(
+      "href",
+      "/marketplace/farms",
+    );
+  });
 });

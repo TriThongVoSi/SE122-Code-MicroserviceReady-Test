@@ -411,6 +411,13 @@ function MobileMenu({
           >
             Sản phẩm
           </Link>
+          <Link
+            to="/marketplace/farms"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-sm font-medium text-white hover:bg-white/10 hover:text-emerald-100"
+          >
+            Nông trại
+          </Link>
         </nav>
 
         <div className="border-t border-white/15 pt-3">
@@ -556,6 +563,7 @@ export function MarketplacePublicLayout() {
 
             <nav className="marketplace-header__nav">
               <ProductsNavItem />
+              <MarketplaceNavLink to="/marketplace/farms" label="Nông trại" />
             </nav>
           </div>
 
