@@ -93,6 +93,12 @@ function createProductPage(categories: string[]): MarketplaceProductPage {
       ratingAverage: 0,
       ratingCount: 0,
       status: 'PUBLISHED',
+      statusReason: null,
+      rejectionReason: null,
+      publishedAt: '2026-05-07T00:00:00Z',
+      statusChangedAt: '2026-05-07T00:00:00Z',
+      approvalEligible: true,
+      approvalBlockers: [],
       createdAt: '2026-05-07T00:00:00Z',
       updatedAt: '2026-05-07T00:00:00Z',
     })),
@@ -189,7 +195,7 @@ describe('useMarketplaceCategories', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(marketplaceApi.listProducts).toHaveBeenCalledWith({ page: 0, size: 100 });
+    expect(marketplaceApi.listProducts).toHaveBeenCalledWith({ size: 100 });
     expect(result.current.data).toEqual(['corn', 'rice', 'soybean']);
   });
 

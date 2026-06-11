@@ -543,6 +543,11 @@ public class MarketplaceImageSearchService {
                 averageRating,
                 ratingCount,
                 product.getStatus(),
+                product.getStatusReason(),
+                product.getPublishedAt(),
+                product.getStatusChangedAt(),
+                true,
+                List.of(),
                 product.getCreatedAt(),
                 product.getUpdatedAt());
     }

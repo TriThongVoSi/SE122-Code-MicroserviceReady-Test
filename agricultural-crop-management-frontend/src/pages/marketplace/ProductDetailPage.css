@@ -1099,3 +1099,136 @@
     padding-bottom: 5rem;
   }
 }
+
+.dark.portal-buyer-active .pdp {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .pdp__breadcrumb,
+.dark.portal-buyer-active .pdp__breadcrumb-current,
+.dark.portal-buyer-active .pdp__price-unit,
+.dark.portal-buyer-active .pdp__short-desc,
+.dark.portal-buyer-active .pdp__qty-label,
+.dark.portal-buyer-active .pdp__qty-stock,
+.dark.portal-buyer-active .pdp__farm-stats,
+.dark.portal-buyer-active .pdp__tab-btn,
+.dark.portal-buyer-active .pdp__desc-text,
+.dark.portal-buyer-active .pdp__desc-updated,
+.dark.portal-buyer-active .pdp__trace-table th,
+.dark.portal-buyer-active .pdp__review-date,
+.dark.portal-buyer-active .pdp__review-comment,
+.dark.portal-buyer-active .pdp__reviews-empty,
+.dark.portal-buyer-active .pdp__reviews-loading,
+.dark.portal-buyer-active .pdp__rp-price-unit,
+.dark.portal-buyer-active .pdp__state-card {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .pdp__name,
+.dark.portal-buyer-active .pdp__rating-score,
+.dark.portal-buyer-active .pdp__qty-value,
+.dark.portal-buyer-active .pdp__farm-name,
+.dark.portal-buyer-active .pdp__trace-title,
+.dark.portal-buyer-active .pdp__trace-table td,
+.dark.portal-buyer-active .pdp__review-name,
+.dark.portal-buyer-active .pdp__related-title,
+.dark.portal-buyer-active .pdp__rp-name {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .pdp__price,
+.dark.portal-buyer-active .pdp__farm-btn--outline:hover,
+.dark.portal-buyer-active .pdp__tab-btn:hover,
+.dark.portal-buyer-active .pdp__tab-btn--active,
+.dark.portal-buyer-active .pdp__rp-name:hover {
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .pdp__price-block,
+.dark.portal-buyer-active .pdp__qty-control,
+.dark.portal-buyer-active .pdp__farm-card,
+.dark.portal-buyer-active .pdp__tab-content,
+.dark.portal-buyer-active .pdp__rp-card,
+.dark.portal-buyer-active .pdp__state-card,
+.dark.portal-buyer-active .pdp__sticky-cta {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .pdp__gallery-main,
+.dark.portal-buyer-active .pdp__gallery-thumb,
+.dark.portal-buyer-active .pdp__rp-media {
+  border-color: var(--border);
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in oklab, var(--primary) 24%, transparent), transparent 40%),
+    linear-gradient(135deg, var(--portal-surface-muted), var(--portal-surface-elevated));
+}
+
+.dark.portal-buyer-active .pdp__gallery-fallback span,
+.dark.portal-buyer-active .pdp__rp-image-fallback {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .pdp__category-badge,
+.dark.portal-buyer-active .pdp__trace-badge,
+.dark.portal-buyer-active .pdp__farm-avatar,
+.dark.portal-buyer-active .pdp__farm-verified {
+  border-color: color-mix(in oklab, var(--primary) 36%, var(--border));
+  background: color-mix(in oklab, var(--primary) 14%, var(--card));
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .pdp__qty-value,
+.dark.portal-buyer-active .pdp__tabs-nav,
+.dark.portal-buyer-active .pdp__trace-section,
+.dark.portal-buyer-active .pdp__trace-table th,
+.dark.portal-buyer-active .pdp__trace-table td,
+.dark.portal-buyer-active .pdp__review-item {
+  border-color: var(--border);
+}
+
+.dark.portal-buyer-active .pdp__qty-btn {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .pdp__qty-btn:hover,
+.dark.portal-buyer-active .pdp__cta-btn--cart:hover,
+.dark.portal-buyer-active .pdp__cta-btn--outline:hover,
+.dark.portal-buyer-active .pdp__farm-btn--outline:hover {
+  background: color-mix(in oklab, var(--primary) 14%, var(--card));
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .pdp__auth-notice {
+  border-color: color-mix(in oklab, var(--warning) 42%, var(--border));
+  background: color-mix(in oklab, var(--warning) 14%, var(--card));
+  color: var(--warning);
+}
+
+.dark.portal-buyer-active .pdp__cta-btn--cart,
+.dark.portal-buyer-active .pdp__cta-btn--outline,
+.dark.portal-buyer-active .pdp__farm-btn--outline,
+.dark.portal-buyer-active .pdp__rp-add-btn {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  background: var(--card);
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .pdp__cta-btn--buy,
+.dark.portal-buyer-active .pdp__farm-btn--primary,
+.dark.portal-buyer-active .pdp__rp-add-btn:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.dark.portal-buyer-active .pdp__rp-card:hover {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34);
+}
+
+.dark.portal-buyer-active .pdp__rp-add-btn:disabled:hover {
+  background: var(--card);
+  color: var(--success);
+}

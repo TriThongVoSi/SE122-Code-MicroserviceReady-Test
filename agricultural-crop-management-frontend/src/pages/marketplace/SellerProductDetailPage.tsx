@@ -23,9 +23,12 @@ function statusVariant(status: MarketplaceProductStatus) {
     case "PENDING_REVIEW":
       return "warning" as const;
     case "INACTIVE":
-    case "REJECTED":
     case "HIDDEN":
+      return "secondary" as const;
+    case "REJECTED":
       return "destructive" as const;
+    case "SOLD_OUT":
+      return "outline" as const;
     default:
       return "secondary" as const;
   }
@@ -35,13 +38,14 @@ function statusLabel(status: MarketplaceProductStatus, t: Translator): string {
   switch (status) {
     case "ACTIVE":
     case "PUBLISHED":
-      return t("marketplaceSeller.status.published", "Published");
+      return t("marketplaceSeller.status.active", "Đang bán / Đã duyệt");
     case "PENDING_REVIEW":
       return t("marketplaceSeller.status.pendingReview", "Pending review");
     case "INACTIVE":
-    case "REJECTED":
     case "HIDDEN":
-      return t("marketplaceSeller.status.hidden", "Hidden");
+      return t("marketplaceSeller.status.inactive", "Đã ẩn");
+    case "REJECTED":
+      return t("marketplaceSeller.status.rejected", "Bị từ chối");
     case "DRAFT":
       return t("marketplaceSeller.status.draft", "Draft");
     case "SOLD_OUT":
@@ -64,7 +68,7 @@ function nextStatusActionLabel(status: MarketplaceProductStatus, t: Translator):
     case "PUBLISHED":
       return t("marketplaceSeller.productDetail.actions.hideProduct", "Hide product");
     case "HIDDEN":
-      return t("marketplaceSeller.productDetail.actions.resubmitReview", "Resubmit for review");
+      return t("marketplaceSeller.productDetail.actions.showProduct", "Show product");
     default:
       return t("marketplaceSeller.productDetail.actions.updateStatus", "Update status");
   }
@@ -143,6 +147,7 @@ export function SellerProductDetailPage() {
   }
 
   const gallery = product.imageUrls.length > 0 ? product.imageUrls : [product.imageUrl];
+  const productModerationReason = product.statusReason ?? product.rejectionReason ?? null;
 
   return (
     <PageContainer variant="wide" className="space-y-6">
@@ -201,6 +206,15 @@ export function SellerProductDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-8 p-6">
+          {productModerationReason ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              <span className="font-semibold">
+                {t("marketplaceSeller.productDetail.adminReasonPrefix", "Lý do từ quản trị")}:
+              </span>{" "}
+              {productModerationReason}
+            </div>
+          ) : null}
+
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div className="space-y-4">
               <div className="overflow-hidden rounded-xl border border-border bg-muted/50">

@@ -399,6 +399,12 @@ export function createMarketplaceRealAdapter(): MarketplaceApiAdapter {
       );
     },
 
+    getAdminProductDetail(productId: number) {
+      return requestEnvelope<MarketplaceProductDetail>(() =>
+        httpClient.get(`${MARKETPLACE_API_PREFIX}/admin/products/${productId}`),
+      );
+    },
+
     updateAdminProductStatus(productId: number, request: MarketplaceUpdateProductStatusRequest) {
       return requestEnvelope<MarketplaceProductDetail>(() =>
         httpClient.patch(`${MARKETPLACE_API_PREFIX}/admin/products/${productId}/status`, {

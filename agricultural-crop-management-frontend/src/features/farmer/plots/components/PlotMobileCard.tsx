@@ -30,7 +30,7 @@ export function PlotMobileCard({
     const { t } = useTranslation();
 
     return (
-        <div className="bg-card rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm">
             {/* Header: Checkbox + Title + Actions */}
             <div className="flex items-start gap-3 mb-3">
                 <Checkbox
@@ -39,8 +39,8 @@ export function PlotMobileCard({
                     className="mt-1"
                 />
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{plot.name}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{t("plots.meta.id", { id: plot.id })}</p>
+                    <h3 className="font-semibold text-foreground truncate">{plot.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">{t("plots.meta.id", { id: plot.id })}</p>
                 </div>
                 <PlotActionsMenu
                     plot={plot}
@@ -50,7 +50,7 @@ export function PlotMobileCard({
             </div>
 
             {/* Meta Information */}
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <span>{plot.area} ha</span>
                 <span>•</span>
                 <span>{getSoilTypeLabel(plot.soilType, t)}</span>
@@ -60,15 +60,15 @@ export function PlotMobileCard({
 
             {/* Crop Information */}
             {plot.crop ? (
-                <div className="text-sm text-gray-700 mb-3">
+                <div className="text-sm text-foreground mb-3">
                     <span className="font-medium">{plot.crop}</span>
                     {plot.cropVariety && (
-                        <span className="text-gray-500"> - {plot.cropVariety}</span>
+                        <span className="text-muted-foreground"> - {plot.cropVariety}</span>
                     )}
                 </div>
             ) : (
                 <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm text-gray-400">{t("plots.noCrop")}</span>
+                    <span className="text-sm text-muted-foreground">{t("plots.noCrop")}</span>
                     <Button variant="link" size="sm" className="h-auto p-0 text-xs">
                         {t("plots.actions.assign")}
                     </Button>

@@ -86,10 +86,10 @@ const isPastDate = (value?: string | null) => {
 };
 
 const selectTriggerClass =
-  "rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-emerald-300 focus-visible:border-emerald-500 focus-visible:ring-emerald-200/50 data-[placeholder]:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-100";
+  "rounded-xl border-2 border-input bg-input-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20 data-[placeholder]:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-muted";
 
 const selectTriggerCompactClass =
-  "h-8 rounded-lg border-2 border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-emerald-300 focus-visible:border-emerald-500 focus-visible:ring-emerald-200/40 data-[placeholder]:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-100";
+  "h-8 rounded-lg border-2 border-input bg-input-background px-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20 data-[placeholder]:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-muted";
 
 const filterSelectBaseClass = "border-border acm-rounded-sm h-9 text-sm";
 
@@ -553,7 +553,7 @@ export function IncidentsPage() {
           </Card>
           <Card className="border-l-4 border-l-gray-400">
             <CardContent className="px-6 py-4 flex items-center gap-3">
-              <XCircle className="w-8 h-8 text-gray-400" />
+              <XCircle className="w-8 h-8 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">{summary.cancelledCount}</p>
                 <p className="text-sm text-muted-foreground">

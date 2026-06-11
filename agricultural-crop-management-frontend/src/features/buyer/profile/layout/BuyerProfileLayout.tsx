@@ -29,7 +29,7 @@ export function BuyerProfileLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0faf3] via-[#f6faf7] to-[#f8faf9]">
+    <div className="min-h-screen bg-background text-foreground">
       {isMobile ? (
         <>
           <ProfileMobileHeader user={userData} />

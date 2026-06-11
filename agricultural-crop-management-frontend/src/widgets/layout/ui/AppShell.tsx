@@ -73,12 +73,37 @@ export function AppShell({
             ? 'portal-farmer'
             : portalType === 'ADMIN'
                 ? 'portal-admin'
-                : 'portal-default';
+                : portalType === 'BUYER'
+                    ? 'portal-buyer'
+                    : portalType === 'EMPLOYEE'
+                        ? 'portal-employee'
+                        : 'portal-default';
+    const portalActiveClass = `${portalScopeClass}-active`;
     const [isMobile, setIsMobile] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.matchMedia('(max-width: 767px)').matches;
     });
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+
+        const root = document.documentElement;
+        const portalActiveClasses = [
+            'portal-admin-active',
+            'portal-farmer-active',
+            'portal-buyer-active',
+            'portal-employee-active',
+            'portal-default-active',
+        ];
+
+        root.classList.remove(...portalActiveClasses);
+        root.classList.add(portalActiveClass);
+
+        return () => {
+            root.classList.remove(portalActiveClass);
+        };
+    }, [portalActiveClass]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined;

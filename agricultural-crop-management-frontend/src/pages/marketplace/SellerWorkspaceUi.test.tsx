@@ -110,6 +110,12 @@ const product: MarketplaceProductSummary = {
   ratingAverage: 0,
   ratingCount: 0,
   status: "ACTIVE",
+  statusReason: null,
+  rejectionReason: null,
+  publishedAt: "2026-06-09T16:00:00.000Z",
+  statusChangedAt: "2026-06-09T16:00:00.000Z",
+  approvalEligible: true,
+  approvalBlockers: [],
   createdAt: "2026-06-09T16:00:00.000Z",
   updatedAt: "2026-06-09T16:41:00.000Z",
 };

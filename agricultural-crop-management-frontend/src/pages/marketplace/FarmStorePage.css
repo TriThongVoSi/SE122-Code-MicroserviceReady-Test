@@ -1012,3 +1012,112 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dark.portal-buyer-active .farm-store-page {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farm-store-breadcrumb,
+.dark.portal-buyer-active .farm-store-breadcrumb span[aria-current="page"],
+.dark.portal-buyer-active .farm-store-hero__meta,
+.dark.portal-buyer-active .farm-store-hero__text p,
+.dark.portal-buyer-active .farm-store-stats dt,
+.dark.portal-buyer-active .farm-store-stats span,
+.dark.portal-buyer-active .farm-store-section-heading span,
+.dark.portal-buyer-active .farm-store-products-sort span,
+.dark.portal-buyer-active .fs-product-card__category,
+.dark.portal-buyer-active .fs-product-card__description,
+.dark.portal-buyer-active .fs-product-card__meta,
+.dark.portal-buyer-active .fs-product-card__price span,
+.dark.portal-buyer-active .farm-store-empty p,
+.dark.portal-buyer-active .farm-store-review-card p {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .farm-store-hero,
+.dark.portal-buyer-active .farm-store-products,
+.dark.portal-buyer-active .farm-store-reviews,
+.dark.portal-buyer-active .fs-product-card,
+.dark.portal-buyer-active .farm-store-empty,
+.dark.portal-buyer-active .farm-store-review-card {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+}
+
+.dark.portal-buyer-active .farm-store-hero__cover,
+.dark.portal-buyer-active .farm-store-hero__cover-placeholder,
+.dark.portal-buyer-active .fs-product-card__media,
+.dark.portal-buyer-active .fs-product-card__skeleton-image,
+.dark.portal-buyer-active .farm-store-skeleton,
+.dark.portal-buyer-active .farm-store-review-card--loading {
+  border-color: var(--border);
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in oklab, var(--primary) 24%, transparent), transparent 34%),
+    linear-gradient(135deg, var(--portal-surface-muted), var(--portal-surface-elevated));
+}
+
+.dark.portal-buyer-active .farm-store-hero h1,
+.dark.portal-buyer-active .farm-store-stats dd,
+.dark.portal-buyer-active .farm-store-section-heading h2,
+.dark.portal-buyer-active .fs-product-card__name,
+.dark.portal-buyer-active .farm-store-empty h2,
+.dark.portal-buyer-active .farm-store-empty h3,
+.dark.portal-buyer-active .farm-store-review-card strong {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farm-store-pill,
+.dark.portal-buyer-active .farm-store-hero__avatar,
+.dark.portal-buyer-active .farm-store-category-tabs button:hover,
+.dark.portal-buyer-active .farm-store-category-tabs button.is-active,
+.dark.portal-buyer-active .farm-store-filter-btn:hover,
+.dark.portal-buyer-active .farm-store-filter-btn.is-active {
+  border-color: color-mix(in oklab, var(--primary) 36%, var(--border));
+  background: color-mix(in oklab, var(--primary) 14%, var(--card));
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .farm-store-stats div,
+.dark.portal-buyer-active .farm-store-category-tabs,
+.dark.portal-buyer-active .farm-store-products-search input,
+.dark.portal-buyer-active .farm-store-products-sort select,
+.dark.portal-buyer-active .farm-store-filter-btn,
+.dark.portal-buyer-active .fs-product-card__add-btn,
+.dark.portal-buyer-active .fs-product-card__add-btn--link {
+  border-color: var(--border);
+  background: var(--input-background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farm-store-products-search input,
+.dark.portal-buyer-active .farm-store-products-sort select {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farm-store-products-search svg {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .fs-product-card:hover {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34);
+}
+
+.dark.portal-buyer-active .fs-product-card__image-fallback {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .fs-product-card__add-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.dark.portal-buyer-active .fs-product-card__add-btn:disabled:hover {
+  border-color: var(--border);
+  background: var(--input-background);
+  color: var(--foreground);
+}

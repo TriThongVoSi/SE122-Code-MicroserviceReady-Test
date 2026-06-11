@@ -417,7 +417,7 @@ export function AdminDocumentsPage() {
                 value={debouncedSearch}
                 onChange={(e) => setDebouncedSearch(e.target.value)}
                 placeholder={t("admin.documents.searchPlaceholder")}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-[14px] bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-[14px] border border-input bg-card py-2 pl-10 pr-4 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
               />
             </div>
 
@@ -428,7 +428,7 @@ export function AdminDocumentsPage() {
             setFilterType(e.target.value);
             setPage(0);
           }}
-          className="w-full sm:w-auto px-3 py-2 border border-border rounded-[14px] bg-card text-sm"
+          className="w-full rounded-[14px] border border-input bg-card px-3 py-2 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-auto"
         >
           <option value="">{t("admin.documents.filters.allTypes")}</option>
           {DOCUMENT_TYPES.map((type) => (
@@ -445,7 +445,7 @@ export function AdminDocumentsPage() {
             setFilterStatus(e.target.value);
             setPage(0);
           }}
-          className="w-full sm:w-auto px-3 py-2 border border-border rounded-[14px] bg-card text-sm"
+          className="w-full rounded-[14px] border border-input bg-card px-3 py-2 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-auto"
         >
           <option value="">{t("admin.documents.filters.allStatuses")}</option>
           {DOCUMENT_STATUSES.map((status) => (

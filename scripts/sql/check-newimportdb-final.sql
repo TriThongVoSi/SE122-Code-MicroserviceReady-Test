@@ -16,6 +16,16 @@ FROM information_schema.tables
 WHERE table_schema = DATABASE()
   AND table_name = 'flyway_schema_history';
 
+-- 1b. Schema columns required by marketplace moderation lifecycle.
+SELECT
+    'marketplace_products_moderation_columns' AS check_name,
+    CASE WHEN COUNT(*) = 3 THEN 'PASS' ELSE 'FAIL' END AS result,
+    COUNT(*) AS existing_columns
+FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND table_name = 'marketplace_products'
+  AND column_name IN ('status_reason', 'status_changed_at', 'status_changed_by_user_id');
+
 -- 2. Main table counts.
 SELECT 'users' AS table_name, COUNT(*) AS total FROM users
 UNION ALL SELECT 'roles', COUNT(*) FROM roles

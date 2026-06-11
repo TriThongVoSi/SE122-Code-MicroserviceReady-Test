@@ -280,7 +280,7 @@ export function CropsVarietiesPage() {
                 value={cropSearchQuery}
                 onChange={(e) => setCropSearchQuery(e.target.value)}
                 placeholder={t("admin.crops.searchCrops")}
-                className="w-full pl-9 pr-3 py-2 border border-border rounded-[14px] bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full rounded-[14px] border border-input bg-card py-2 pl-9 pr-3 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
               />
             </div>
             <button
@@ -442,7 +442,7 @@ export function CropsVarietiesPage() {
                 value={varietySearchQuery}
                 onChange={(e) => setVarietySearchQuery(e.target.value)}
                 placeholder={t("admin.crops.searchVarieties")}
-                className="w-full pl-9 pr-3 py-2 border border-border rounded-[14px] bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full rounded-[14px] border border-input bg-card py-2 pl-9 pr-3 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
               />
             </div>
             <button
@@ -461,7 +461,7 @@ export function CropsVarietiesPage() {
                 onChange={(e) =>
                   setSelectedCropId(e.target.value ? Number(e.target.value) : null)
                 }
-                className="w-full sm:w-auto px-3 py-2 border border-border rounded-[14px] bg-card text-sm"
+                className="w-full rounded-[14px] border border-input bg-card px-3 py-2 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-auto"
               >
                 <option value="">{t("seasonFilters.allCrops")}</option>
                 {crops.map((c) => (

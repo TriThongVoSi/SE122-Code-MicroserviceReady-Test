@@ -75,13 +75,13 @@ const SOURCE_OPTIONS: { value: SoilTestSourceType; labelKey: string; fallbackLab
 ];
 
 const FORM_INPUT_CLASS_NAME =
-  "h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm placeholder:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const FORM_SELECT_TRIGGER_CLASS_NAME =
-  "h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm data-[placeholder]:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm data-[placeholder]:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const FORM_TEXTAREA_CLASS_NAME =
-  "rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "rounded-xl border border-input bg-input-background px-4 py-3 text-sm shadow-sm placeholder:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const defaultValues = (): SoilTestFormValues => ({
   sampleDate: new Date().toISOString().split("T")[0],

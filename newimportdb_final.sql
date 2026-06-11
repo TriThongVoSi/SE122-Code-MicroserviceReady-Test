@@ -563,7 +563,8 @@ VALUES
 
 INSERT INTO marketplace_products
     (version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
-     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, published_at, created_at, updated_at)
+     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, status_reason,
+     status_changed_at, status_changed_by_user_id, published_at, created_at, updated_at)
 VALUES
     (0, 'gao-thom-st25-an-phu-2025', 'Gạo thơm ST25 An Phú', 'RICE',
      'Gạo thơm hữu cơ từ vụ Đông Xuân đã hoàn thành.',
@@ -571,12 +572,14 @@ VALUES
      138000.00, 'kg', 4820.000, '/demo-evidence/products/rice grain.jpg',
      '["/demo-evidence/products/rice grain.jpg","/demo-evidence/products/rice field.jpg"]',
      @farmer_anphu_user_id, @farm_anphu_id, @season_rice_2025_id, @pwlot_rice_st25_id,
-     TRUE, 0.0, 0, 'ACTIVE', '2026-04-10 08:00:00', '2026-04-09 09:00:00', '2026-05-28 08:00:00');
+     TRUE, 0.0, 0, 'ACTIVE', NULL, '2026-04-10 08:00:00', @admin_user_id,
+     '2026-04-10 08:00:00', '2026-04-09 09:00:00', '2026-05-28 08:00:00');
 SET @product_rice_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_products
     (version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
-     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, published_at, created_at, updated_at)
+     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, status_reason,
+     status_changed_at, status_changed_by_user_id, published_at, created_at, updated_at)
 VALUES
     (0, 'dau-nanh-ags398-binh-minh-2026', 'Đậu nành AGS398 Bình Minh', 'SOYBEAN',
      'Đậu nành khô từ vụ cải tạo đất, tồn kho thấp.',
@@ -584,12 +587,14 @@ VALUES
      42000.00, 'kg', 320.000, '/demo-evidence/products/soybean.jpg',
      '["/demo-evidence/products/soybean.jpg","/demo-evidence/products/soybean field.jpg"]',
      @farmer_binhminh_user_id, @farm_binhminh_id, @season_soy_2026_id, @pwlot_soy_ags398_id,
-     TRUE, 5.0, 1, 'ACTIVE', '2026-04-12 08:00:00', '2026-04-11 09:00:00', '2026-05-30 09:00:00');
+     TRUE, 5.0, 1, 'ACTIVE', NULL, '2026-04-12 08:00:00', @admin_user_id,
+     '2026-04-12 08:00:00', '2026-04-11 09:00:00', '2026-05-30 09:00:00');
 SET @product_soy_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_products
     (version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
-     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, published_at, created_at, updated_at)
+     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, status_reason,
+     status_changed_at, status_changed_by_user_id, published_at, created_at, updated_at)
 VALUES
     (0, 'rau-cai-xanh-binh-minh-2026', 'Rau cải xanh Bình Minh', 'VEGETABLE',
      'Lô rau nhà lưới đang chờ duyệt sau kiểm tra chất lượng.',
@@ -597,12 +602,14 @@ VALUES
      26000.00, 'kg', 410.000, '/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg',
      '["/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg"]',
      @farmer_binhminh_user_id, @farm_binhminh_id, @season_leafy_2026_id, @pwlot_leafy_id,
-     TRUE, 0.0, 0, 'PENDING_REVIEW', NULL, '2026-06-03 11:00:00', '2026-06-03 11:00:00');
+     TRUE, 0.0, 0, 'PENDING_REVIEW', NULL, '2026-06-03 11:00:00', @farmer_binhminh_user_id,
+     NULL, '2026-06-03 11:00:00', '2026-06-03 11:00:00');
 SET @product_leafy_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_products
     (version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
-     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, published_at, created_at, updated_at)
+     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, status_reason,
+     status_changed_at, status_changed_by_user_id, published_at, created_at, updated_at)
 VALUES
     (0, 'ngo-hat-lvn10-an-phu-2026', 'Ngô hạt LVN10 An Phú', 'CORN',
      'Lô ngô đã bán hết, dùng cho trạng thái hết hàng.',
@@ -610,7 +617,8 @@ VALUES
      30000.00, 'kg', 0.000, '/demo-evidence/products/corn.jpg',
      '["/demo-evidence/products/corn.jpg","/demo-evidence/products/corn field.jpg"]',
      @farmer_anphu_user_id, @farm_anphu_id, @season_corn_2026_id, @pwlot_corn_id,
-     TRUE, 0.0, 0, 'SOLD_OUT', '2026-06-02 08:00:00', '2026-06-01 18:00:00', '2026-06-04 10:15:00');
+     TRUE, 0.0, 0, 'SOLD_OUT', NULL, '2026-06-04 10:15:00', @farmer_anphu_user_id,
+     '2026-06-02 08:00:00', '2026-06-01 18:00:00', '2026-06-04 10:15:00');
 SET @product_corn_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_carts (user_id, created_at, updated_at)

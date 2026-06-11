@@ -124,9 +124,13 @@ function productFixture(): MarketplaceProductDetail {
     traceable: true,
     ratingAverage: 0,
     ratingCount: 0,
-    status: 'INACTIVE',
+    status: 'REJECTED',
     statusReason: 'Missing harvest certificate',
     rejectionReason: 'Photo quality is too low',
+    publishedAt: null,
+    statusChangedAt: '2026-04-03T08:00:00Z',
+    approvalEligible: true,
+    approvalBlockers: [],
     createdAt: '2026-04-02T08:00:00Z',
     updatedAt: '2026-04-03T08:00:00Z',
     traceabilityCode: 'TRACE-99',
@@ -294,7 +298,7 @@ describe('SellerProductFormPage', () => {
   it('shows admin rejection reason when editing a rejected listing', async () => {
     renderPage('/farmer/marketplace-products/99/edit');
 
-    expect(await screen.findByText('Admin reason: Photo quality is too low')).toBeInTheDocument();
+    expect(await screen.findByText('Admin reason: Missing harvest certificate')).toBeInTheDocument();
   });
 });
 

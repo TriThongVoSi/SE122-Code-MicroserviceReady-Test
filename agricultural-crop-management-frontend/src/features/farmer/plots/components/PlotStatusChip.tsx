@@ -36,7 +36,7 @@ export function PlotStatusChip({ status, className = "" }: PlotStatusChipProps) 
         },
         dormant: {
             icon: Moon,
-            className: "bg-slate-50 text-slate-600 border border-slate-200",
+            className: "bg-muted text-muted-foreground border border-border",
         },
         planned: {
             icon: Clock,

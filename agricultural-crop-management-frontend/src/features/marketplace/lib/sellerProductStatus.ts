@@ -16,9 +16,9 @@ export function getNextSellerProductStatusAction(
     case "INACTIVE":
       return { status: "ACTIVE" };
     case "PUBLISHED":
-      return { status: "HIDDEN" };
+      return { status: "INACTIVE" };
     case "HIDDEN":
-      return { status: "PENDING_REVIEW" };
+      return { status: "ACTIVE" };
     default:
       return null;
   }
@@ -39,7 +39,7 @@ export function getNextSellerProductStatusLabel(
     case "PUBLISHED":
       return "Hide product";
     case "HIDDEN":
-      return "Resubmit for review";
+      return "Show product";
     default:
       return "Update status";
   }

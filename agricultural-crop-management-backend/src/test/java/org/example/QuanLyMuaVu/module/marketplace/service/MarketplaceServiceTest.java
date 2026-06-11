@@ -442,6 +442,64 @@ class MarketplaceServiceTest {
             assertEquals(0, lotB.getOnHandQuantity().compareTo(new BigDecimal("19")));
             verify(marketplaceCartItemRepository).deleteAllByCartId(100L);
         }
+
+        @Test
+        void createOrder_DepletesAvailableQuantity_MarksProductSoldOut() throws Exception {
+            ProductWarehouseLot limitedLot = buildLot(1, "5");
+            MarketplaceProduct limitedProduct = buildProduct(
+                    200L,
+                    "rice-bag",
+                    "Rice Bag",
+                    new BigDecimal("100000"),
+                    limitedLot,
+                    20L);
+            limitedProduct.setStockQuantity(new BigDecimal("10"));
+
+            MarketplaceCartItem cartItem = MarketplaceCartItem.builder()
+                    .id(1L)
+                    .cart(cart)
+                    .product(limitedProduct)
+                    .quantity(new BigDecimal("5"))
+                    .unitPriceSnapshot(limitedProduct.getPrice())
+                    .build();
+
+            MarketplaceOrderGroup savedGroup = MarketplaceOrderGroup.builder()
+                    .id(99L)
+                    .groupCode("MOG-SOLDOUT")
+                    .buyerUser(buyer)
+                    .idempotencyKey("idem-soldout")
+                    .requestFingerprint("fp")
+                    .build();
+
+            when(currentUserService.getCurrentUser()).thenReturn(buyer);
+            when(marketplaceCartRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(cart));
+            when(marketplaceCartItemRepository.findByCartIdWithProductForUpdate(100L)).thenReturn(List.of(cartItem));
+            when(marketplaceOrderGroupRepository.findByBuyerUser_IdAndIdempotencyKey(10L, "idem-soldout"))
+                    .thenReturn(Optional.empty());
+            when(objectMapper.writeValueAsString(any())).thenReturn("{\"k\":\"v\"}");
+            when(marketplaceProductRepository.findAllByIdInForUpdate(List.of(200L))).thenReturn(List.of(limitedProduct));
+            when(productWarehouseLotRepository.findAllByIdInForUpdate(List.of(1))).thenReturn(List.of(limitedLot));
+            when(marketplaceOrderGroupRepository.save(any(MarketplaceOrderGroup.class))).thenReturn(savedGroup);
+            when(marketplaceOrderRepository.save(any(MarketplaceOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            MarketplaceCreateOrderRequest request = new MarketplaceCreateOrderRequest(
+                    MarketplacePaymentMethod.COD,
+                    null,
+                    "Buyer Name",
+                    "0909000000",
+                    "123 Road",
+                    null,
+                    "idem-soldout");
+
+            MarketplaceCreateOrderResultResponse response = marketplaceService.createOrder(request, null);
+
+            assertNotNull(response);
+            assertEquals(MarketplaceProductStatus.SOLD_OUT, limitedProduct.getStatus());
+            assertEquals(0, limitedProduct.getStockQuantity().compareTo(new BigDecimal("5")));
+            assertEquals(0, limitedLot.getOnHandQuantity().compareTo(BigDecimal.ZERO));
+            assertNotNull(limitedProduct.getStatusChangedAt());
+            assertEquals(buyer, limitedProduct.getStatusChangedByUser());
+        }
     }
 
     @Nested
@@ -993,15 +1051,16 @@ class MarketplaceServiceTest {
             ProductWarehouseLot pendingLot = buildLot(7, "9");
             MarketplaceProduct pendingProduct = buildProduct(777L, "pending-product", "Pending Product", new BigDecimal("30000"), pendingLot, 20L);
             pendingProduct.setStatus(MarketplaceProductStatus.PENDING_REVIEW);
+            pendingProduct.setTraceable(true);
 
+            when(currentUserService.getCurrentUser()).thenReturn(User.builder().id(1L).build());
             when(marketplaceProductRepository.findById(777L)).thenReturn(Optional.of(pendingProduct));
-            when(productWarehouseLotRepository.findById(7)).thenReturn(Optional.of(pendingLot));
             when(marketplaceProductRepository.save(any(MarketplaceProduct.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(marketplaceProductReviewRepository.aggregateRatingsByProductIds(List.of(777L))).thenReturn(List.of());
 
             MarketplaceProductDetailResponse response = marketplaceService.updateAdminProductStatus(
                     777L,
-                    new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE));
+                    new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE, null));
 
             assertEquals(MarketplaceProductStatus.ACTIVE, response.status());
             assertNotNull(pendingProduct.getPublishedAt());

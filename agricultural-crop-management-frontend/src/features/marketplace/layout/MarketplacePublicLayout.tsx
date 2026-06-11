@@ -32,6 +32,7 @@ import {
   useMarketplaceCartMergeBridge,
   useScrolled,
 } from "../hooks";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { BuyerAiAssistantContext, type BuyerAiAssistantOpenInput } from "../ai/BuyerAiAssistantContext";
 import { BuyerAiAssistantDrawer } from "../ai/BuyerAiAssistantDrawer";
 import "./MarketplacePublicLayout.css";
@@ -79,6 +80,7 @@ const PRODUCTS_NAV_ACTIVE_STYLE = {
 };
 
 const MARKETPLACE_DOCUMENT_SCROLL_CLASS = "marketplace-document-scroll";
+const BUYER_PORTAL_ACTIVE_CLASS = "portal-buyer-active";
 
 function ProductsNavItem() {
   const [isOpen, setIsOpen] = useState(false);
@@ -277,38 +279,38 @@ function MarketplaceSearchBar({ className = "" }: { className?: string }) {
 
 function MarketplaceFooter() {
   return (
-    <footer className="bg-gray-900 py-12 text-gray-300">
+    <footer className="marketplace-footer py-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <Link to="/marketplace" className="mb-4 flex items-center gap-2">
-              <div className="rounded-md bg-emerald-600 p-1.5 text-white">
+              <div className="marketplace-footer__logo rounded-md p-1.5">
                 <Package size={24} />
               </div>
-              <span className="text-xl font-bold text-white">Farm ACM</span>
+              <span className="marketplace-footer__brand text-xl font-bold">Farm ACM</span>
             </Link>
-            <p className="mb-4 text-sm text-gray-400">
+            <p className="marketplace-footer__description mb-4 text-sm">
               Nền tảng giao dịch nông sản minh bạch, kết nối trực tiếp từ nông
               trại đến bàn ăn của bạn.
             </p>
             <div className="flex gap-4">
               <a
                 href="#"
-                className="transition-colors hover:text-white"
+                className="marketplace-footer__social-link transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook size={20} />
               </a>
               <a
                 href="#"
-                className="transition-colors hover:text-white"
+                className="marketplace-footer__social-link transition-colors"
                 aria-label="Twitter"
               >
                 <Twitter size={20} />
               </a>
               <a
                 href="#"
-                className="transition-colors hover:text-white"
+                className="marketplace-footer__social-link transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram size={20} />
@@ -317,12 +319,12 @@ function MarketplaceFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold text-white">Khám phá</h3>
+            <h3 className="marketplace-footer__heading mb-4 font-semibold">Khám phá</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   to="/marketplace/products"
-                  className="hover:text-emerald-400"
+                  className="marketplace-footer__link"
                 >
                   Tất cả sản phẩm
                 </Link>
@@ -331,8 +333,8 @@ function MarketplaceFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold text-white">Hỗ trợ</h3>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <h3 className="marketplace-footer__heading mb-4 font-semibold">Hỗ trợ</h3>
+            <ul className="marketplace-footer__list space-y-2 text-sm">
               <li>Câu hỏi thường gặp</li>
               <li>Chính sách vận chuyển</li>
               <li>Đổi trả và hoàn tiền</li>
@@ -341,22 +343,22 @@ function MarketplaceFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold text-white">
+            <h3 className="marketplace-footer__heading mb-4 font-semibold">
               Dành cho người bán
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/sign-up" className="hover:text-emerald-400">
+                <Link to="/sign-up" className="marketplace-footer__link">
                   Đăng ký bán hàng
                 </Link>
               </li>
-              <li className="text-gray-400">Hướng dẫn bán hàng</li>
-              <li className="text-gray-400">Tiêu chuẩn chất lượng</li>
+              <li className="marketplace-footer__muted">Hướng dẫn bán hàng</li>
+              <li className="marketplace-footer__muted">Tiêu chuẩn chất lượng</li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
+        <div className="marketplace-footer__bottom mt-8 border-t pt-8 text-center text-sm">
           <p>&copy; {new Date().getFullYear()} FarmACM.</p>
         </div>
       </div>
@@ -524,10 +526,12 @@ export function MarketplacePublicLayout() {
 
   useEffect(() => {
     document.documentElement.classList.add(MARKETPLACE_DOCUMENT_SCROLL_CLASS);
+    document.documentElement.classList.add(BUYER_PORTAL_ACTIVE_CLASS);
     document.body.classList.add(MARKETPLACE_DOCUMENT_SCROLL_CLASS);
 
     return () => {
       document.documentElement.classList.remove(MARKETPLACE_DOCUMENT_SCROLL_CLASS);
+      document.documentElement.classList.remove(BUYER_PORTAL_ACTIVE_CLASS);
       document.body.classList.remove(MARKETPLACE_DOCUMENT_SCROLL_CLASS);
     };
   }, []);
@@ -539,7 +543,7 @@ export function MarketplacePublicLayout() {
 
   return (
     <BuyerAiAssistantContext.Provider value={{ openAssistant: openBuyerAiAssistant }}>
-      <div className="flex min-h-screen flex-col bg-gray-50">
+      <div className="portal-buyer marketplace-buyer-portal flex min-h-screen flex-col bg-background text-foreground">
       <header
         className="marketplace-header fb-marketplace sticky top-0 z-50 w-full border-b shadow-sm"
         style={{
@@ -572,6 +576,8 @@ export function MarketplacePublicLayout() {
           </div>
 
           <div className="marketplace-header__right">
+            <ThemeToggle className="text-white hover:bg-white/10 hover:text-emerald-100" />
+
             <Link
               to="/marketplace/cart"
               aria-label="Giỏ hàng"
@@ -650,10 +656,10 @@ export function MarketplacePublicLayout() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <div className="px-2 py-1.5">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-foreground">
                               {user?.name ?? "Người dùng"}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               {user?.email ?? ""}
                             </p>
                           </div>

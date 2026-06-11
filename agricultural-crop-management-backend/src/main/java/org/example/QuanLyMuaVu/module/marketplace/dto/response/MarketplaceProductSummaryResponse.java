@@ -2,6 +2,7 @@ package org.example.QuanLyMuaVu.module.marketplace.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus;
 
 public record MarketplaceProductSummaryResponse(
@@ -27,6 +28,11 @@ public record MarketplaceProductSummaryResponse(
         Double ratingAverage,
         Long ratingCount,
         MarketplaceProductStatus status,
+        String statusReason,
+        LocalDateTime publishedAt,
+        LocalDateTime statusChangedAt,
+        Boolean approvalEligible,
+        List<String> approvalBlockers,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 }

@@ -90,7 +90,7 @@ const getTaskStatusClassName = (status?: string) => {
     case "OVERDUE":
       return "bg-red-100 text-red-700 border-red-200";
     case "CANCELLED":
-      return "bg-slate-100 text-slate-600 border-slate-200";
+      return "bg-muted text-muted-foreground border-border";
     default:
       return "bg-amber-100 text-amber-700 border-amber-200";
   }
@@ -456,7 +456,7 @@ export function LaborManagementPage() {
                     onValueChange={setSelectedDirectoryEmployeeId}
                     disabled={!canMutateSeason}
                   >
-                    <SelectTrigger className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm data-[placeholder]:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20">
+                    <SelectTrigger className="h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm data-[placeholder]:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20">
                       <SelectValue placeholder={t("laborWorkspace.fields.selectEmployeePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -478,7 +478,7 @@ export function LaborManagementPage() {
                     onChange={(event) => setWagePerTask(event.target.value)}
                     placeholder={t("laborWorkspace.fields.wagePerTaskPlaceholder")}
                     disabled={!canMutateSeason}
-                    className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20"
+                    className="h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm placeholder:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                   />
                 </div>
 
@@ -519,7 +519,7 @@ export function LaborManagementPage() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="rounded-xl border-slate-300 bg-white shadow-sm hover:border-slate-400 hover:bg-white focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20"
+                      className="rounded-xl border-border bg-card shadow-sm hover:border-primary/50 hover:bg-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                       onClick={() => setSelectedBulkEmployeeIds([])}
                       disabled={selectedBulkEmployeeIds.length === 0}
                     >
@@ -612,7 +612,7 @@ export function LaborManagementPage() {
                           <Badge
                             className={
                               employee.active === false
-                                ? "bg-slate-100 text-slate-600 border-slate-200"
+                                ? "bg-muted text-muted-foreground border-border"
                                 : "bg-emerald-100 text-emerald-700 border-emerald-200"
                             }
                           >

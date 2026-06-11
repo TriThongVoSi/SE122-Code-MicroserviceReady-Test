@@ -40,15 +40,26 @@ body.marketplace-document-scroll {
 }
 
 .marketplace-buyer-ai-launcher {
+  --marketplace-floating-offset: 24px;
+  --marketplace-floating-gap: 16px;
+  --marketplace-floating-size: 56px;
+
   position: fixed;
-  right: max(88px, calc(env(safe-area-inset-right) + 88px));
-  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(
+    calc(var(--marketplace-floating-offset) + var(--marketplace-floating-size) + var(--marketplace-floating-gap)),
+    calc(env(safe-area-inset-right) + var(--marketplace-floating-offset) + var(--marketplace-floating-size) + var(--marketplace-floating-gap))
+  );
+  bottom: max(
+    var(--marketplace-floating-offset),
+    calc(env(safe-area-inset-bottom) + var(--marketplace-floating-offset))
+  );
   z-index: 40;
   display: inline-flex;
-  min-height: 52px;
+  height: var(--marketplace-floating-size);
+  min-height: var(--marketplace-floating-size);
   align-items: center;
   gap: 10px;
-  padding: 0 18px 0 14px;
+  padding: 0 18px 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 999px;
   background: linear-gradient(135deg, #047857 0%, #059669 100%);
@@ -93,11 +104,62 @@ body.marketplace-document-scroll {
   color: #d1fae5;
 }
 
+.marketplace-footer {
+  border-top: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--background) 94%, var(--primary) 6%) 0%,
+    var(--card) 100%
+  );
+  color: var(--muted-foreground);
+}
+
+.marketplace-footer__logo {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.marketplace-footer__brand,
+.marketplace-footer__heading {
+  color: var(--foreground);
+}
+
+.marketplace-footer__description,
+.marketplace-footer__list,
+.marketplace-footer__muted,
+.marketplace-footer__bottom {
+  color: var(--muted-foreground);
+}
+
+.marketplace-footer__link,
+.marketplace-footer__social-link {
+  color: color-mix(in oklab, var(--foreground) 82%, var(--primary));
+  text-decoration: none;
+}
+
+.marketplace-footer__link:hover,
+.marketplace-footer__social-link:hover {
+  color: var(--primary);
+}
+
+.marketplace-footer__bottom {
+  border-color: var(--border);
+}
+
 @media (max-width: 639px) {
   .marketplace-buyer-ai-launcher {
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(84px, calc(env(safe-area-inset-bottom) + 84px));
-    min-height: 48px;
+    --marketplace-floating-offset: 12px;
+    --marketplace-floating-gap: 12px;
+    --marketplace-floating-size: 48px;
+
+    right: max(
+      var(--marketplace-floating-offset),
+      calc(env(safe-area-inset-right) + var(--marketplace-floating-offset))
+    );
+    bottom: max(
+      calc(var(--marketplace-floating-offset) + var(--marketplace-floating-size) + var(--marketplace-floating-gap)),
+      calc(env(safe-area-inset-bottom) + var(--marketplace-floating-offset) + var(--marketplace-floating-size) + var(--marketplace-floating-gap))
+    );
     padding: 0 14px 0 12px;
   }
 
@@ -707,4 +769,151 @@ body.marketplace-document-scroll {
   .marketplace-filter-apply {
     width: 100%;
   }
+}
+
+.dark.portal-buyer-active .marketplace-buyer-portal {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .marketplace-footer {
+  border-color: var(--border);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--portal-surface-elevated) 90%, #0b2416) 0%,
+      var(--background) 100%
+    );
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .marketplace-footer__brand,
+.dark.portal-buyer-active .marketplace-footer__heading {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .marketplace-footer__description,
+.dark.portal-buyer-active .marketplace-footer__list,
+.dark.portal-buyer-active .marketplace-footer__muted,
+.dark.portal-buyer-active .marketplace-footer__bottom {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .marketplace-footer__link,
+.dark.portal-buyer-active .marketplace-footer__social-link {
+  color: color-mix(in oklab, var(--foreground) 82%, var(--success));
+}
+
+.dark.portal-buyer-active .marketplace-footer__link:hover,
+.dark.portal-buyer-active .marketplace-footer__social-link:hover {
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .marketplace-footer__bottom {
+  border-color: var(--border);
+}
+
+.dark.portal-buyer-active .marketplace-header .fb-search-input {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  background: rgba(10, 31, 21, 0.62) !important;
+  color: #ffffff !important;
+}
+
+.dark.portal-buyer-active .marketplace-header .fb-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.dark.portal-buyer-active .marketplace-header .fb-search-input:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(10, 31, 21, 0.78) !important;
+}
+
+.dark.portal-buyer-active .marketplace-header form .absolute.left-3 {
+  color: rgba(255, 255, 255, 0.74) !important;
+}
+
+.dark.portal-buyer-active .marketplace-product-filter-portal::before {
+  background: rgba(8, 13, 10, 0.62);
+}
+
+.dark.portal-buyer-active .marketplace-filter-panel.marketplace-product-filter-panel {
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--card) 96%, transparent);
+  color: var(--foreground);
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.5),
+    0 10px 24px rgba(0, 0, 0, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.dark.portal-buyer-active .marketplace-filter-header,
+.dark.portal-buyer-active .marketplace-filter-footer {
+  border-color: var(--border);
+  background: var(--portal-surface-elevated);
+  box-shadow: none;
+}
+
+.dark.portal-buyer-active .marketplace-filter-body {
+  background: var(--card);
+}
+
+.dark.portal-buyer-active .marketplace-filter-heading h3,
+.dark.portal-buyer-active .marketplace-filter-label,
+.dark.portal-buyer-active .marketplace-filter-field input,
+.dark.portal-buyer-active .marketplace-filter-field select {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-heading p,
+.dark.portal-buyer-active .marketplace-filter-muted {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-icon,
+.dark.portal-buyer-active .marketplace-filter-chip--active,
+.dark.portal-buyer-active .marketplace-filter-suggestion--active,
+.dark.portal-buyer-active .marketplace-filter-summary {
+  background: color-mix(in oklab, var(--primary) 16%, var(--portal-surface));
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .marketplace-filter-chip,
+.dark.portal-buyer-active .marketplace-filter-suggestion,
+.dark.portal-buyer-active .marketplace-filter-reset,
+.dark.portal-buyer-active .marketplace-filter-field {
+  border-color: var(--border);
+  background: var(--input-background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-chip:hover,
+.dark.portal-buyer-active .marketplace-filter-suggestion:hover,
+.dark.portal-buyer-active .marketplace-filter-reset:hover {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  background: var(--portal-surface-muted);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-field input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-field-icon,
+.dark.portal-buyer-active .marketplace-filter-select-icon {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .marketplace-filter-field-icon--green,
+.dark.portal-buyer-active .marketplace-filter-summary strong {
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .marketplace-filter-chip-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--portal-surface-muted),
+    var(--portal-surface-elevated),
+    var(--portal-surface-muted)
+  );
+  background-size: 200% 100%;
 }

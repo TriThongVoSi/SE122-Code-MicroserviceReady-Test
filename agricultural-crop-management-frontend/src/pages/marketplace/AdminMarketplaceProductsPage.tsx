@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { Check, MoreVertical, RotateCcw, Search, X } from "lucide-react";
+import { Check, Eye, MoreVertical, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import type { MarketplaceProductStatus } from "@/shared/api";
+import type {
+  MarketplaceProductDetail,
+  MarketplaceProductStatus,
+  MarketplaceProductSummary,
+} from "@/shared/api";
 import {
   Badge,
   Button,
@@ -11,6 +15,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Input,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from "@/shared/ui";
 import {
   AdminContentCard,
@@ -19,6 +28,7 @@ import {
   AdminPageContainer,
 } from "@/features/admin/shared/ui";
 import {
+  useMarketplaceAdminProductDetail,
   useMarketplaceAdminProducts,
   useMarketplaceUpdateAdminProductStatusMutation,
 } from "@/features/marketplace/hooks";
@@ -66,17 +76,36 @@ function statusLabel(status: MarketplaceProductStatus, t: ReturnType<typeof useI
   }
 }
 
+function approvalBlockerLabel(blocker: string, t: ReturnType<typeof useI18n>["t"]) {
+  const labels: Record<string, string> = {
+    TRACEABILITY_DISABLED: t("admin.marketplace.products.blockers.traceabilityDisabled", "Chưa bật truy xuất nguồn gốc"),
+    TRACEABILITY_CHAIN_INCOMPLETE: t("admin.marketplace.products.blockers.traceabilityIncomplete", "Thiếu nông trại, mùa vụ hoặc lô"),
+    TRACEABILITY_CHAIN_INVALID: t("admin.marketplace.products.blockers.traceabilityInvalid", "Chuỗi truy xuất không khớp"),
+    LOT_MISSING: t("admin.marketplace.products.blockers.lotMissing", "Chưa gắn lô thu hoạch"),
+    LOT_NOT_IN_STOCK: t("admin.marketplace.products.blockers.lotNotInStock", "Lô không còn ở trạng thái trong kho"),
+    LOT_STOCK_EMPTY: t("admin.marketplace.products.blockers.lotStockEmpty", "Lô đã hết tồn"),
+    LISTING_STOCK_EMPTY: t("admin.marketplace.products.blockers.listingStockEmpty", "Số lượng đăng bán bằng 0"),
+    AVAILABLE_STOCK_EMPTY: t("admin.marketplace.products.blockers.availableStockEmpty", "Không còn số lượng khả dụng"),
+  };
+
+  return labels[blocker] ?? blocker;
+}
+
+function moderationReason(product: MarketplaceProductSummary | MarketplaceProductDetail) {
+  return product.statusReason ?? product.rejectionReason ?? null;
+}
+
 function ModerationActions({
-  productId,
-  currentStatus,
+  product,
+  onOpenDetail,
   onOpenRejectModal,
 }: {
-  productId: number;
-  currentStatus: MarketplaceProductStatus;
+  product: MarketplaceProductSummary;
+  onOpenDetail: (productId: number) => void;
   onOpenRejectModal: (productId: number, targetStatus: MarketplaceProductStatus) => void;
 }) {
   const { t } = useI18n();
-  const mutation = useMarketplaceUpdateAdminProductStatusMutation(productId);
+  const mutation = useMarketplaceUpdateAdminProductStatusMutation(product.id);
 
   const handleApprove = (status: MarketplaceProductStatus) => {
     mutation.mutate({ status });
@@ -88,8 +117,9 @@ function ModerationActions({
     icon: typeof Check;
     className: string;
     requiresReason: boolean;
+    disabled?: boolean;
   }> =
-    currentStatus === "PENDING_REVIEW"
+    product.status === "PENDING_REVIEW"
       ? [
           {
             status: "ACTIVE",
@@ -97,6 +127,7 @@ function ModerationActions({
             icon: Check,
             className: "text-primary hover:bg-emerald-50 hover:text-primary",
             requiresReason: false,
+            disabled: product.approvalEligible === false,
           },
           {
             status: "REJECTED",
@@ -106,66 +137,17 @@ function ModerationActions({
             requiresReason: true,
           },
         ]
-      : currentStatus === "ACTIVE" || currentStatus === "PUBLISHED"
+      : product.status === "ACTIVE" || product.status === "PUBLISHED"
         ? [
             {
-              status: "INACTIVE",
-              label: t("admin.marketplace.products.actions.hide"),
+              status: "REJECTED",
+              label: t("admin.marketplace.products.actions.removeListing", "Gỡ listing"),
               icon: X,
               className: "text-destructive hover:bg-red-50 hover:text-red-700",
               requiresReason: true,
             },
           ]
-        : currentStatus === "INACTIVE" || currentStatus === "HIDDEN"
-          ? [
-              {
-                status: "ACTIVE",
-                label: t("admin.marketplace.products.actions.publish"),
-                icon: Check,
-                className: "text-primary hover:bg-emerald-50 hover:text-primary",
-                requiresReason: false,
-              },
-              {
-                status: "PENDING_REVIEW",
-                label: t("admin.marketplace.products.actions.returnToReview"),
-                icon: RotateCcw,
-                className: "text-muted-foreground hover:bg-muted hover:text-foreground",
-                requiresReason: false,
-              },
-            ]
-          : currentStatus === "REJECTED"
-            ? [
-                {
-                  status: "PENDING_REVIEW",
-                  label: t("admin.marketplace.products.actions.returnToReview"),
-                  icon: RotateCcw,
-                  className: "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  requiresReason: false,
-                },
-                {
-                  status: "ACTIVE",
-                  label: t("admin.marketplace.products.actions.approve"),
-                  icon: Check,
-                  className: "text-primary hover:bg-emerald-50 hover:text-primary",
-                  requiresReason: false,
-                },
-              ]
-          : [
-              {
-                status: "PENDING_REVIEW",
-                label: t("admin.marketplace.products.actions.sendToReview"),
-                icon: RotateCcw,
-                className: "text-muted-foreground hover:bg-muted hover:text-foreground",
-                requiresReason: false,
-              },
-              {
-                status: "INACTIVE",
-                label: t("admin.marketplace.products.actions.hide"),
-                icon: X,
-                className: "text-destructive hover:bg-red-50 hover:text-red-700",
-                requiresReason: true,
-              },
-            ];
+        : [];
 
   return (
     <DropdownMenu>
@@ -182,6 +164,10 @@ function ModerationActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onSelect={() => onOpenDetail(product.id)}>
+          <Eye size={14} />
+          <span>{t("admin.marketplace.products.actions.viewDetail", "Xem chi tiết")}</span>
+        </DropdownMenuItem>
         {actions.map((action) => {
           const Icon = action.icon;
 
@@ -189,10 +175,10 @@ function ModerationActions({
             <DropdownMenuItem
               key={action.status}
               className={action.className}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || action.disabled}
               onSelect={() => {
                 if (action.requiresReason) {
-                  onOpenRejectModal(productId, action.status);
+                  onOpenRejectModal(product.id, action.status);
                 } else {
                   handleApprove(action.status);
                 }
@@ -208,12 +194,164 @@ function ModerationActions({
   );
 }
 
+function AdminProductDetailSheet({
+  product,
+  isLoading,
+  isError,
+  onOpenRejectModal,
+}: {
+  product?: MarketplaceProductDetail;
+  isLoading: boolean;
+  isError: boolean;
+  onOpenRejectModal: (productId: number, targetStatus: MarketplaceProductStatus) => void;
+}) {
+  const { t } = useI18n();
+  const mutation = useMarketplaceUpdateAdminProductStatusMutation(product?.id ?? 0);
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        {t("admin.marketplace.products.detail.loading", "Đang tải chi tiết sản phẩm...")}
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="p-4 text-sm text-destructive">
+        {t("admin.marketplace.products.detail.loadError", "Không thể tải chi tiết sản phẩm.")}
+      </div>
+    );
+  }
+
+  const blockers = product.approvalBlockers ?? [];
+  const reason = moderationReason(product);
+  const canModeratePending = product.status === "PENDING_REVIEW";
+  const canRemoveActive = product.status === "ACTIVE" || product.status === "PUBLISHED";
+
+  return (
+    <div className="space-y-5 px-4 pb-6">
+      <div className="overflow-hidden rounded-lg border border-border bg-muted">
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          className="h-52 w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={statusVariant(product.status)}>{statusLabel(product.status, t)}</Badge>
+          {product.traceable ? (
+            <Badge variant="success">{t("common.yes")}</Badge>
+          ) : (
+            <Badge variant="secondary">{t("common.no")}</Badge>
+          )}
+        </div>
+        <h3 className="text-lg font-semibold text-foreground">{product.name}</h3>
+        <p className="text-sm text-muted-foreground">{product.shortDescription || "-"}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-card p-4 text-sm">
+        <div>
+          <p className="text-muted-foreground">{t("admin.marketplace.products.table.price")}</p>
+          <p className="font-semibold text-foreground">{formatVnd(product.price)} / {product.unit}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">{t("marketplaceSeller.table.stock", "Tồn kho")}</p>
+          <p className="font-semibold text-foreground">{product.stockQuantity} {product.unit}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">{t("marketplaceSeller.table.available", "Khả dụng")}</p>
+          <p className="font-semibold text-foreground">{product.availableQuantity} {product.unit}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">{t("admin.marketplace.products.table.seller")}</p>
+          <p className="font-semibold text-foreground">{product.farmerDisplayName}</p>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-card p-4 text-sm">
+        <p className="font-semibold text-foreground">{t("admin.marketplace.products.detail.traceability", "Truy xuất nguồn gốc")}</p>
+        <div className="mt-3 space-y-2 text-muted-foreground">
+          <p>{t("marketplaceSeller.productDetail.fields.farm", "Nông trại")}: <span className="font-medium text-foreground">{product.farmName ?? "-"}</span></p>
+          <p>{t("marketplaceSeller.productDetail.fields.season", "Mùa vụ")}: <span className="font-medium text-foreground">{product.seasonName ?? "-"}</span></p>
+          <p>{t("marketplaceSeller.productDetail.fields.lot", "Lô")}: <span className="font-medium text-foreground">{product.traceabilityCode ?? "-"}</span></p>
+        </div>
+      </div>
+
+      {blockers.length > 0 ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">
+            {t("admin.marketplace.products.detail.approvalBlocked", "Chưa đủ điều kiện phê duyệt")}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {blockers.map((blocker) => (
+              <li key={blocker}>{approvalBlockerLabel(blocker, t)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {reason ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <span className="font-semibold">{t("marketplaceSeller.table.adminReason", "Lý do từ quản trị")}:</span>{" "}
+          {reason}
+        </div>
+      ) : null}
+
+      <div className="rounded-lg border border-border bg-card p-4 text-sm leading-6 text-muted-foreground">
+        {product.description || product.shortDescription || "-"}
+      </div>
+
+      {canModeratePending ? (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            className="flex-1"
+            disabled={mutation.isPending || product.approvalEligible === false}
+            onClick={() => mutation.mutate({ status: "ACTIVE" })}
+          >
+            <Check className="h-4 w-4" />
+            {t("admin.marketplace.products.actions.approve")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
+            disabled={mutation.isPending}
+            onClick={() => onOpenRejectModal(product.id, "REJECTED")}
+          >
+            <X className="h-4 w-4" />
+            {t("admin.marketplace.products.actions.reject")}
+          </Button>
+        </div>
+      ) : null}
+
+      {canRemoveActive ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full border-destructive text-destructive hover:bg-destructive/10"
+          disabled={mutation.isPending}
+          onClick={() => onOpenRejectModal(product.id, "REJECTED")}
+        >
+          <X className="h-4 w-4" />
+          {t("admin.marketplace.products.actions.removeListing", "Gỡ listing")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function AdminMarketplaceProductsPage() {
   const { t } = useI18n();
-  const [status, setStatus] = useState<"ALL" | MarketplaceProductStatus>("ALL");
+  const [status, setStatus] = useState<"ALL" | MarketplaceProductStatus>("PENDING_REVIEW");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [rejectModalState, setRejectModalState] = useState<{
     isOpen: boolean;
     productId: number | null;
@@ -226,6 +364,7 @@ export function AdminMarketplaceProductsPage() {
     q: search.trim() || undefined,
     status: status === "ALL" ? undefined : status,
   });
+  const selectedProductQuery = useMarketplaceAdminProductDetail(selectedProductId ?? undefined);
 
   // Move mutation hook to component level to fix Rules of Hooks violation
   const rejectMutation = useMarketplaceUpdateAdminProductStatusMutation(
@@ -272,7 +411,7 @@ export function AdminMarketplaceProductsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder={t("admin.marketplace.products.searchPlaceholder")}
-              className="h-11 rounded-[14px] border-border pl-10"
+              className="h-11 rounded-[14px] border-input pl-10"
             />
           </div>
 
@@ -324,6 +463,11 @@ export function AdminMarketplaceProductsPage() {
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{product.name}</p>
                         <p className="truncate text-xs text-muted-foreground">{product.category || t("admin.marketplace.products.fallback.uncategorized")}</p>
+                        {product.status === "PENDING_REVIEW" && product.approvalEligible === false ? (
+                          <p className="mt-1 text-xs font-medium text-amber-700">
+                            {t("admin.marketplace.products.detail.approvalBlocked", "Chưa đủ điều kiện phê duyệt")}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </td>
@@ -344,8 +488,8 @@ export function AdminMarketplaceProductsPage() {
                   <td className="p-4 font-medium text-foreground">{formatVnd(product.price)}</td>
                   <td className="p-4 text-right">
                     <ModerationActions
-                      productId={product.id}
-                      currentStatus={product.status}
+                      product={product}
+                      onOpenDetail={setSelectedProductId}
                       onOpenRejectModal={openRejectModal}
                     />
                   </td>
@@ -391,21 +535,37 @@ export function AdminMarketplaceProductsPage() {
         />
       )}
 
+      <Sheet
+        open={selectedProductId != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedProductId(null);
+          }
+        }}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle>{t("admin.marketplace.products.detail.title", "Chi tiết sản phẩm")}</SheetTitle>
+            <SheetDescription>
+              {t("admin.marketplace.products.detail.description", "Xem đầy đủ thông tin listing trước khi kiểm duyệt.")}
+            </SheetDescription>
+          </SheetHeader>
+          <AdminProductDetailSheet
+            product={selectedProductQuery.data}
+            isLoading={selectedProductQuery.isLoading}
+            isError={selectedProductQuery.isError}
+            onOpenRejectModal={openRejectModal}
+          />
+        </SheetContent>
+      </Sheet>
+
       <RejectWithReasonModal
         isOpen={rejectModalState.isOpen}
         onClose={closeRejectModal}
         onConfirm={handleRejectConfirm}
         isLoading={rejectMutation.isPending}
-        title={
-          rejectModalState.targetStatus === "INACTIVE" || rejectModalState.targetStatus === "HIDDEN"
-            ? t("admin.marketplace.products.modal.hideTitle")
-            : t("admin.marketplace.products.modal.rejectTitle")
-        }
-        description={
-          rejectModalState.targetStatus === "INACTIVE" || rejectModalState.targetStatus === "HIDDEN"
-            ? t("admin.marketplace.products.modal.hideDescription")
-            : t("admin.marketplace.products.modal.rejectDescription")
-        }
+        title={t("admin.marketplace.products.modal.rejectTitle")}
+        description={t("admin.marketplace.products.modal.rejectDescription")}
         reasonLabel={t("admin.marketplace.products.modal.reasonLabel")}
         reasonPlaceholder={t("admin.marketplace.products.modal.reasonPlaceholder")}
       />

@@ -132,7 +132,7 @@ class MarketplaceAdminControllerIntegrationTest {
         assumeTrue(testProductId != null, "Test requires existing farm data");
 
         MarketplaceUpdateProductStatusRequest request =
-            new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE);
+            new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE, null);
 
         mockMvc.perform(patch("/api/v1/marketplace/admin/products/" + testProductId + "/status")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,9 @@ class MarketplaceAdminControllerIntegrationTest {
         assumeTrue(testProductId != null, "Test requires existing farm data");
 
         MarketplaceUpdateProductStatusRequest request =
-            new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.REJECTED);
+            new MarketplaceUpdateProductStatusRequest(
+                    MarketplaceProductStatus.REJECTED,
+                    "Product images do not match the listing description");
 
         mockMvc.perform(patch("/api/v1/marketplace/admin/products/" + testProductId + "/status")
                 .contentType(MediaType.APPLICATION_JSON)

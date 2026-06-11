@@ -318,7 +318,7 @@ export function GlobalSearchBar({
             ? `search-option-${highlightedIndex}`
             : undefined
         }
-        className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15"
+        className="border-white/40 bg-white/10 pl-9 text-white placeholder:text-white/50 focus:border-white/80 focus:bg-white/15 focus:ring-white/25 focus-visible:border-white/80 focus-visible:ring-white/25"
       />
 
       {open && (

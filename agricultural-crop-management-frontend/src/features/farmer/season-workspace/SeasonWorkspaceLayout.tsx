@@ -627,7 +627,7 @@ export function SeasonWorkspaceLayout() {
           </div>
 
           {isSeasonWriteLocked && (
-            <div className="rounded-xl border border-[#ffcc80] bg-[#fff3e0] px-4 py-2 acm-body-text text-[#e65100]">
+            <div className="rounded-xl border border-[var(--portal-status-estimated-border)] bg-[var(--portal-status-estimated-bg)] px-4 py-2 acm-body-text text-[var(--portal-status-estimated-fg)]">
               {seasonWriteLockReason}
             </div>
           )}

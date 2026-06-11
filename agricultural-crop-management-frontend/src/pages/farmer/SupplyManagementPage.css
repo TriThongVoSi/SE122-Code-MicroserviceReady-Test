@@ -405,15 +405,15 @@
 }
 
 .farmer-supply-management-page .badge-restricted {
-    background: #fff3e0;
-    color: #e65100;
-    border: 1px solid #ffe0b2;
+    background: var(--portal-status-estimated-bg);
+    color: var(--portal-status-estimated-fg);
+    border: 1px solid var(--portal-status-estimated-border);
 }
 
 .farmer-supply-management-page .badge-normal {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
+    background: var(--portal-status-measured-bg);
+    color: var(--portal-status-measured-fg);
+    border: 1px solid var(--portal-status-measured-border);
 }
 
 /* ---------------------------------------------------------------
@@ -431,52 +431,52 @@
 
 /* Supplies status badges */
 .farmer-supply-management-page .status-badge.in_stock {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--portal-status-measured-bg);
+    color: var(--portal-status-measured-fg);
 }
 
 .farmer-supply-management-page .status-badge.pending,
 .farmer-supply-management-page .status-badge.reserved,
 .farmer-supply-management-page .status-badge.hold {
-    background: #fff3e0;
-    color: #e65100;
+    background: var(--portal-status-estimated-bg);
+    color: var(--portal-status-estimated-fg);
 }
 
 .farmer-supply-management-page .status-badge.depleted,
 .farmer-supply-management-page .status-badge.expired,
 .farmer-supply-management-page .status-badge.archived {
-    background: #ffebee;
-    color: #c62828;
+    background: var(--portal-status-missing-bg);
+    color: var(--portal-status-missing-fg);
 }
 
 /* Inventory status badges */
 .farmer-supply-management-page .status-in-stock {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--portal-status-measured-bg);
+    color: var(--portal-status-measured-fg);
 }
 
 .farmer-supply-management-page .status-low-stock,
 .farmer-supply-management-page .status-hold,
 .farmer-supply-management-page .movement-adjust {
-    background: #fff3e0;
-    color: #e65100;
+    background: var(--portal-status-estimated-bg);
+    color: var(--portal-status-estimated-fg);
 }
 
 .farmer-supply-management-page .status-expired,
 .farmer-supply-management-page .movement-out {
-    background: #ffebee;
-    color: #c62828;
+    background: var(--portal-status-missing-bg);
+    color: var(--portal-status-missing-fg);
 }
 
 .farmer-supply-management-page .status-out-of-stock,
 .farmer-supply-management-page .status-neutral {
-    background: #eceff1;
-    color: #455a64;
+    background: var(--portal-status-unavailable-bg);
+    color: var(--portal-status-unavailable-fg);
 }
 
 .farmer-supply-management-page .movement-in {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--portal-status-measured-bg);
+    color: var(--portal-status-measured-fg);
 }
 
 .farmer-supply-management-page .ml-2 {
@@ -487,7 +487,7 @@
    14. EXPIRY WARNINGS (from Suppliers & Supplies)
    --------------------------------------------------------------- */
 .farmer-supply-management-page .expiring-soon {
-    color: #e65100;
+    color: var(--portal-status-estimated-fg);
 }
 
 .farmer-supply-management-page .expiry-warning {
@@ -702,8 +702,8 @@
 .farmer-supply-management-page .form-group select:focus,
 .farmer-supply-management-page .form-group textarea:focus {
     outline: none;
-    border-color: #2F9E44;
-    box-shadow: 0 0 0 3px rgba(47, 158, 68, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 18%, transparent);
 }
 
 .farmer-supply-management-page .form-group textarea {
@@ -718,7 +718,7 @@
 }
 
 .farmer-supply-management-page .form-group .preview .negative {
-    color: #c62828;
+    color: var(--portal-status-missing-fg);
 }
 
 /* ---------------------------------------------------------------
@@ -737,8 +737,8 @@
    23. WARNING BANNER & CONFIRM CHECKBOX (from Suppliers & Supplies)
    --------------------------------------------------------------- */
 .farmer-supply-management-page .warning-banner {
-    background: #fff3e0;
-    border: 1px solid #ffe0b2;
+    background: var(--portal-status-estimated-bg);
+    border: 1px solid var(--portal-status-estimated-border);
     border-radius: 8px;
     padding: 14px;
     margin-top: 16px;
@@ -746,13 +746,13 @@
 
 .farmer-supply-management-page .warning-banner strong {
     display: block;
-    color: #e65100;
+    color: var(--portal-status-estimated-fg);
     margin-bottom: 6px;
 }
 
 .farmer-supply-management-page .warning-banner p {
     margin: 0 0 12px;
-    color: #e65100;
+    color: var(--portal-status-estimated-fg);
     font-size: var(--text-body);
 }
 
@@ -772,7 +772,7 @@
     gap: 8px;
     cursor: pointer;
     font-size: var(--text-body);
-    color: #e65100;
+    color: var(--portal-status-estimated-fg);
 }
 
 .farmer-supply-management-page .confirm-checkbox input {
@@ -786,8 +786,8 @@
    24. ERROR MESSAGE (deduplicated)
    --------------------------------------------------------------- */
 .farmer-supply-management-page .error-message {
-    background: #ffebee;
-    color: #c62828;
+    background: var(--portal-status-missing-bg);
+    color: var(--portal-status-missing-fg);
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 16px;

@@ -31,6 +31,11 @@ public record MarketplaceProductDetailResponse(
         Double ratingAverage,
         Long ratingCount,
         MarketplaceProductStatus status,
+        String statusReason,
+        LocalDateTime publishedAt,
+        LocalDateTime statusChangedAt,
+        Boolean approvalEligible,
+        List<String> approvalBlockers,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
 }

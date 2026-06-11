@@ -76,7 +76,7 @@ export function NotificationsPage() {
             <div
               key={notification.id}
               className={`rounded-lg border p-4 transition ${
-                notification.readAt ? 'bg-muted/30' : 'bg-white'
+                notification.readAt ? 'bg-muted/30' : 'bg-card'
               }`}
             >
               <div className="flex items-start justify-between gap-4">

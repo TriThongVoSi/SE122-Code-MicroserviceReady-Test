@@ -106,9 +106,9 @@ export function PlotListView({
             return <ArrowUpDown className="w-4 h-4 ml-1 opacity-40 group-hover:opacity-60 transition-opacity" />;
         }
         return sortDirection === "asc" ? (
-            <ArrowUp className="w-4 h-4 ml-1 text-blue-600" />
+            <ArrowUp className="w-4 h-4 ml-1 text-primary" />
         ) : (
-            <ArrowDown className="w-4 h-4 ml-1 text-blue-600" />
+            <ArrowDown className="w-4 h-4 ml-1 text-primary" />
         );
     };
 
@@ -116,7 +116,7 @@ export function PlotListView({
     return (
         <>
             {/* Desktop Table View (hidden on mobile) */}
-            <div className="hidden md:block bg-card rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="hidden md:block bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full table-fixed">
                         {/* Define column widths: Checkbox(12px), Plot Name(30%), Area(15%), pH(12%), Soil Type(18%), Status(17%), Actions(12px) */}
@@ -131,7 +131,7 @@ export function PlotListView({
                         </colgroup>
 
                         {/* Table Header - Sticky */}
-                        <thead className="bg-gray-50 border-b-2 border-gray-200 sticky top-0 z-10">
+                        <thead className="bg-muted/50 border-b-2 border-border sticky top-0 z-10">
                             <tr>
                                 {/* Checkbox Column */}
                                 <th className="px-4 py-3">
@@ -139,7 +139,7 @@ export function PlotListView({
                                         <Checkbox
                                             checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
                                             onCheckedChange={onToggleAllSelection}
-                                            className="border-gray-400"
+                                            className="border-border"
                                         />
                                     </div>
                                 </th>
@@ -148,7 +148,7 @@ export function PlotListView({
                                 <th className="px-4 py-3 text-left">
                                     <button
                                         onClick={() => handleSort("name")}
-                                        className="group flex items-center text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors uppercase tracking-wider"
+                                        className="group flex items-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
                                     >
                                         {t("plots.table.plotName")}
                                         {renderSortIcon("name")}
@@ -159,7 +159,7 @@ export function PlotListView({
                                 <th className="px-4 py-3 text-right">
                                     <button
                                         onClick={() => handleSort("area")}
-                                        className="group flex items-center justify-end text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors ml-auto uppercase tracking-wider"
+                                        className="group flex items-center justify-end text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ml-auto uppercase tracking-wider"
                                     >
                                         {t("plots.table.areaHa")}
                                         {renderSortIcon("area")}
@@ -170,7 +170,7 @@ export function PlotListView({
                                 <th className="px-4 py-3 text-center">
                                     <button
                                         onClick={() => handleSort("pH")}
-                                        className="group flex items-center justify-center text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors mx-auto uppercase tracking-wider"
+                                        className="group flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mx-auto uppercase tracking-wider"
                                     >
                                         {t("plots.table.ph")}
                                         {renderSortIcon("pH")}
@@ -179,7 +179,7 @@ export function PlotListView({
 
                                 {/* Soil Type */}
                                 <th className="px-4 py-3 text-left">
-                                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wider">
+                                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                         {t("plots.table.soilType")}
                                     </span>
                                 </th>
@@ -188,7 +188,7 @@ export function PlotListView({
                                 <th className="px-4 py-3 text-left">
                                     <button
                                         onClick={() => handleSort("status")}
-                                        className="group flex items-center text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors uppercase tracking-wider"
+                                        className="group flex items-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
                                     >
                                         {t("plots.table.status")}
                                         {renderSortIcon("status")}
@@ -203,7 +203,7 @@ export function PlotListView({
                         </thead>
 
                         {/* Table Body */}
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border">
                             {sortedPlots.map((plot, index) => {
                                 const isSelected = selectedPlots.includes(plot.id);
 
@@ -214,8 +214,8 @@ export function PlotListView({
                                         className={`
                                             group cursor-pointer transition-all duration-150
                                             ${isSelected
-                                                ? "bg-blue-50/50 hover:bg-blue-50/70"
-                                                : "bg-card hover:bg-gray-50"
+                                                ? "bg-primary/10 hover:bg-primary/15"
+                                                : "bg-card hover:bg-muted/50"
                                             }
                                         `}
                                     >
@@ -226,21 +226,21 @@ export function PlotListView({
                                                     checked={isSelected}
                                                     onClick={(e) => e.stopPropagation()}
                                                     onCheckedChange={() => onToggleSelection(plot.id)}
-                                                    className="border-gray-400"
+                                                    className="border-border"
                                                 />
                                             </div>
                                         </td>
 
                                         {/* Plot Name - Bold, Truncate */}
                                         <td className="px-4 py-3.5">
-                                            <div className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                                            <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                                                 {plot.name}
                                             </div>
                                         </td>
 
                                         {/* Area - Right-aligned, Monospace */}
                                         <td className="px-4 py-3.5 text-right">
-                                            <span className="font-mono tabular-nums text-sm text-slate-900">
+                                            <span className="font-mono tabular-nums text-sm text-foreground">
                                                 {plot.area.toFixed(2)}
                                             </span>
                                         </td>
@@ -261,7 +261,7 @@ export function PlotListView({
 
                                         {/* Soil Type */}
                                         <td className="px-4 py-3.5">
-                                            <span className="text-sm text-slate-600 truncate block">
+                                            <span className="text-sm text-muted-foreground truncate block">
                                                 {getSoilTypeLabel(plot.soilType, t)}
                                             </span>
                                         </td>
@@ -289,12 +289,12 @@ export function PlotListView({
                 </div>
 
                 {/* Footer with row count */}
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                    <p className="text-sm text-slate-600">
+                <div className="px-6 py-3 bg-muted/50 border-t border-border">
+                    <p className="text-sm text-muted-foreground">
                         {t("plots.table.showingCount", { count: sortedPlots.length })}
                         {selectedPlots.length > 0 && (
                             <span className="ml-2">
-                                - <span className="font-semibold text-blue-600">{selectedPlots.length}</span> {t("plots.selected")}
+                                - <span className="font-semibold text-primary">{selectedPlots.length}</span> {t("plots.selected")}
                             </span>
                         )}
                     </p>

@@ -56,12 +56,12 @@ import {
 } from '@/shared/ui';
 
 const selectTriggerClass =
-    'rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-emerald-300 focus-visible:border-emerald-500 focus-visible:ring-emerald-200/50 data-[placeholder]:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-100';
+    'rounded-xl border-2 border-input bg-input-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20 data-[placeholder]:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-muted';
 
 const getActorBadgeClass = (actorType?: string | null) => {
     if (actorType === 'EMPLOYEE') return 'bg-sky-100 text-sky-800 border-sky-200';
     if (actorType === 'FARMER') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-    return 'bg-slate-100 text-slate-700 border-slate-200';
+    return 'bg-muted text-muted-foreground border-border';
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -319,7 +319,7 @@ export function FieldLogsPage() {
     };
     
     const getLogTypeConfig = (type: string) => {
-        return LOG_TYPES.find(t => t.value === type) ?? { label: type, color: 'bg-gray-100 text-gray-800' };
+        return LOG_TYPES.find(t => t.value === type) ?? { label: type, color: 'bg-muted text-muted-foreground' };
     };
 
     const getLogTypeLabel = (type: string) =>

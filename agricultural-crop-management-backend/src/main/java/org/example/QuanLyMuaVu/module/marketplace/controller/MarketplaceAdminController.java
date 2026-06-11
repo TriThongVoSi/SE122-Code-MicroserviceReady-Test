@@ -45,6 +45,11 @@ public class MarketplaceAdminController {
         return ApiResponse.success(marketplaceService.listAdminProducts(q, status, page, size));
     }
 
+    @GetMapping("/products/{productId}")
+    public ApiResponse<MarketplaceProductDetailResponse> getProductDetail(@PathVariable Long productId) {
+        return ApiResponse.success(marketplaceService.getAdminProductDetail(productId));
+    }
+
     @PatchMapping("/products/{productId}/status")
     public ApiResponse<MarketplaceProductDetailResponse> updateProductStatus(
             @PathVariable Long productId,

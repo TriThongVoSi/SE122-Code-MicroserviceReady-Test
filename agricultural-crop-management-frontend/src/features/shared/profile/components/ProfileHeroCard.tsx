@@ -37,7 +37,7 @@ export function ProfileHeroCard({
   labels,
 }: ProfileHeroCardProps) {
   return (
-    <Card className="overflow-hidden border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(16,185,129,0.10)]">
+    <Card className="overflow-hidden border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(16,185,129,0.10)]">
       {/* Zone A: Banner */}
       <div className="relative h-36 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600">
         <div
@@ -58,7 +58,7 @@ export function ProfileHeroCard({
       <CardContent className="px-6 pb-6 pt-0 sm:px-8 sm:pb-8">
         {/* Zone B: Identity row, overlapping the banner */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-6">
-          <Avatar className="-mt-12 h-24 w-24 shrink-0 ring-4 ring-white shadow-lg sm:h-28 sm:w-28">
+          <Avatar className="-mt-12 h-24 w-24 shrink-0 ring-4 ring-card shadow-lg sm:h-28 sm:w-28">
             <AvatarFallback className="bg-emerald-600 text-2xl font-semibold text-white">
               {initials}
             </AvatarFallback>
@@ -66,15 +66,15 @@ export function ProfileHeroCard({
 
           <div className="flex flex-1 flex-col gap-2 pt-1 sm:pb-2">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 {displayName}
               </h2>
-              <p className="text-sm text-slate-500">@{username}</p>
+              <p className="text-sm text-muted-foreground">@{username}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant="secondary"
-                className="border-slate-200 bg-slate-100 text-slate-700"
+                className="border-border bg-muted text-foreground"
               >
                 <RoleIcon className="mr-1 h-3 w-3" />
                 {roleLabel}
@@ -82,14 +82,14 @@ export function ProfileHeroCard({
               <Badge
                 className={
                   isActive
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 bg-slate-100 text-slate-600'
+                    ? 'border-primary/30 bg-primary/10 text-primary'
+                    : 'border-border bg-muted text-muted-foreground'
                 }
               >
                 <span
                   className={
                     'mr-1.5 inline-block h-2 w-2 rounded-full ' +
-                    (isActive ? 'bg-emerald-500' : 'bg-slate-400')
+                    (isActive ? 'bg-primary' : 'bg-muted-foreground')
                   }
                 />
                 {labels.status}
@@ -132,19 +132,19 @@ const TONE_STYLES: Record<
   { tile: string; chip: string; icon: string }
 > = {
   slate: {
-    tile: 'bg-slate-50 border-slate-200',
-    chip: 'bg-white text-slate-600 ring-1 ring-slate-200',
-    icon: 'text-slate-600',
+    tile: 'bg-muted/40 border-border',
+    chip: 'bg-card text-muted-foreground ring-1 ring-border',
+    icon: 'text-muted-foreground',
   },
   emerald: {
-    tile: 'bg-emerald-50/70 border-emerald-100',
-    chip: 'bg-white text-emerald-600 ring-1 ring-emerald-100',
-    icon: 'text-emerald-600',
+    tile: 'bg-primary/10 border-primary/20',
+    chip: 'bg-card text-primary ring-1 ring-primary/20',
+    icon: 'text-primary',
   },
   sky: {
-    tile: 'bg-sky-50/70 border-sky-100',
-    chip: 'bg-white text-sky-600 ring-1 ring-sky-100',
-    icon: 'text-sky-600',
+    tile: 'bg-info/10 border-info/20',
+    chip: 'bg-card text-info ring-1 ring-info/20',
+    icon: 'text-info',
   },
 };
 
@@ -168,11 +168,11 @@ function StatTile({ tone, icon: Icon, label, value, mono }: StatTileProps) {
         <Icon className={`h-5 w-5 ${styles.icon}`} />
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
         <p
-          className={`mt-0.5 truncate text-base font-semibold text-slate-900 ${
+          className={`mt-0.5 truncate text-base font-semibold text-foreground ${
             mono ? 'font-mono' : ''
           }`}
         >

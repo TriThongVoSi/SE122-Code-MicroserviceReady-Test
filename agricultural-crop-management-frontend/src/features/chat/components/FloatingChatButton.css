@@ -24,11 +24,12 @@
   --fcb-size: 56px;
   --fcb-icon-size: 26px;
   --fcb-badge-size: 20px;
+  --fcb-offset: 24px;
 
   /* Positioning — fixed bottom-right, above any scroll bar */
   position: fixed;
-  bottom: max(8px, env(safe-area-inset-bottom));
-  right: max(8px, env(safe-area-inset-right));
+  bottom: max(var(--fcb-offset), calc(env(safe-area-inset-bottom) + var(--fcb-offset)));
+  right: max(var(--fcb-offset), calc(env(safe-area-inset-right) + var(--fcb-offset)));
   z-index: 9999;
 }
 
@@ -234,8 +235,7 @@
    ────────────────────────────────────────────────────────────── */
 @media (max-width: 639px) {
   .floating-chat-btn-wrapper {
-    bottom: max(12px, env(safe-area-inset-bottom));
-    right: max(12px, env(safe-area-inset-right));
+    --fcb-offset: 12px;
     --fcb-size: 48px;
     --fcb-icon-size: 22px;
   }

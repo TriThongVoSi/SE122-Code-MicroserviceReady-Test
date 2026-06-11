@@ -8,7 +8,7 @@ export const adminCardClass =
   "rounded-[18px] border border-border bg-card shadow-sm";
 
 export const adminControlClass =
-  "h-9 rounded-[14px] border-border bg-card text-sm";
+  "h-9 rounded-[14px] border border-input bg-card text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:ring-2 focus:ring-ring/20 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 focus:outline-none focus-visible:outline-none";
 
 export const adminButtonClass = "rounded-[14px]";
 

@@ -140,7 +140,8 @@ public class MarketplaceSecurityTest {
         // In a real scenario with actual JWT tokens, this would return 403 from business logic
         // when the service detects the product belongs to a different farmer.
         MarketplaceUpdateProductStatusRequest request = new MarketplaceUpdateProductStatusRequest(
-                MarketplaceProductStatus.INACTIVE
+                MarketplaceProductStatus.INACTIVE,
+                null
         );
 
         mockMvc.perform(patch("/api/v1/marketplace/farmer/products/1/status")
@@ -170,7 +171,8 @@ public class MarketplaceSecurityTest {
     @DisplayName("FARMER cannot approve listings - PATCH /api/v1/marketplace/admin/products/{id}/status returns 403")
     void farmerCannotApproveListings() throws Exception {
         MarketplaceUpdateProductStatusRequest request = new MarketplaceUpdateProductStatusRequest(
-                MarketplaceProductStatus.ACTIVE
+                MarketplaceProductStatus.ACTIVE,
+                null
         );
 
         mockMvc.perform(patch("/api/v1/marketplace/admin/products/1/status")

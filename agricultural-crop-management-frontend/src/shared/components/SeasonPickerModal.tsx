@@ -54,7 +54,7 @@ export function SeasonPickerModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md border-border bg-card text-card-foreground"
         style={{ maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         onInteractOutside={(e) => e.preventDefault()}
       >
@@ -134,8 +134,8 @@ interface SeasonCardProps {
 function SeasonCard({ season, onSelect }: SeasonCardProps) {
   const statusColors: Record<string, string> = {
     ACTIVE: "bg-primary/10 text-primary border-primary/20",
-    PLANNED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    COMPLETED: "bg-green-500/10 text-green-600 border-green-500/20",
+    PLANNED: "bg-info/10 text-info border-info/20",
+    COMPLETED: "bg-success/10 text-success border-success/20",
     CANCELLED: "bg-destructive/10 text-destructive border-destructive/20",
   };
   const statusKey = season.status ?? "PLANNED";
@@ -143,16 +143,16 @@ function SeasonCard({ season, onSelect }: SeasonCardProps) {
   return (
     <Button
       variant="outline"
-      className="w-full justify-start h-auto py-3 px-4 rounded-xl border-2 hover:border-primary/50 transition-colors"
+      className="w-full justify-start h-auto py-3 px-4 rounded-xl border-2 border-border bg-card text-card-foreground hover:border-primary/50 hover:bg-muted/70 transition-colors"
       onClick={() => onSelect(season.id)}
     >
-      <div className="flex flex-col items-start gap-1 w-full">
-        <div className="flex items-center justify-between w-full">
-          <span className="font-medium text-foreground">
+      <div className="flex min-w-0 flex-col items-start gap-1 w-full">
+        <div className="flex min-w-0 items-center justify-between gap-3 w-full">
+          <span className="min-w-0 truncate font-medium text-foreground">
             {season.seasonName}
           </span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full border ${statusColors[statusKey] ?? "bg-muted"}`}
+            className={`shrink-0 text-xs px-2 py-0.5 rounded-full border ${statusColors[statusKey] ?? "bg-muted text-muted-foreground border-border"}`}
           >
             {statusKey}
           </span>

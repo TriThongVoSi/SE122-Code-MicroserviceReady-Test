@@ -1,10 +1,17 @@
 .ai-float-button {
+  --fab-offset: 24px;
+  --fab-gap: 16px;
+  --fab-size: 56px;
+
   position: fixed;
-  right: max(80px, calc(env(safe-area-inset-right) + 80px));
-  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(
+    calc(var(--fab-offset) + var(--fab-size) + var(--fab-gap)),
+    calc(env(safe-area-inset-right) + var(--fab-offset) + var(--fab-size) + var(--fab-gap))
+  );
+  bottom: max(var(--fab-offset), calc(env(safe-area-inset-bottom) + var(--fab-offset)));
   z-index: 9998;
-  width: 4rem;
-  height: 4rem;
+  width: var(--fab-size);
+  height: var(--fab-size);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
@@ -21,9 +28,8 @@
 
 @media (max-width: 639px) {
   .ai-float-button {
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(84px, calc(env(safe-area-inset-bottom) + 84px));
-    width: 3.5rem;
-    height: 3.5rem;
+    --fab-offset: 12px;
+    --fab-gap: 12px;
+    --fab-size: 48px;
   }
 }

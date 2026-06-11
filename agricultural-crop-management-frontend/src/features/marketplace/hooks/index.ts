@@ -13,6 +13,7 @@ export {
   useMarketplaceAdminOrderAuditLogs,
   useMarketplaceAdminOrderDetail,
   useMarketplaceAdminOrders,
+  useMarketplaceAdminProductDetail,
   useMarketplaceAdminProducts,
   useMarketplaceAdminStats,
   useMarketplaceAddCartItemMutation,

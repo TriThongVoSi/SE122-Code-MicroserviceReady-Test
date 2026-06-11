@@ -945,8 +945,11 @@ public class MarketplaceService {
                         .build();
                 orderItems.add(orderItem);
 
-                lockedProduct.setStockQuantity(currentListingQuantity(lockedProduct).subtract(creationItem.quantity()));
                 lockedLot.setOnHandQuantity(lockedLot.getOnHandQuantity().subtract(creationItem.quantity()));
+                lockedProduct.setStockQuantity(currentListingQuantity(lockedProduct).subtract(creationItem.quantity()));
+                if (lockedProduct.getStockQuantity().min(lockedLot.getOnHandQuantity()).compareTo(ZERO_QUANTITY) <= 0) {
+                    applyProductStatus(lockedProduct, MarketplaceProductStatus.SOLD_OUT, null, buyer);
+                }
                 productWarehouseTransactionRepository.save(buildMarketplaceLotTransaction(
                         lockedLot,
                         ProductWarehouseTransactionType.MARKETPLACE_ORDER_RESERVED,
@@ -1604,9 +1607,8 @@ public class MarketplaceService {
                 .season(lot.getSeason())
                 .lot(lot)
                 .traceable(Boolean.TRUE)
-                .status(MarketplaceProductStatus.DRAFT)
-                .publishedAt(null)
                 .build();
+        applyProductStatus(product, MarketplaceProductStatus.DRAFT, null, farmer);
 
         MarketplaceProduct saved = marketplaceProductRepository.save(product);
         return toProductDetail(saved, null);
@@ -1631,7 +1633,8 @@ public class MarketplaceService {
     public MarketplaceProductDetailResponse updateFarmerProductStatus(
             Long productId,
             MarketplaceUpdateProductStatusRequest request) {
-        Long farmerUserId = currentUserService.getCurrentUserId();
+        User farmer = currentUserService.getCurrentUser();
+        Long farmerUserId = farmer.getId();
         MarketplaceProduct product = getOwnedProductForFarmer(productId, farmerUserId);
         MarketplaceProductStatus targetStatus = request.status();
 
@@ -1640,20 +1643,10 @@ public class MarketplaceService {
             validateTraceabilityChain(product);
             ensureLotSellable(product.getLot());
             ensureListingHasStock(product);
+        } else if (targetStatus == MarketplaceProductStatus.ACTIVE) {
+            ensureApprovalEligible(product);
         }
-        product.setStatus(targetStatus);
-
-        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
-        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            if (product.getPublishedAt() == null) {
-                product.setPublishedAt(LocalDateTime.now());
-            }
-        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
-            // Preserve publishedAt for sold out products (they were previously ACTIVE)
-        } else {
-            // Clear publishedAt for other non-active statuses
-            product.setPublishedAt(null);
-        }
+        applyProductStatus(product, targetStatus, null, farmer);
 
         MarketplaceProduct saved = marketplaceProductRepository.save(product);
         MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
@@ -1740,56 +1733,43 @@ public class MarketplaceService {
         return PageResponse.of(productPage, items);
     }
 
+    @Transactional(readOnly = true)
+    public MarketplaceProductDetailResponse getAdminProductDetail(Long productId) {
+        MarketplaceProduct product = marketplaceProductRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
+        MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(product.getId()))
+                .get(product.getId());
+        return toProductDetail(product, rating);
+    }
+
     @Transactional
     public MarketplaceProductDetailResponse updateAdminProductStatus(
             Long productId,
             MarketplaceUpdateProductStatusRequest request) {
+        User admin = currentUserService.getCurrentUser();
         MarketplaceProduct product = marketplaceProductRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
         MarketplaceProductStatus targetStatus = request.status();
+        String statusReason = normalizeNullable(request.statusReason());
 
         validateAdminProductStatusTransition(product.getStatus(), targetStatus);
-        if (targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            ProductWarehouseLot lot = product.getLot();
-            if (lot == null) {
-                throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
-            }
-            ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
-            ensureLotSellable(lockedLot);
-            ensureListingHasStock(product);
-        }
         if (targetStatus == MarketplaceProductStatus.ACTIVE) {
-            ProductWarehouseLot lot = product.getLot();
-            if (lot == null) {
-                throw new AppException(ErrorCode.MARKETPLACE_TRACEABILITY_CHAIN_INVALID);
-            }
-            ProductWarehouseLot lockedLot = productWarehouseLotRepository.findById(lot.getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_WAREHOUSE_LOT_NOT_FOUND));
-            ensureLotSellable(lockedLot);
-            ensureListingHasStock(product);
+            ensureApprovalEligible(product);
+        } else if (targetStatus == MarketplaceProductStatus.REJECTED && statusReason == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
-        product.setStatus(targetStatus);
-
-        // Set publishedAt timestamp for ACTIVE and legacy PUBLISHED status
-        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
-            if (product.getPublishedAt() == null) {
-                product.setPublishedAt(LocalDateTime.now());
-            }
-        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
-            // Preserve publishedAt for sold out products (they were previously ACTIVE)
-        } else {
-            // Clear publishedAt for other non-active statuses
-            product.setPublishedAt(null);
-        }
+        applyProductStatus(product, targetStatus, statusReason, admin);
 
         MarketplaceProduct saved = marketplaceProductRepository.save(product);
-        auditProductStatusChange(saved, "Admin changed product status to " + targetStatus.name());
+        String auditReason = "Admin changed product status to " + targetStatus.name()
+                + (statusReason == null ? "" : ": " + statusReason);
+        auditProductStatusChange(saved, auditReason);
         if (saved.getFarmerUser() != null) {
             notifyUser(
                     saved.getFarmerUser().getId(),
                     "Product moderation updated",
-                    "Product " + saved.getName() + " is now " + targetStatus.name() + ".",
+                    "Product " + saved.getName() + " is now " + targetStatus.name()
+                            + (statusReason == null ? "." : ". Reason: " + statusReason),
                     "/farmer/marketplace-products");
         }
         MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
@@ -2313,6 +2293,7 @@ public class MarketplaceService {
 
         double averageRating = ratingProjection == null ? 0D : Optional.ofNullable(ratingProjection.getAverageRating()).orElse(0D);
         long ratingCount = ratingProjection == null ? 0L : Optional.ofNullable(ratingProjection.getRatingCount()).orElse(0L);
+        List<String> approvalBlockers = productApprovalBlockers(product);
 
         return new MarketplaceProductSummaryResponse(
                 product.getId(),
@@ -2337,6 +2318,11 @@ public class MarketplaceService {
                 averageRating,
                 ratingCount,
                 product.getStatus(),
+                product.getStatusReason(),
+                product.getPublishedAt(),
+                product.getStatusChangedAt(),
+                approvalBlockers.isEmpty(),
+                approvalBlockers,
                 product.getCreatedAt(),
                 product.getUpdatedAt());
     }
@@ -2371,6 +2357,11 @@ public class MarketplaceService {
                 summary.ratingAverage(),
                 summary.ratingCount(),
                 summary.status(),
+                summary.statusReason(),
+                summary.publishedAt(),
+                summary.statusChangedAt(),
+                summary.approvalEligible(),
+                summary.approvalBlockers(),
                 summary.createdAt(),
                 summary.updatedAt());
     }
@@ -2962,6 +2953,109 @@ public class MarketplaceService {
         }
     }
 
+    private MarketplaceProductStatus resolveFarmerUpsertTargetStatus(MarketplaceProductStatus currentStatus) {
+        if (currentStatus == null || currentStatus == MarketplaceProductStatus.DRAFT) {
+            return MarketplaceProductStatus.DRAFT;
+        }
+        if (currentStatus == MarketplaceProductStatus.PENDING_REVIEW) {
+            return MarketplaceProductStatus.PENDING_REVIEW;
+        }
+        return MarketplaceProductStatus.PENDING_REVIEW;
+    }
+
+    private void applyProductStatus(
+            MarketplaceProduct product,
+            MarketplaceProductStatus targetStatus,
+            String statusReason,
+            User actor) {
+        if (targetStatus == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        MarketplaceProductStatus currentStatus = product.getStatus();
+        String resolvedReason = targetStatus == MarketplaceProductStatus.REJECTED
+                ? normalizeNullable(statusReason)
+                : null;
+        boolean changed = currentStatus != targetStatus || !Objects.equals(product.getStatusReason(), resolvedReason);
+
+        product.setStatus(targetStatus);
+        product.setStatusReason(resolvedReason);
+
+        if (targetStatus == MarketplaceProductStatus.ACTIVE || targetStatus == MarketplaceProductStatus.PUBLISHED) {
+            if (product.getPublishedAt() == null) {
+                product.setPublishedAt(LocalDateTime.now());
+            }
+        } else if (targetStatus == MarketplaceProductStatus.SOLD_OUT) {
+            // Keep the original publication timestamp for traceability history.
+        } else {
+            product.setPublishedAt(null);
+        }
+
+        if (changed) {
+            product.setStatusChangedAt(LocalDateTime.now());
+            product.setStatusChangedByUser(actor);
+        }
+    }
+
+    private void ensureApprovalEligible(MarketplaceProduct product) {
+        List<String> blockers = productApprovalBlockers(product);
+        if (!blockers.isEmpty()) {
+            log.warn("Marketplace product {} is not approval-eligible: {}", product == null ? null : product.getId(), blockers);
+            throw new AppException(ErrorCode.MARKETPLACE_STOCK_CONFLICT);
+        }
+    }
+
+    private List<String> productApprovalBlockers(MarketplaceProduct product) {
+        if (product == null) {
+            return List.of("PRODUCT_NOT_FOUND");
+        }
+
+        List<String> blockers = new ArrayList<>();
+        Farm farm = product.getFarm();
+        Season season = product.getSeason();
+        ProductWarehouseLot lot = product.getLot();
+
+        if (!Boolean.TRUE.equals(product.getTraceable())) {
+            blockers.add("TRACEABILITY_DISABLED");
+        }
+
+        if (farm == null || season == null || lot == null) {
+            blockers.add("TRACEABILITY_CHAIN_INCOMPLETE");
+        } else {
+            Integer seasonFarmId = season.getPlot() == null || season.getPlot().getFarm() == null
+                    ? null
+                    : season.getPlot().getFarm().getId();
+            Integer lotFarmId = lot.getFarm() == null ? null : lot.getFarm().getId();
+            Integer lotSeasonId = lot.getSeason() == null ? null : lot.getSeason().getId();
+
+            if (!Objects.equals(farm.getId(), seasonFarmId)
+                    || !Objects.equals(farm.getId(), lotFarmId)
+                    || !Objects.equals(season.getId(), lotSeasonId)) {
+                blockers.add("TRACEABILITY_CHAIN_INVALID");
+            }
+        }
+
+        if (lot == null) {
+            blockers.add("LOT_MISSING");
+        } else {
+            if (lot.getStatus() != ProductWarehouseLotStatus.IN_STOCK) {
+                blockers.add("LOT_NOT_IN_STOCK");
+            }
+            if (lot.getOnHandQuantity() == null || lot.getOnHandQuantity().compareTo(ZERO_QUANTITY) <= 0) {
+                blockers.add("LOT_STOCK_EMPTY");
+            }
+        }
+
+        if (currentListingQuantity(product).compareTo(ZERO_QUANTITY) <= 0) {
+            blockers.add("LISTING_STOCK_EMPTY");
+        }
+        if (currentAvailableQuantity(product).compareTo(ZERO_QUANTITY) <= 0) {
+            blockers.add("AVAILABLE_STOCK_EMPTY");
+        }
+
+        return blockers.stream().distinct().toList();
+    }
+
     private MarketplaceProductDetailResponse saveFarmerProduct(
             MarketplaceProduct product,
             MarketplaceFarmerProductUpsertRequest request,
@@ -2973,6 +3067,7 @@ public class MarketplaceService {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE);
         }
 
+        MarketplaceProductStatus statusBeforeSave = product.getStatus();
         validateTraceabilityReferencesForUpsert(true, lot.getFarm(), lot.getSeason(), lot);
         product.setSlug(generateUniqueSlug(request.name(), product.getId()));
         product.setName(request.name().trim());
@@ -2989,8 +3084,7 @@ public class MarketplaceService {
         product.setSeason(lot.getSeason());
         product.setLot(lot);
         product.setTraceable(Boolean.TRUE);
-        product.setStatus(MarketplaceProductStatus.DRAFT);
-        product.setPublishedAt(null);
+        applyProductStatus(product, resolveFarmerUpsertTargetStatus(statusBeforeSave), null, farmer);
 
         MarketplaceProduct saved = marketplaceProductRepository.save(product);
         MarketplaceProductReviewRepository.ProductRatingProjection rating = aggregateProductRatings(List.of(saved.getId()))
@@ -3148,11 +3242,12 @@ public class MarketplaceService {
 
         boolean allowed = switch (current) {
             case DRAFT -> target == MarketplaceProductStatus.PENDING_REVIEW;
-            case ACTIVE -> target == MarketplaceProductStatus.INACTIVE || target == MarketplaceProductStatus.SOLD_OUT;
+            case PENDING_REVIEW -> target == MarketplaceProductStatus.DRAFT;
+            case ACTIVE -> target == MarketplaceProductStatus.INACTIVE;
             case INACTIVE -> target == MarketplaceProductStatus.ACTIVE;
             // Legacy support for backward compatibility with existing data
-            case PUBLISHED -> target == MarketplaceProductStatus.HIDDEN;
-            case HIDDEN -> target == MarketplaceProductStatus.PENDING_REVIEW;
+            case PUBLISHED -> target == MarketplaceProductStatus.INACTIVE;
+            case HIDDEN -> target == MarketplaceProductStatus.ACTIVE;
             default -> false;
         };
 
@@ -3168,9 +3263,16 @@ public class MarketplaceService {
             return; // no-op
         }
 
-        // Admin has full control over status transitions
-        // All transitions are allowed for admin users
-        // This provides flexibility for moderation and emergency actions
+        boolean allowed = switch (current) {
+            case PENDING_REVIEW -> target == MarketplaceProductStatus.ACTIVE
+                    || target == MarketplaceProductStatus.REJECTED;
+            case ACTIVE, PUBLISHED -> target == MarketplaceProductStatus.REJECTED;
+            default -> false;
+        };
+
+        if (!allowed) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
     }
 
     private void validateFarmerOrderStatusTransition(

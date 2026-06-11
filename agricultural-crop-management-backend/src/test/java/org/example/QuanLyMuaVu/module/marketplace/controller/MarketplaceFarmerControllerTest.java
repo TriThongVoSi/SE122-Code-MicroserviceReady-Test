@@ -111,6 +111,11 @@ class MarketplaceFarmerControllerTest {
                 0D,
                 0L,
                 MarketplaceProductStatus.DRAFT,
+                null,
+                null,
+                null,
+                true,
+                List.of(),
                 LocalDateTime.of(2026, 4, 23, 8, 0),
                 LocalDateTime.of(2026, 4, 23, 9, 0));
 

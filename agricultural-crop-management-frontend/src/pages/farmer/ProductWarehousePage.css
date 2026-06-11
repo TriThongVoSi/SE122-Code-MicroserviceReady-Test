@@ -75,14 +75,14 @@
 }
 
 .farmer-product-warehouse-page .warehouse-directory-item:hover {
-  border-color: #2e7d32;
+  border-color: var(--primary);
   background: var(--muted);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
 }
 
 .farmer-product-warehouse-page .warehouse-directory-item.is-selected {
-  border-color: #2e7d32;
-  background: rgba(21, 128, 61, 0.08);
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
 }
 
 .farmer-product-warehouse-page .warehouse-name {
@@ -206,9 +206,9 @@
 }
 
 .farmer-product-warehouse-page .error-state {
-  border: 1px solid #ffcdd2;
-  background: #ffebee;
-  color: #c62828;
+  border: 1px solid var(--portal-status-missing-border);
+  background: var(--portal-status-missing-bg);
+  color: var(--portal-status-missing-fg);
 }
 
 .farmer-product-warehouse-page .empty-state.small {
@@ -297,9 +297,9 @@
 }
 
 .farmer-product-warehouse-dialog .warehouse-form-error {
-  border: 1px solid #ffcdd2;
-  background: #ffebee;
-  color: #c62828;
+  border: 1px solid var(--portal-status-missing-border);
+  background: var(--portal-status-missing-bg);
+  color: var(--portal-status-missing-fg);
   border-radius: 0.5rem;
   padding: 0.625rem;
   font-size: 0.8125rem;

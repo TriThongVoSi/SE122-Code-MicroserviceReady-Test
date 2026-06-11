@@ -58,6 +58,10 @@ export type MarketplaceProductSummary = {
   status: MarketplaceProductStatus;
   statusReason?: string | null;
   rejectionReason?: string | null;
+  publishedAt: string | null;
+  statusChangedAt: string | null;
+  approvalEligible: boolean;
+  approvalBlockers: string[];
   createdAt: string;
   updatedAt: string;
 };

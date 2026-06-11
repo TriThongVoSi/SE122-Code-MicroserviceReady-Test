@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { Link as LinkIcon, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useI18n } from "@/shared/lib/hooks/useI18n";
-import type { MarketplaceFarmerProductUpsertRequest, MarketplaceProductStatus } from "@/shared/api";
+import type {
+  MarketplaceFarmerProductFormLotOption,
+  MarketplaceFarmerProductUpsertRequest,
+  MarketplaceProductStatus,
+} from "@/shared/api";
 import {
   BackButton,
   Button,
@@ -65,13 +69,13 @@ const EMPTY_FORM: ProductFormState = {
 };
 
 const FORM_INPUT_CLASS_NAME =
-  "h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm placeholder:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const FORM_SELECT_TRIGGER_CLASS_NAME =
-  "h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm shadow-sm data-[placeholder]:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "h-11 rounded-xl border border-input bg-input-background px-4 text-sm shadow-sm data-[placeholder]:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const FORM_TEXTAREA_CLASS_NAME =
-  "rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[#3BA55D] focus:ring-2 focus:ring-[#3BA55D]/20 focus-visible:border-[#3BA55D] focus-visible:ring-2 focus-visible:ring-[#3BA55D]/20";
+  "rounded-xl border border-input bg-input-background px-4 py-3 text-sm shadow-sm placeholder:text-muted-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20";
 
 const PRODUCT_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 const PRODUCT_IMAGE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -108,7 +112,7 @@ function nextStatusActionLabel(status: MarketplaceProductStatus, t: Translator):
     case "PUBLISHED":
       return t("marketplaceSeller.productForm.actions.hideProduct", "Hide product");
     case "HIDDEN":
-      return t("marketplaceSeller.productForm.actions.resubmitReview", "Resubmit for review");
+      return t("marketplaceSeller.productForm.actions.showProduct", "Show product");
     default:
       return t("marketplaceSeller.productForm.actions.updateStatus", "Update status");
   }
@@ -172,13 +176,44 @@ export function SellerProductFormPage() {
     };
   }, [selectedImagePreview]);
 
-  const selectableLots = useMemo(
-    () =>
-      (formOptionsQuery.data?.lots ?? []).filter(
-        (lot) => lot.linkedProductId == null || lot.linkedProductId === productId,
-      ),
-    [formOptionsQuery.data?.lots, productId],
-  );
+  const currentProductLot = useMemo<MarketplaceFarmerProductFormLotOption | null>(() => {
+    if (!isEdit || !product?.lotId) {
+      return null;
+    }
+
+    const optionLots = formOptionsQuery.data?.lots ?? [];
+    if (optionLots.some((lot) => lot.id === product.lotId)) {
+      return null;
+    }
+
+    return {
+      id: product.lotId,
+      lotCode: product.traceabilityCode ?? `LOT-${product.lotId}`,
+      farmId: product.farmId,
+      farmName: product.farmName,
+      seasonId: product.seasonId,
+      seasonName: product.seasonName,
+      availableQuantity: product.availableQuantity ?? 0,
+      harvestedAt: null,
+      unit: product.unit,
+      productName: product.name,
+      productVariant: null,
+      linkedProductId: product.id,
+      linkedProductStatus: product.status,
+    };
+  }, [formOptionsQuery.data?.lots, isEdit, product]);
+
+  const selectableLots = useMemo(() => {
+    const lots = (formOptionsQuery.data?.lots ?? []).filter(
+      (lot) => lot.linkedProductId == null || lot.linkedProductId === productId,
+    );
+
+    if (!currentProductLot || lots.some((lot) => lot.id === currentProductLot.id)) {
+      return lots;
+    }
+
+    return [...lots, currentProductLot];
+  }, [currentProductLot, formOptionsQuery.data?.lots, productId]);
 
   const filteredSeasons = useMemo(() => {
     const seasons = formOptionsQuery.data?.seasons ?? [];
@@ -218,9 +253,16 @@ export function SellerProductFormPage() {
     Boolean(selectedLot) &&
     Number(form.stockQuantity) <= Number(selectedLot?.availableQuantity ?? 0);
 
-  const productModerationReason = product?.rejectionReason ?? product?.statusReason ?? null;
+  const selectedLotAvailableQuantity = Number(selectedLot?.availableQuantity ?? 0);
+  const selectedLotIsApprovalBlocked = Boolean(selectedLot && selectedLotAvailableQuantity <= 0);
+  const productModerationReason = product?.statusReason ?? product?.rejectionReason ?? null;
   const imagePreviewSrc = selectedImagePreview ?? form.imageUrl.trim();
   const isSavingProduct = createMutation.isPending || updateMutation.isPending || uploadImageMutation.isPending;
+  const saveWillRequireReview = Boolean(
+    isEdit &&
+      product &&
+      !["DRAFT", "PENDING_REVIEW"].includes(product.status),
+  );
   const initialForm = useMemo<ProductFormState>(() => {
     if (!isEdit || !product) {
       return EMPTY_FORM;
@@ -531,6 +573,17 @@ export function SellerProductFormPage() {
         />
       </div>
 
+      {saveWillRequireReview ? (
+        <Card className="border-warning/40 bg-warning/10 shadow-sm">
+          <CardContent className="p-4 text-sm text-foreground">
+            {t(
+              "marketplaceSeller.productForm.reapprovalWarning",
+              "Lưu thay đổi sẽ gửi duyệt lại và tạm ẩn khỏi marketplace cho tới khi quản trị viên phê duyệt.",
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <form
         className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_360px]"
         onSubmit={onSubmit}
@@ -629,9 +682,9 @@ export function SellerProductFormPage() {
                   <TabsContent value="upload" className="space-y-3">
                     <Label
                       htmlFor="product-image-file"
-                      className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm shadow-sm transition-colors hover:border-[#3BA55D] hover:bg-[#3BA55D]/5"
+                      className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-4 py-6 text-center text-sm shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
                     >
-                      <Upload className="mb-2 h-6 w-6 text-[#3BA55D]" aria-hidden="true" />
+                      <Upload className="mb-2 h-6 w-6 text-primary" aria-hidden="true" />
                       <span className="font-medium text-foreground">
                         {selectedImageFile?.name ??
                           t("marketplaceSeller.productForm.imageInput.chooseFile", "Choose product image")}
@@ -784,11 +837,18 @@ export function SellerProductFormPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {filteredLots.map((lot) => (
-                      <SelectItem key={lot.id} value={String(lot.id)}>
-                        {lot.lotCode} - {lot.productName ?? t("marketplaceSeller.productForm.harvestLotFallback", "Harvested lot")}
-                      </SelectItem>
-                    ))}
+                    {filteredLots.map((lot) => {
+                      const lotIsBlocked = Number(lot.availableQuantity ?? 0) <= 0;
+
+                      return (
+                        <SelectItem key={lot.id} value={String(lot.id)}>
+                          {lot.lotCode} - {lot.productName ?? t("marketplaceSeller.productForm.harvestLotFallback", "Harvested lot")}
+                          {lotIsBlocked
+                            ? ` (${t("marketplaceSeller.productForm.lotInfo.notEligible", "không đủ điều kiện")})`
+                            : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -816,7 +876,7 @@ export function SellerProductFormPage() {
                       <span className="text-muted-foreground">
                         {t("marketplaceSeller.productForm.lotInfo.availableQuantity", "Available quantity")}
                       </span>
-                      <span className="font-medium text-foreground">
+                      <span className={selectedLotIsApprovalBlocked ? "font-medium text-destructive" : "font-medium text-foreground"}>
                         {selectedLot.availableQuantity} {selectedLot.unit ?? ""}
                       </span>
                     </div>
@@ -828,6 +888,14 @@ export function SellerProductFormPage() {
                           : t("marketplaceSeller.productForm.lotInfo.na", "N/A")}
                       </span>
                     </div>
+                    {selectedLotIsApprovalBlocked ? (
+                      <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                        {t(
+                          "marketplaceSeller.productForm.lotInfo.notEligibleMessage",
+                          "Lô này hiện không đủ điều kiện đăng bán vì không còn số lượng khả dụng.",
+                        )}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -930,7 +998,9 @@ export function SellerProductFormPage() {
                 >
                   {isSavingProduct
                     ? t("marketplaceSeller.productForm.actions.saving", "Saving...")
-                    : isEdit
+                    : saveWillRequireReview
+                      ? t("marketplaceSeller.productForm.actions.saveAndResubmit", "Lưu và gửi duyệt lại")
+                      : isEdit
                       ? t("marketplaceSeller.productForm.actions.saveChanges", "Save changes")
                       : t("marketplaceSeller.productForm.actions.createDraft", "Create draft")}
                 </Button>

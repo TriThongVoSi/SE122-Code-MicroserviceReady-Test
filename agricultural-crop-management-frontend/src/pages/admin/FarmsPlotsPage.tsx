@@ -234,7 +234,7 @@ export function FarmsPlotsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10 pr-4 py-2 border border-border rounded-[14px] bg-card text-sm w-full sm:w-64"
+                  className="w-full rounded-[14px] border border-input bg-card py-2 pl-10 pr-4 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-64"
                 />
               </div>
               <button
@@ -360,13 +360,13 @@ export function FarmsPlotsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10 pr-4 py-2 border border-border rounded-[14px] bg-card text-sm w-full sm:w-64"
+                  className="w-full rounded-[14px] border border-input bg-card py-2 pl-10 pr-4 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-64"
                 />
               </div>
               <select
                 value={farmFilter || ''}
                 onChange={(e) => { setFarmFilter(e.target.value ? Number(e.target.value) : null); setPage(0); }}
-                className="w-full sm:w-auto px-3 py-2 border border-border rounded-[14px] bg-card text-sm"
+                className="w-full rounded-[14px] border border-input bg-card px-3 py-2 text-sm transition-[border-color,color,box-shadow] focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 sm:w-auto"
               >
                 <option value="">{t('admin.farmsPlots.farms.all')}</option>
                 {(filterFarms ?? []).map(f => (

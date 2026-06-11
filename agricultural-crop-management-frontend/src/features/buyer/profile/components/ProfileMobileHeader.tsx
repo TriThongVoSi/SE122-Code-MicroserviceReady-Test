@@ -61,7 +61,7 @@ export function ProfileMobileHeader({ user }: ProfileMobileHeaderProps) {
                 cn(
                   'flex flex-1 flex-col items-center gap-1 rounded-t-xl px-2 py-2.5 text-xs font-medium transition-all',
                   isActive
-                    ? 'bg-gradient-to-br from-[#f0faf3] via-[#f6faf7] to-[#f8faf9] text-emerald-700'
+                    ? 'bg-background text-primary'
                     : 'text-emerald-100 hover:text-white'
                 )
               }

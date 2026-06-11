@@ -301,7 +301,7 @@ export const ReportsChartTabs: React.FC<ReportsChartTabsProps> = ({
                 onCostGranularityChange(value as "DAY" | "WEEK" | "MONTH")
               }
             >
-              <SelectTrigger className="h-8 w-full sm:w-[140px] rounded-[14px] border-border bg-card text-foreground text-sm">
+              <SelectTrigger className="h-8 w-full rounded-[14px] border-input bg-card text-sm text-foreground sm:w-[140px]">
                 <SelectValue placeholder={t('admin.reportsAnalytics.chart.granularity')} />
               </SelectTrigger>
               <SelectContent className="rounded-[14px]">

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Edit, Eye, EyeOff, Package, PackageOpen, Plus, Search } from "lucide-react";
+import { Edit, Eye, EyeOff, Package, PackageOpen, Plus, Search, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MarketplaceProductStatus, MarketplaceProductSummary } from "@/shared/api";
 import {
@@ -39,13 +39,16 @@ function statusVariant(status: MarketplaceProductStatus) {
   switch (status) {
     case "ACTIVE":
     case "PUBLISHED":
-      return "default" as const;
+      return "success" as const;
     case "PENDING_REVIEW":
-      return "secondary" as const;
-    case "INACTIVE":
-    case "REJECTED":
+      return "warning" as const;
     case "HIDDEN":
+    case "INACTIVE":
+      return "secondary" as const;
+    case "REJECTED":
       return "destructive" as const;
+    case "SOLD_OUT":
+      return "outline" as const;
     default:
       return "outline" as const;
   }
@@ -61,13 +64,14 @@ function useStatusLabel() {
         return t("marketplaceSeller.status.pendingReview");
       case "ACTIVE":
       case "PUBLISHED":
-        return t("marketplaceSeller.status.published");
+        return t("marketplaceSeller.status.active", "Đang bán / Đã duyệt");
       case "INACTIVE":
-      case "REJECTED":
       case "HIDDEN":
-        return t("marketplaceSeller.status.hidden");
+        return t("marketplaceSeller.status.inactive", "Đã ẩn");
+      case "REJECTED":
+        return t("marketplaceSeller.status.rejected", "Bị từ chối");
       case "SOLD_OUT":
-        return t("marketplaceSeller.status.soldOut", "Sold out");
+        return t("marketplaceSeller.status.soldOut", "Hết hàng");
       default:
         return status;
     }
@@ -75,7 +79,7 @@ function useStatusLabel() {
 }
 
 function moderationReason(product: MarketplaceProductSummary) {
-  return product.rejectionReason ?? product.statusReason ?? null;
+  return product.statusReason ?? product.rejectionReason ?? null;
 }
 
 function ProductActions({ product }: { product: MarketplaceProductSummary }) {
@@ -83,9 +87,13 @@ function ProductActions({ product }: { product: MarketplaceProductSummary }) {
   const mutation = useMarketplaceUpdateFarmerProductStatusMutation(product.id);
   const nextAction = getNextSellerProductStatusAction(product.status);
   const isPublished = product.status === "ACTIVE" || product.status === "PUBLISHED";
+  const isHidden = product.status === "INACTIVE" || product.status === "HIDDEN";
+  const isDraft = product.status === "DRAFT";
   const statusActionLabel = isPublished
     ? t("marketplaceSeller.products.actions.hide", "Hide product")
-    : t("marketplaceSeller.products.actions.show", "Show product");
+    : isHidden
+      ? t("marketplaceSeller.products.actions.show", "Show product")
+      : getNextSellerProductStatusLabel(product.status);
   const editLabel = t("marketplaceSeller.products.actions.edit", "Edit product");
 
   return (
@@ -95,7 +103,7 @@ function ProductActions({ product }: { product: MarketplaceProductSummary }) {
         size="icon"
         className="text-muted-foreground hover:bg-muted hover:text-foreground"
         disabled={mutation.isPending || !nextAction}
-        title={getNextSellerProductStatusLabel(product.status)}
+        title={statusActionLabel}
         aria-label={statusActionLabel}
         onClick={() => {
           if (nextAction) {
@@ -103,7 +111,7 @@ function ProductActions({ product }: { product: MarketplaceProductSummary }) {
           }
         }}
       >
-        {isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+        {isPublished ? <EyeOff size={16} /> : isHidden ? <Eye size={16} /> : isDraft ? <Send size={16} /> : <Package size={16} />}
       </Button>
       <Button asChild variant="ghost" size="icon" className="text-primary hover:bg-primary/10 hover:text-primary">
         <Link to={`/farmer/marketplace-products/${product.id}/edit`} aria-label={editLabel}>
@@ -301,8 +309,10 @@ export function SellerProductsPage() {
                     <SelectItem value="ALL">{t("marketplaceSeller.filters.allStatuses")}</SelectItem>
                     <SelectItem value="DRAFT">{t("marketplaceSeller.status.draft")}</SelectItem>
                     <SelectItem value="PENDING_REVIEW">{t("marketplaceSeller.status.pendingReview")}</SelectItem>
-                    <SelectItem value="ACTIVE">{t("marketplaceSeller.status.published")}</SelectItem>
-                    <SelectItem value="INACTIVE">{t("marketplaceSeller.status.hidden")}</SelectItem>
+                    <SelectItem value="ACTIVE">{t("marketplaceSeller.status.active", "Đang bán / Đã duyệt")}</SelectItem>
+                    <SelectItem value="INACTIVE">{t("marketplaceSeller.status.inactive", "Đã ẩn")}</SelectItem>
+                    <SelectItem value="REJECTED">{t("marketplaceSeller.status.rejected", "Bị từ chối")}</SelectItem>
+                    <SelectItem value="SOLD_OUT">{t("marketplaceSeller.status.soldOut", "Hết hàng")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

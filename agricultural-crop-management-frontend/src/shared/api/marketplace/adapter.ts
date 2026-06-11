@@ -176,6 +176,10 @@ export interface MarketplaceApiAdapter {
     query?: MarketplaceAdminProductQuery,
   ): Promise<MarketplaceApiResponse<MarketplaceProductPage>>;
 
+  getAdminProductDetail(
+    productId: number,
+  ): Promise<MarketplaceApiResponse<MarketplaceProductDetail>>;
+
   updateAdminProductStatus(
     productId: number,
     request: MarketplaceUpdateProductStatusRequest,

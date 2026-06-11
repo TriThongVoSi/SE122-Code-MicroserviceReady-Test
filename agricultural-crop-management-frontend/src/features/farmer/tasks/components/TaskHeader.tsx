@@ -27,11 +27,11 @@ export function TaskHeader({
       <CardContent className="px-6 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2 leading-tight">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 leading-tight">
               <ClipboardList className="w-6 h-6 text-emerald-600" />
               {t('tasks.pageTitle')}
             </h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {t('tasks.subtitle')}
             </p>
           </div>

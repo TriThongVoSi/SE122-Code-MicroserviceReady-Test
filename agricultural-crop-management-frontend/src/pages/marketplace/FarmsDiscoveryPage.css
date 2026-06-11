@@ -646,3 +646,83 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dark.portal-buyer-active .farms-discovery-page {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farms-discovery-hero {
+  border-color: var(--border);
+  background:
+    linear-gradient(90deg, rgba(15, 21, 18, 0.96) 0%, rgba(15, 21, 18, 0.86) 46%, rgba(15, 21, 18, 0.3) 100%),
+    url("/demo-evidence/products/rice%20field.jpg") center / cover;
+}
+
+.dark.portal-buyer-active .farms-discovery-hero h1,
+.dark.portal-buyer-active .farms-discovery-card__title a,
+.dark.portal-buyer-active .farms-discovery-state h2 {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farms-discovery-hero p,
+.dark.portal-buyer-active .farms-discovery-field span,
+.dark.portal-buyer-active .farms-discovery-field svg,
+.dark.portal-buyer-active .farms-discovery-card__title span,
+.dark.portal-buyer-active .farms-discovery-card__description,
+.dark.portal-buyer-active .farms-discovery-card__stats span,
+.dark.portal-buyer-active .farms-discovery-state p {
+  color: var(--muted-foreground);
+}
+
+.dark.portal-buyer-active .farms-discovery-hero__search input,
+.dark.portal-buyer-active .farms-discovery-field,
+.dark.portal-buyer-active .farms-discovery-toggle,
+.dark.portal-buyer-active .farms-discovery-chips button,
+.dark.portal-buyer-active .farms-discovery-card,
+.dark.portal-buyer-active .farms-discovery-state {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farms-discovery-field select {
+  color: var(--foreground);
+}
+
+.dark.portal-buyer-active .farms-discovery-toggle:hover,
+.dark.portal-buyer-active .farms-discovery-toggle.is-active,
+.dark.portal-buyer-active .farms-discovery-chips button:hover,
+.dark.portal-buyer-active .farms-discovery-chips button.is-active,
+.dark.portal-buyer-active .farms-discovery-category-row__title,
+.dark.portal-buyer-active .farms-discovery-card__avatar,
+.dark.portal-buyer-active .farms-discovery-card__badges span {
+  border-color: color-mix(in oklab, var(--primary) 36%, var(--border));
+  background: color-mix(in oklab, var(--primary) 14%, var(--card));
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .farms-discovery-card:hover {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+}
+
+.dark.portal-buyer-active .farms-discovery-card__media,
+.dark.portal-buyer-active .farms-discovery-card__skeleton-media,
+.dark.portal-buyer-active .farms-discovery-card__skeleton-body span {
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in oklab, var(--primary) 24%, transparent), transparent 34%),
+    linear-gradient(135deg, var(--portal-surface-muted), var(--portal-surface-elevated));
+}
+
+.dark.portal-buyer-active .farms-discovery-card__favorite,
+.dark.portal-buyer-active .farms-discovery-card__secondary {
+  border-color: var(--border);
+  background: var(--portal-surface-elevated);
+  color: var(--success);
+}
+
+.dark.portal-buyer-active .farms-discovery-card__secondary:hover {
+  border-color: color-mix(in oklab, var(--primary) 42%, var(--border));
+  background: color-mix(in oklab, var(--primary) 14%, var(--card));
+}

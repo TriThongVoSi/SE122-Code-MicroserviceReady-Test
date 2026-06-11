@@ -109,6 +109,16 @@ public class MarketplaceProduct {
     @Column(name = "published_at")
     LocalDateTime publishedAt;
 
+    @Column(name = "status_reason", length = 500)
+    String statusReason;
+
+    @Column(name = "status_changed_at")
+    LocalDateTime statusChangedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "status_changed_by_user_id")
+    org.example.QuanLyMuaVu.module.identity.entity.User statusChangedByUser;
+
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
 

@@ -84,9 +84,9 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="flex w-full max-w-full gap-0 overflow-hidden border-l-0 bg-slate-50 p-0 shadow-2xl sm:w-[640px] sm:max-w-[640px] lg:w-[720px] lg:max-w-[720px]"
+                className="flex w-full max-w-full gap-0 overflow-hidden border-l border-border bg-background p-0 text-foreground shadow-2xl sm:w-[640px] sm:max-w-[640px] lg:w-[720px] lg:max-w-[720px]"
             >
-                <SheetHeader className="border-b border-lime-100 bg-gradient-to-br from-lime-50 via-white to-emerald-50 px-5 py-5 pr-14 text-left sm:px-6">
+                <SheetHeader className="border-b border-border bg-card px-5 py-5 pr-14 text-left sm:px-6">
                     <div className="flex items-start gap-3">
                         <div
                             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"
@@ -95,10 +95,10 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                             <Leaf className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                            <SheetTitle className="text-base font-semibold text-slate-950 sm:text-lg">
+                            <SheetTitle className="text-base font-semibold text-foreground sm:text-lg">
                                 Trợ lý AI mùa vụ
                             </SheetTitle>
-                            <SheetDescription className="mt-1 max-w-[34rem] text-sm leading-6 text-slate-600">
+                            <SheetDescription className="mt-1 max-w-[34rem] text-sm leading-6 text-muted-foreground">
                                 Nhận gợi ý về thời tiết, chăm sóc cây trồng, sâu bệnh và chi phí vận hành trang trại.
                             </SheetDescription>
                         </div>
@@ -112,7 +112,7 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                                 <button
                                     key={chip.label}
                                     type="button"
-                                    className="inline-flex h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-lime-200 hover:bg-lime-50 hover:text-lime-800 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2"
+                                    className="inline-flex h-9 items-center rounded-full border border-border bg-card px-3 text-sm font-medium text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/45 focus:ring-offset-2 focus:ring-offset-background"
                                     onClick={() => setDraft(chip.prompt)}
                                 >
                                     {chip.label}
@@ -123,7 +123,7 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 shrink-0 rounded-full text-slate-500 hover:bg-white hover:text-lime-700"
+                            className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-primary"
                             onClick={() => {
                                 reset();
                                 setDraft('');
@@ -135,7 +135,7 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                         </Button>
                     </div>
 
-                    <div className="min-h-0 flex-1 rounded-2xl border border-slate-200 bg-white/80 shadow-inner">
+                    <div className="min-h-0 flex-1 rounded-2xl border border-border bg-muted/30 shadow-inner">
                         <ScrollArea className="h-full">
                             <div className="space-y-4 p-4 sm:p-5">
                                 {messages.map((message) => {
@@ -149,7 +149,7 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                                             )}
                                         >
                                             {!isUser && (
-                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-lime-100 text-lime-700">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                                     <Bot className="h-4 w-4" />
                                                 </div>
                                             )}
@@ -157,8 +157,8 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                                                 className={cn(
                                                     'max-w-[84%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm',
                                                     isUser
-                                                        ? 'bg-green-700 text-white'
-                                                        : 'border border-slate-200 bg-white text-slate-900',
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'border border-border bg-card text-card-foreground',
                                                 )}
                                             >
                                                 {isUser ? (
@@ -172,10 +172,10 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                                 })}
                                 {isSending && (
                                     <div className="flex items-start gap-2">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-lime-100 text-lime-700">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                             <Bot className="h-4 w-4" />
                                         </div>
-                                        <div className="animate-pulse rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+                                        <div className="animate-pulse rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
                                             Đang trả lời...
                                         </div>
                                     </div>
@@ -185,7 +185,7 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                         </ScrollArea>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm focus-within:border-lime-300 focus-within:ring-4 focus-within:ring-lime-100">
+                    <div className="rounded-2xl border border-border bg-card p-3 shadow-sm focus-within:border-primary/60 focus-within:ring-4 focus-within:ring-primary/15">
                         <Textarea
                             placeholder="Hỏi về cây trồng, sâu bệnh, đất, tưới tiêu hoặc lịch mùa vụ..."
                             value={draft}
@@ -196,14 +196,13 @@ export function AiDrawer({ open, onOpenChange, portalColor }: AiDrawerProps) {
                             className="min-h-[88px] resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
                         />
                         <div className="mt-3 flex items-center justify-between gap-3">
-                            <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                 <Sparkles className="h-3.5 w-3.5" />
                                 AI mùa vụ
                             </span>
                             <Button
                                 type="button"
-                                className="rounded-full px-4 text-white hover:opacity-95"
-                                style={{ backgroundColor: portalColor }}
+                                className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
                                 onClick={handleSend}
                                 disabled={!draft.trim() || isSending}
                             >

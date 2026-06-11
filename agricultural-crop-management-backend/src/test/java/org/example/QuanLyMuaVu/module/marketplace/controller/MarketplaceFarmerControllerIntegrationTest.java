@@ -316,7 +316,7 @@ public class MarketplaceFarmerControllerIntegrationTest {
 
         // Submit for review
         MarketplaceUpdateProductStatusRequest statusRequest =
-                new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.PENDING_REVIEW);
+                new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.PENDING_REVIEW, null);
 
         mockMvc.perform(patch("/api/v1/marketplace/farmer/products/" + product.getId() + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -351,7 +351,7 @@ public class MarketplaceFarmerControllerIntegrationTest {
 
         // Try to activate directly (should fail - farmers cannot DRAFT → ACTIVE)
         MarketplaceUpdateProductStatusRequest statusRequest =
-                new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE);
+                new MarketplaceUpdateProductStatusRequest(MarketplaceProductStatus.ACTIVE, null);
 
         mockMvc.perform(patch("/api/v1/marketplace/farmer/products/" + product.getId() + "/status")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -67,6 +67,8 @@ export const marketplaceQueryKeys = {
   adminProductsBase: () => [...marketplaceQueryKeys.root, "admin-products"] as const,
   adminProducts: (query?: MarketplaceAdminProductQuery) =>
     [...marketplaceQueryKeys.adminProductsBase(), query ?? {}] as const,
+  adminProduct: (productId?: number) =>
+    [...marketplaceQueryKeys.root, "admin-product", productId ?? 0] as const,
   adminOrdersBase: () => [...marketplaceQueryKeys.root, "admin-orders"] as const,
   adminOrders: (query?: MarketplaceAdminOrderQuery) =>
     [...marketplaceQueryKeys.adminOrdersBase(), query ?? {}] as const,
@@ -673,6 +675,17 @@ export function useMarketplaceAdminProducts(query?: MarketplaceAdminProductQuery
   });
 }
 
+export function useMarketplaceAdminProductDetail(productId?: number) {
+  return useQuery({
+    queryKey: marketplaceQueryKeys.adminProduct(productId),
+    enabled: Boolean(productId && productId > 0),
+    queryFn: async () => {
+      const response = await marketplaceApi.getAdminProductDetail(productId ?? 0);
+      return response.result;
+    },
+  });
+}
+
 export function useMarketplaceUpdateAdminProductStatusMutation(productId: number) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -683,6 +696,7 @@ export function useMarketplaceUpdateAdminProductStatusMutation(productId: number
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminProductsBase() }),
+        queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminProduct(productId) }),
         queryClient.invalidateQueries({ queryKey: marketplaceQueryKeys.adminStats() }),
       ]);
     },
