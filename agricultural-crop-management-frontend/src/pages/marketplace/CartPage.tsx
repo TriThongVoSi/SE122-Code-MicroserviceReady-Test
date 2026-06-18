@@ -226,11 +226,24 @@ export function CartPage() {
     cart.sellerGroups && cart.sellerGroups.length > 0
       ? cart.sellerGroups
       : cart.items.reduce<
-          Array<{ farmerUserId: number; farmerName: string | null; farmName: string | null; items: typeof cart.items }>
+          Array<{
+            farmerUserId: number;
+            farmerName: string | null;
+            farmId: number | null;
+            farmName: string | null;
+            items: typeof cart.items;
+          }>
         >((groups, item) => {
           const existing = groups.find((group) => group.farmerUserId === item.farmerUserId);
           if (existing) existing.items.push(item);
-          else groups.push({ farmerUserId: item.farmerUserId, farmerName: null, farmName: null, items: [item] });
+          else
+            groups.push({
+              farmerUserId: item.farmerUserId,
+              farmerName: null,
+              farmId: null,
+              farmName: null,
+              items: [item],
+            });
           return groups;
         }, []);
 
@@ -266,13 +279,29 @@ export function CartPage() {
               {/* Seller header */}
               <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-4 py-2.5">
                 <Store size={16} className="text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-foreground">
-                  {group.farmerName ?? `Người bán #${group.farmerUserId}`}
-                </h2>
-                {group.farmName && (
-                  <span className="text-xs text-muted-foreground">
-                    — {group.farmName}
-                  </span>
+                {group.farmId ? (
+                  <Link
+                    to={`/marketplace/farms/${group.farmId}`}
+                    className="group/link flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary transition-colors duration-200"
+                  >
+                    <span>{group.farmerName ?? `Người bán #${group.farmerUserId}`}</span>
+                    {group.farmName && (
+                      <span className="text-xs font-normal text-muted-foreground transition-colors group-hover/link:text-primary/80">
+                        — {group.farmName}
+                      </span>
+                    )}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <h2 className="text-sm font-semibold text-foreground">
+                      {group.farmerName ?? `Người bán #${group.farmerUserId}`}
+                    </h2>
+                    {group.farmName && (
+                      <span className="text-xs text-muted-foreground">
+                        — {group.farmName}
+                      </span>
+                    )}
+                  </div>
                 )}
                 <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
                   {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}
