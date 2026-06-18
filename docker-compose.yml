@@ -1,0 +1,79 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_quanlymuavu
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-quanlymuavu}
+      MYSQL_USER: ${MYSQL_USER:-springuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-springpass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  backend:
+    build:
+      context: ./agricultural-crop-management-backend
+      dockerfile: Dockerfile
+    container_name: backend_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8080
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-quanlymuavu}
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY}
+      JWT_VALID_DURATION: ${JWT_VALID_DURATION:-3600}
+      JWT_REFRESHABLE_DURATION: ${JWT_REFRESHABLE_DURATION:-36000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_AUTH: false
+      SMTP_STARTTLS: false
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      APP_AI_API_KEY: ${APP_AI_API_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./agricultural-crop-management-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    container_name: frontend_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

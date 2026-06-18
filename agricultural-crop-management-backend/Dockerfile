@@ -1,9 +1,24 @@
-FROM eclipse-temurin:23-jdk-alpine
+FROM maven:3.9-eclipse-temurin-23-alpine AS builder
+
+WORKDIR /build
+
+COPY pom.xml ./
+COPY mvnw ./
+COPY .mvn .mvn
+COPY src src
+
+RUN mvn package -DskipTests -B
+
+FROM eclipse-temurin:23-jre-alpine AS runtime
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /build/target/*.jar app.jar
 
 EXPOSE 8080
+
+USER appuser
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
