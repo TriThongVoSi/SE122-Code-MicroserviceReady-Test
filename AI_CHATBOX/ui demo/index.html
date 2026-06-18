@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmTrace AI Assistant - Demo Chat Box</title>
+    <!-- Google Fonts: Inter and Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar for configuration and controls -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-seedling logo-icon"></i>
+                    <span>FarmTrace AI</span>
+                </div>
+                <button class="sidebar-close-btn" id="closeSidebarBtn" title="Đóng thanh bên">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <!-- Server Status -->
+            <div class="sidebar-card status-card">
+                <h3><i class="fa-solid fa-server icon-title"></i> Trạng thái Server</h3>
+                <div class="status-indicator">
+                    <span class="status-dot status-offline" id="statusDot"></span>
+                    <span class="status-text" id="statusText">Đang ngắt kết nối...</span>
+                </div>
+                <div class="status-details" id="statusDetails">
+                    <div class="detail-item">
+                        <span class="detail-label">Model LLM:</span>
+                        <span class="detail-val" id="modelVal">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Embedding:</span>
+                        <span class="detail-val" id="embedVal">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Collection:</span>
+                        <span class="detail-val" id="collectionVal">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RAG Settings -->
+            <div class="sidebar-card">
+                <h3><i class="fa-solid fa-sliders icon-title"></i> Cấu hình RAG</h3>
+                <div class="control-group">
+                    <label for="topKSlider">Số nguồn tham khảo (Top K): <span id="topKValue">2</span></label>
+                    <input type="range" id="topKSlider" min="1" max="10" value="2" step="1" class="slider">
+                </div>
+            </div>
+
+            <!-- Ingestion Management -->
+            <div class="sidebar-card">
+                <h3><i class="fa-solid fa-database icon-title"></i> Nạp Dữ Liệu (Ingestion)</h3>
+                <div class="control-group">
+                    <label for="dataDirInput">Thư mục dữ liệu (Tùy chọn)</label>
+                    <input type="text" id="dataDirInput" placeholder="Mặc định (data/)" class="text-input">
+                </div>
+                <div class="control-group checkbox-group">
+                    <input type="checkbox" id="resetDbCheck">
+                    <label for="resetDbCheck">Reset Database trước khi nạp</label>
+                </div>
+                <button id="ingestBtn" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-arrows-spin btn-icon"></i>
+                    <span class="btn-text">Bắt đầu nạp tài liệu</span>
+                </button>
+            </div>
+
+            <!-- Quick Prompts / FAQ -->
+            <div class="sidebar-card quick-prompts-card">
+                <h3><i class="fa-solid fa-circle-question icon-title"></i> Câu hỏi gợi ý</h3>
+                <div class="quick-prompts-list">
+                    <button class="quick-prompt-btn">FarmTrace là gì?</button>
+                    <button class="quick-prompt-btn">MVP FarmTrace cần có những gì?</button>
+                    <button class="quick-prompt-btn">AI Chatbox hỗ trợ gì cho nông dân?</button>
+                    <button class="quick-prompt-btn">Quy trình VietGAP yêu cầu nguồn nước thế nào?</button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="sidebar-footer">
+                <span>FarmTrace AI v1.0.0</span>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle-btn" id="toggleSidebarBtn" title="Mở thanh bên">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="chat-title">
+                        <h2>Hỏi đáp FarmTrace & VietGAP</h2>
+                        <p>Trợ lý ảo hỗ trợ quy trình và tài liệu VietGAP</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle-btn" id="themeToggleBtn" title="Chuyển chế độ Sáng/Tối">
+                        <i class="fa-solid fa-moon moon-icon"></i>
+                        <i class="fa-solid fa-sun sun-icon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Window -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message message-ai">
+                    <div class="message-avatar">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="message-content-wrapper">
+                        <div class="message-bubble">
+                            <p>Xin chào! Tôi là trợ lý AI của FarmTrace. Tôi có thể hỗ trợ bạn tìm kiếm và trả lời các câu hỏi liên quan đến tiêu chuẩn VietGAP hoặc hệ thống FarmTrace.</p>
+                            <p>Hãy chọn một câu hỏi gợi ý bên trái hoặc nhập câu hỏi của bạn dưới đây!</p>
+                        </div>
+                        <span class="message-time" id="welcomeTime"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="chat-input-container">
+                <form id="chatForm" class="chat-input-form">
+                    <input type="text" id="userInput" placeholder="Nhập câu hỏi của bạn ở đây..." autocomplete="off" required>
+                    <button type="submit" id="sendBtn" class="send-btn" title="Gửi tin nhắn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
