@@ -31,6 +31,27 @@ class DocumentService:
             chunks.append(doc)
         return chunks
 
+    def _split_oversized_documents(self, documents) -> list:
+        chunks = []
+        max_unsplit_chars = int(settings.CHUNK_SIZE * 1.5)
+        for doc in documents:
+            if len(doc.page_content) <= max_unsplit_chars:
+                chunks.append(doc)
+                continue
+
+            old_chunk_id = doc.metadata.get("chunk_id")
+            split_docs = self.splitter.split_documents([doc])
+            for index, split_doc in enumerate(split_docs):
+                metadata = dict(doc.metadata)
+                if old_chunk_id:
+                    metadata["parent_chunk_id"] = old_chunk_id
+                    metadata["chunk_id"] = f"{old_chunk_id}:part-{index}"
+                else:
+                    metadata["chunk_id"] = f"chunk:part-{index}"
+                split_doc.metadata = metadata
+                chunks.append(split_doc)
+        return chunks
+
     def ingest(self, data_dir: str | None = None, reset: bool = False) -> dict:
         target_dir = Path(data_dir) if data_dir else settings.DATA_DIR
         if not target_dir.is_absolute():
@@ -44,7 +65,9 @@ class DocumentService:
         heading_chunks = [doc for doc in documents if doc.metadata.get("chunk_id")]
         fallback_documents = [doc for doc in documents if not doc.metadata.get("chunk_id")]
         fallback_chunks = self.splitter.split_documents(fallback_documents)
-        chunks = heading_chunks + self._ensure_chunk_metadata(fallback_chunks)
+        chunks = self._split_oversized_documents(
+            heading_chunks + self._ensure_chunk_metadata(fallback_chunks)
+        )
         self.chroma_store.add_documents(chunks)
 
         return {

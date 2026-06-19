@@ -70,9 +70,14 @@ class OllamaService:
             payload["options"]["num_ctx"],
             payload["options"]["num_predict"],
         )
-        resp = requests.post(url, json=payload, timeout=120)
-        resp.raise_for_status()
-        data = resp.json()
+        try:
+            resp = requests.post(url, json=payload, timeout=120)
+            resp.raise_for_status()
+            data = resp.json()
+        except (requests.RequestException, ValueError):
+            logger.exception("[OLLAMA-FALLBACK] request or JSON parsing failed")
+            return INSUFFICIENT_DATA_MESSAGE
+
         content = data.get("message", {}).get("content", "")
         return self._clean_thinking(content) or INSUFFICIENT_DATA_MESSAGE
 
@@ -88,9 +93,14 @@ class OllamaService:
         )
 
         start = time.perf_counter()
-        response = self.llm.invoke(prompt)
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        content = self._clean_thinking(response.content or "")
+        try:
+            response = self.llm.invoke(prompt)
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            content = self._clean_thinking(response.content or "")
+        except Exception:
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            logger.exception("[OLLAMA] ChatOllama invoke failed after %.0f ms", elapsed_ms)
+            return self._fallback_generate(prompt)
 
         logger.info(
             "[OLLAMA] latency_ms=%.0f response_chars=%d empty=%s",

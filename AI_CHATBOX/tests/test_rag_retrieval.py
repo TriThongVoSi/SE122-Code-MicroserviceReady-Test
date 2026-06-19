@@ -1,7 +1,10 @@
 import unittest
 
 from langchain_core.documents import Document
+import requests
 
+import app.services.ollama_service as ollama_module
+from app.config import settings
 from app.services.rag_retrieval import (
     INSUFFICIENT_DATA_MESSAGE,
     RetrievedContext,
@@ -12,8 +15,10 @@ from app.services.rag_retrieval import (
     select_best_contexts,
 )
 from app.services.rag_service import RagService
+from app.services.ollama_service import OllamaService
 from app.services.source_sanitizer import (
     MAX_PUBLIC_SNIPPET_CHARS,
+    sanitize_prompt_content,
     sanitize_public_snippet,
 )
 
@@ -93,7 +98,10 @@ class RagRetrievalTests(unittest.TestCase):
         )
         service = RagService.__new__(RagService)
 
-        context = service._build_context([RetrievedContext(doc=doc, score=0.4641, query="q")])
+        context, used_contexts = service._build_context(
+            [RetrievedContext(doc=doc, score=0.4641, query="q")],
+            max_chunks=1,
+        )
 
         self.assertIn("[TÀI LIỆU 1]", context)
         self.assertIn("Tiêu đề: 4.2 Nguon nuoc", context)
@@ -104,6 +112,53 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertNotIn("chunk_id", context.lower())
         self.assertNotIn("source_path", context.lower())
         self.assertNotIn("C:\\data", context)
+        self.assertEqual(len(used_contexts), 1)
+        self.assertIs(used_contexts[0].doc, doc)
+
+    def test_build_context_only_uses_full_chunks_that_fit_prompt_budget(self):
+        doc_a = Document(
+            page_content="- Dong dau\n- Dong hai",
+            metadata={"file_name": "a.md", "heading": "A", "chunk_id": "a:1"},
+        )
+        doc_b = Document(
+            page_content="B" * 400,
+            metadata={"file_name": "b.md", "heading": "B", "chunk_id": "b:1"},
+        )
+        service = RagService.__new__(RagService)
+        original_limit = settings.MAX_CONTEXT_CHARS
+        settings.MAX_CONTEXT_CHARS = 80
+        try:
+            context, used_contexts = service._build_context(
+                [
+                    RetrievedContext(doc=doc_a, score=0.1, query="q"),
+                    RetrievedContext(doc=doc_b, score=0.2, query="q"),
+                ],
+                max_chunks=2,
+            )
+        finally:
+            settings.MAX_CONTEXT_CHARS = original_limit
+
+        self.assertIn("- Dong dau\n- Dong hai", context)
+        self.assertNotIn("...", context)
+        self.assertNotIn("BBBB", context)
+        self.assertEqual([item.doc.metadata["chunk_id"] for item in used_contexts], ["a:1"])
+
+    def test_sanitize_prompt_content_preserves_list_structure(self):
+        raw = (
+            "# Quy trinh\n"
+            "source: data/vietgap/private.md\n"
+            "- Buoc 1:  Ghi   nhat ky.\n"
+            "- Buoc 2: Kiem tra nguon nuoc.\n"
+            "chunk_id: vietgap:private:1\n"
+            "C:/private/data/vietgap.md\n"
+        )
+
+        cleaned = sanitize_prompt_content(raw)
+
+        self.assertIn("- Buoc 1: Ghi nhat ky.\n- Buoc 2: Kiem tra nguon nuoc.", cleaned)
+        self.assertNotIn("source:", cleaned)
+        self.assertNotIn("chunk_id", cleaned)
+        self.assertNotIn("C:/private", cleaned)
 
     def test_build_sources_returns_sanitized_public_schema_and_preserves_order(self):
         doc_a = Document(
@@ -180,13 +235,81 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertEqual(result["answer"], INSUFFICIENT_DATA_MESSAGE)
         self.assertEqual(result["sources"], [])
 
+    def test_chat_model_insufficient_returns_without_sources(self):
+        doc = Document(
+            page_content="Noi dung co lien quan nhung model thay chua du.",
+            metadata={"file_name": "vietgap.md", "heading": "Nguon nuoc", "chunk_id": "vietgap:1"},
+        )
+
+        class FakeOllama:
+            def generate(self, prompt, chunks_count=0):
+                return INSUFFICIENT_DATA_MESSAGE
+
+        class FakeService(RagService):
+            def __init__(self):
+                self.ollama_service = FakeOllama()
+
+            def _retrieve_contexts(self, question, top_k):
+                return [RetrievedContext(doc=doc, score=0.1, query=question)]
+
+        service = FakeService()
+
+        result = service.chat("VietGAP yeu cau nguon nuoc nhu the nao?", top_k=1)
+
+        self.assertEqual(result["answer"], INSUFFICIENT_DATA_MESSAGE)
+        self.assertEqual(result["sources"], [])
+
     def test_is_insufficient_answer_normalizes_variants(self):
         self.assertTrue(is_insufficient_answer(INSUFFICIENT_DATA_MESSAGE))
         self.assertTrue(
             is_insufficient_answer("Tôi chưa có đủ dữ liệu trong tài liệu hiện tại để trả lời câu hỏi này.")
         )
 
-    def test_weak_filtered_result_falls_back_to_all_categories(self):
+    def test_high_confidence_route_merges_filtered_and_all_category_candidates(self):
+        class FakeStore:
+            def __init__(self):
+                self.filters = []
+
+            def similarity_search_with_score(self, query, k, filter=None):
+                self.filters.append(filter)
+                if filter is not None:
+                    filtered_doc = Document(
+                        page_content="Noi dung filtered",
+                        metadata={
+                            "chunk_id": "vietgap:filtered",
+                            "file_name": "vietgap.md",
+                            "heading": "Filtered",
+                        },
+                    )
+                    return [(filtered_doc, 0.3)]
+                all_doc = Document(
+                    page_content="Noi dung all tot hon",
+                    metadata={
+                        "chunk_id": "faq:all",
+                        "file_name": "faq.md",
+                        "heading": "All",
+                    },
+                )
+                duplicate_doc = Document(
+                    page_content="Noi dung filtered",
+                    metadata={
+                        "chunk_id": "vietgap:filtered",
+                        "file_name": "vietgap.md",
+                        "heading": "Filtered duplicate",
+                    },
+                )
+                return [(all_doc, 0.1), (duplicate_doc, 0.2)]
+
+        service = RagService.__new__(RagService)
+        service.chroma_store = FakeStore()
+
+        contexts = service._retrieve_contexts("VietGAP yeu cau nguon nuoc nhu the nao?", top_k=2)
+
+        self.assertEqual([item.doc.metadata["heading"] for item in contexts], ["All", "Filtered"])
+        self.assertIn({"category": "vietgap"}, service.chroma_store.filters)
+        self.assertIn(None, service.chroma_store.filters)
+
+    def test_high_confidence_route_still_searches_all_when_filtered_has_one_good_context(self):
         class FakeStore:
             def __init__(self):
                 self.filters = []
@@ -214,24 +337,21 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertIn({"category": "vietgap"}, service.chroma_store.filters)
         self.assertIn(None, service.chroma_store.filters)
 
-    def test_extractive_answer_uses_selected_context_when_model_is_too_conservative(self):
-        doc = Document(
-            page_content=(
-                "### Nguon nuoc\n\n"
-                "Can kiem soat nguy co o nhiem vi sinh vat va hoa chat tu nguon nuoc tuoi.\n"
-                "Nguon nuoc can phu hop voi nhom cay trong va san pham thu hoach."
-            ),
-            metadata={"file_name": "vietgap.md", "heading": "Nguon nuoc"},
-        )
-        service = RagService.__new__(RagService)
+    def test_ollama_fallback_request_error_returns_insufficient_data(self):
+        service = OllamaService.__new__(OllamaService)
+        original_post = ollama_module.requests.post
 
-        answer = service._build_extractive_answer(
-            "VietGAP yeu cau nguon nuoc nhu the nao?",
-            [RetrievedContext(doc=doc, score=0.1, query="q")],
-        )
+        def raise_request_error(*args, **kwargs):
+            raise requests.RequestException("connection failed")
 
-        self.assertIn("nguon nuoc", answer.lower())
-        self.assertLessEqual(answer.count("\n- ") + int(answer.startswith("- ")), 5)
+        ollama_module.requests.post = raise_request_error
+        try:
+            with self.assertLogs("app.services.ollama_service", level="WARNING"):
+                answer = service._fallback_generate("prompt")
+        finally:
+            ollama_module.requests.post = original_post
+
+        self.assertEqual(answer, INSUFFICIENT_DATA_MESSAGE)
 
 
 if __name__ == "__main__":

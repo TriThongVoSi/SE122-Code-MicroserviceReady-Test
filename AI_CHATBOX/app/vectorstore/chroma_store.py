@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 import shutil
 from typing import List
 
@@ -7,6 +8,10 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+_ADD_DOCUMENTS_BATCH_SIZE = 32
 
 
 class ChromaStore:
@@ -27,7 +32,15 @@ class ChromaStore:
         if not documents:
             return
         vectorstore = self.get_vectorstore()
-        vectorstore.add_documents(documents)
+        for start in range(0, len(documents), _ADD_DOCUMENTS_BATCH_SIZE):
+            batch = documents[start:start + _ADD_DOCUMENTS_BATCH_SIZE]
+            logger.info(
+                "[CHROMA] adding batch documents=%d start=%d total=%d",
+                len(batch),
+                start,
+                len(documents),
+            )
+            vectorstore.add_documents(batch)
 
     def reset(self) -> None:
         chroma_dir: Path = settings.CHROMA_DIR

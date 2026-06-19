@@ -36,10 +36,10 @@ class Settings:
     DATA_DIR: Path = _resolve_path(os.getenv("DATA_DIR", "./data"))
     COLLECTION_NAME: str = os.getenv("COLLECTION_NAME", "farmtrace_knowledge")
 
-    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "600"))
-    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "80"))
-    DEFAULT_TOP_K: int = int(os.getenv("DEFAULT_TOP_K", "4"))
-    MAX_CONTEXT_CHARS: int = int(os.getenv("MAX_CONTEXT_CHARS", "2200"))
+    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "650"))
+    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "100"))
+    DEFAULT_TOP_K: int = int(os.getenv("DEFAULT_TOP_K", "5"))
+    MAX_CONTEXT_CHARS: int = int(os.getenv("MAX_CONTEXT_CHARS", "2600"))
     MAX_DISTANCE_THRESHOLD: float | None = _optional_float(os.getenv("MAX_DISTANCE_THRESHOLD", "0.5"))
     MIN_RETRIEVAL_SCORE: float | None = _optional_float(os.getenv("MIN_RETRIEVAL_SCORE", ""))
 

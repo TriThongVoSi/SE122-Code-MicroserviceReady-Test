@@ -2,6 +2,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from app.config import settings
+from app.services.document_service import DocumentService
 from app.services.markdown_chunker import build_document_chunks
 
 
@@ -44,6 +49,32 @@ class MarkdownChunkingTests(unittest.TestCase):
             chunks = build_document_chunks(file_path, data_dir)
 
         self.assertEqual(chunks[0].metadata["category"], "unknown")
+
+    def test_document_service_resplits_oversized_heading_chunks_with_parent_metadata(self):
+        doc = Document(
+            page_content=" ".join(f"noi-dung-{index}" for index in range(80)),
+            metadata={
+                "category": "vietgap",
+                "source": "data/vietgap/long.md",
+                "file_name": "long.md",
+                "heading": "Quy trinh dai",
+                "chunk_id": "vietgap:long.md:0:0",
+            },
+        )
+        service = DocumentService.__new__(DocumentService)
+        service.splitter = RecursiveCharacterTextSplitter(chunk_size=120, chunk_overlap=20)
+        original_chunk_size = settings.CHUNK_SIZE
+        settings.CHUNK_SIZE = 60
+        try:
+            chunks = service._split_oversized_documents([doc])
+        finally:
+            settings.CHUNK_SIZE = original_chunk_size
+
+        self.assertGreater(len(chunks), 1)
+        self.assertTrue(all(chunk.metadata["heading"] == "Quy trinh dai" for chunk in chunks))
+        self.assertTrue(all(chunk.metadata["parent_chunk_id"] == "vietgap:long.md:0:0" for chunk in chunks))
+        self.assertEqual(chunks[0].metadata["chunk_id"], "vietgap:long.md:0:0:part-0")
+        self.assertEqual(chunks[1].metadata["chunk_id"], "vietgap:long.md:0:0:part-1")
 
 
 if __name__ == "__main__":

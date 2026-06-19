@@ -1,11 +1,18 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
+from app.config import settings
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="User question")
     session_id: Optional[str] = Field(default=None, description="Optional chat session id")
-    top_k: int = Field(default=4, ge=1, le=10, description="Number of retrieved chunks")
+    top_k: int = Field(
+        default=settings.DEFAULT_TOP_K,
+        ge=1,
+        le=10,
+        description="Number of retrieved chunks",
+    )
 
 
 class SourceDocument(BaseModel):

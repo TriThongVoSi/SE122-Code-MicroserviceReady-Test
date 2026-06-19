@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from app.constants import MAX_PROMPT_CHUNK_CHARS
 from app.config import settings
 from app.prompts.system_prompt import SYSTEM_PROMPT, RAG_PROMPT_TEMPLATE
 from app.schemas.chat_schema import SourceDocument
@@ -12,30 +11,13 @@ from app.services.rag_retrieval import (
     detect_intent,
     expand_query,
     is_insufficient_answer,
-    normalize_text,
+    normalize_content_hash,
     select_best_contexts,
 )
 from app.services.source_sanitizer import sanitize_prompt_content, sanitize_public_snippet
 from app.vectorstore.chroma_store import ChromaStore
 
 logger = logging.getLogger(__name__)
-
-_EXTRACTIVE_STOPWORDS = {
-    "vietgap",
-    "farmtrace",
-    "nhu",
-    "the",
-    "nao",
-    "gi",
-    "co",
-    "can",
-    "yeu",
-    "cau",
-    "khong",
-    "hay",
-    "cho",
-    "toi",
-}
 
 
 class RagService:
@@ -94,61 +76,106 @@ class RagService:
             max_distance,
         )
 
-        fallback_used = False
+        candidates: list[RetrievedContext] = []
         if intent.confidence == "high" and intent.category:
             filtered_candidates = self._search_candidates(queries, fetch_k, category=intent.category)
-            selected = select_best_contexts(filtered_candidates, top_k, max_distance)
-            weak_required_count = min(top_k, 2)
-            if len(selected) >= weak_required_count:
-                logger.info(
-                    "[RAG] route=filtered category=%s final_context_count=%d",
-                    intent.category,
-                    len(selected),
-                )
-                return selected
-
-            fallback_used = True
+            candidates.extend(filtered_candidates)
             logger.info(
-                "[RAG] weak filtered result count=%d required=%d; falling back to all categories",
-                len(selected),
-                weak_required_count,
+                "[RAG] route=filtered-first category=%s candidate_count=%d",
+                intent.category,
+                len(filtered_candidates),
             )
 
         all_candidates = self._search_candidates(queries, fetch_k, category=None)
-        selected = select_best_contexts(all_candidates, top_k, max_distance)
+        candidates.extend(all_candidates)
+        selected = select_best_contexts(
+            self._deduplicate_candidates_preserving_route_order(candidates),
+            top_k,
+            max_distance,
+        )
         logger.info(
-            "[RAG] route=all fallback_used=%s final_context_count=%d",
-            fallback_used,
+            "[RAG] route=merged filtered_used=%s final_context_count=%d",
+            intent.confidence == "high" and bool(intent.category),
             len(selected),
         )
+        self._log_selected_contexts(selected)
         return selected
 
-    def _build_context(self, contexts: list[RetrievedContext]) -> str:
+    @staticmethod
+    def _deduplicate_candidates_preserving_route_order(
+        candidates: list[RetrievedContext],
+    ) -> list[RetrievedContext]:
+        deduped: list[RetrievedContext] = []
+        seen_chunk_ids: set[str] = set()
+        seen_hashes: set[str] = set()
+        for candidate in candidates:
+            chunk_id = candidate.doc.metadata.get("chunk_id")
+            content_hash = normalize_content_hash(candidate.doc.page_content)
+            if chunk_id and chunk_id in seen_chunk_ids:
+                continue
+            if content_hash in seen_hashes:
+                continue
+            deduped.append(candidate)
+            if chunk_id:
+                seen_chunk_ids.add(chunk_id)
+            seen_hashes.add(content_hash)
+        return deduped
+
+    @staticmethod
+    def _log_selected_contexts(contexts: list[RetrievedContext]) -> None:
+        for rank, context in enumerate(contexts, start=1):
+            doc = context.doc
+            preview = sanitize_prompt_content(doc.page_content).replace("\n", " ")[:150]
+            logger.info(
+                "[RAG-SELECTED] rank=%d distance=%s query=%r category=%s file=%s heading=%s chunk_id=%s preview=%r",
+                rank,
+                f"{context.score:.4f}" if context.score is not None else None,
+                context.query,
+                doc.metadata.get("category"),
+                doc.metadata.get("file_name") or doc.metadata.get("source"),
+                doc.metadata.get("heading"),
+                doc.metadata.get("chunk_id"),
+                preview,
+            )
+
+    def _build_context(
+        self,
+        contexts: list[RetrievedContext],
+        max_chunks: int | None = None,
+    ) -> tuple[str, list[RetrievedContext]]:
         if not contexts:
-            return ""
+            return "", []
 
         context_parts: List[str] = []
+        used_contexts: list[RetrievedContext] = []
         total_chars = 0
-        for index, context in enumerate(contexts[:5], start=1):
+        chunk_limit = min(max_chunks or settings.DEFAULT_TOP_K, 5)
+        for context in contexts[:chunk_limit]:
             doc = context.doc
             heading = doc.metadata.get("heading") or "Tài liệu"
-            content = sanitize_prompt_content(doc.page_content, max_chars=MAX_PROMPT_CHUNK_CHARS)
+            content = sanitize_prompt_content(doc.page_content)
             if not content:
                 continue
+            index = len(context_parts) + 1
             part = (
                 f"[TÀI LIỆU {index}]\n"
                 f"Tiêu đề: {heading}\n"
                 f"{content}"
             )
+            separator_chars = 2 if context_parts else 0
 
-            if total_chars + len(part) > settings.MAX_CONTEXT_CHARS:
-                remaining = settings.MAX_CONTEXT_CHARS - total_chars
-                if remaining > 100:
-                    context_parts.append(part[:remaining] + "...")
-                break
+            if total_chars + separator_chars + len(part) > settings.MAX_CONTEXT_CHARS:
+                logger.info(
+                    "[RAG-CONTEXT-SKIP] chunk_id=%s chars=%d remaining_budget=%d",
+                    doc.metadata.get("chunk_id"),
+                    len(part),
+                    max(settings.MAX_CONTEXT_CHARS - total_chars - separator_chars, 0),
+                )
+                continue
 
             context_parts.append(part)
-            total_chars += len(part)
+            used_contexts.append(context)
+            total_chars += separator_chars + len(part)
 
         context = "\n\n".join(context_parts)
         logger.info(
@@ -157,7 +184,7 @@ class RagService:
             len(context_parts),
             len(contexts),
         )
-        return context
+        return context, used_contexts
 
     def _build_sources(self, contexts: list[RetrievedContext]) -> List[SourceDocument]:
         sources: List[SourceDocument] = []
@@ -193,47 +220,6 @@ class RagService:
             value = value.split("/")[-1]
         return value or "Tài liệu"
 
-    def _build_extractive_answer(self, question: str, contexts: list[RetrievedContext]) -> str:
-        query_terms = {
-            term
-            for term in normalize_text(question).split()
-            if len(term) > 2 and term not in _EXTRACTIVE_STOPWORDS
-        }
-        candidates: list[tuple[int, int, str]] = []
-        fallback_lines: list[str] = []
-
-        for context_index, context in enumerate(contexts):
-            lines = context.doc.page_content.replace("\r\n", "\n").split("\n")
-            for line_index, raw_line in enumerate(lines):
-                line = raw_line.strip().lstrip("#-*0123456789. ").strip()
-                if not line or len(line) < 20:
-                    continue
-                fallback_lines.append(line)
-                normalized_line = normalize_text(line)
-                score = sum(1 for term in query_terms if term in normalized_line)
-                if score:
-                    candidates.append((score, context_index * 1000 + line_index, line))
-
-        selected_lines: list[str] = []
-        seen: set[str] = set()
-        ranked_lines = [
-            item[2]
-            for item in sorted(candidates, key=lambda item: (-item[0], item[1]))
-        ] or fallback_lines
-
-        for line in ranked_lines:
-            normalized_line = normalize_text(line)
-            if normalized_line in seen:
-                continue
-            selected_lines.append(line)
-            seen.add(normalized_line)
-            if len(selected_lines) >= 5:
-                break
-
-        if not selected_lines:
-            return INSUFFICIENT_DATA_MESSAGE
-        return "\n".join(f"- {line}" for line in selected_lines)
-
     def chat(self, question: str, top_k: int | None = None) -> dict:
         k = top_k or settings.DEFAULT_TOP_K
         logger.info("Chat request: question=%r, top_k=%d", question, k)
@@ -248,19 +234,36 @@ class RagService:
                 "sources": [],
             }
 
-        context = self._build_context(contexts)
+        context, used_contexts = self._build_context(contexts, max_chunks=k)
+        if not context or not used_contexts:
+            logger.info("No prompt context after sanitizing/budgeting; returning insufficient-data response")
+            return {
+                "answer": INSUFFICIENT_DATA_MESSAGE,
+                "sources": [],
+            }
+
         prompt = RAG_PROMPT_TEMPLATE.format(
             system_prompt=SYSTEM_PROMPT.strip(),
             context=context,
             question=question,
         )
 
-        answer = self.ollama_service.generate(prompt, chunks_count=len(contexts))
+        answer = self.ollama_service.generate(prompt, chunks_count=len(used_contexts))
         if is_insufficient_answer(answer):
-            logger.info("Model returned insufficient-data response with selected contexts; using extractive fallback")
-            answer = self._build_extractive_answer(question, contexts)
+            logger.info("Model returned insufficient-data response; returning without sources")
+            return {
+                "answer": INSUFFICIENT_DATA_MESSAGE,
+                "sources": [],
+            }
         answer = answer.strip()
-        sources = [] if is_insufficient_answer(answer) else self._build_sources(contexts)
+        if not answer:
+            logger.info("Model returned empty answer; returning insufficient-data response")
+            return {
+                "answer": INSUFFICIENT_DATA_MESSAGE,
+                "sources": [],
+            }
+
+        sources = self._build_sources(used_contexts)
         logger.info("Generated answer: %d chars", len(answer))
 
         return {

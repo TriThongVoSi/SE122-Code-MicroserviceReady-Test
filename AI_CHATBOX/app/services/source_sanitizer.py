@@ -19,6 +19,10 @@ def normalize_whitespace(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def normalize_line_whitespace(text: str) -> str:
+    return re.sub(r"[ \t]+", " ", text).strip()
+
+
 def _contains_metadata_pattern(text: str) -> bool:
     return any(pattern.search(text) for pattern in METADATA_PATTERNS)
 
@@ -45,8 +49,8 @@ def _strip_inline_metadata(text: str) -> str:
 def sanitize_prompt_content(text: str, max_chars: int = MAX_PROMPT_CHUNK_CHARS) -> str:
     cleaned = remove_metadata_lines(text)
     cleaned = _strip_inline_metadata(cleaned)
-    cleaned = normalize_whitespace(cleaned)
-    return cleaned[:max_chars].rstrip()
+    lines = [normalize_line_whitespace(line) for line in cleaned.split("\n")]
+    return "\n".join(line for line in lines if line).rstrip()
 
 
 def sanitize_public_snippet(text: str, max_chars: int = MAX_PUBLIC_SNIPPET_CHARS) -> str:
