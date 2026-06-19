@@ -14,6 +14,23 @@ class DocumentService:
             chunk_overlap=settings.CHUNK_OVERLAP,
         )
 
+    @staticmethod
+    def _ensure_chunk_metadata(documents) -> list:
+        chunks = []
+        for index, doc in enumerate(documents):
+            if doc.metadata.get("chunk_id"):
+                chunks.append(doc)
+                continue
+
+            category = doc.metadata.get("category", "unknown")
+            file_name = doc.metadata.get("file_name", "unknown")
+            page = doc.metadata.get("page")
+            page_part = f":page-{page}" if page is not None else ""
+            doc.metadata.setdefault("heading", "Tài liệu")
+            doc.metadata["chunk_id"] = f"{category}:{file_name}{page_part}:{index}"
+            chunks.append(doc)
+        return chunks
+
     def ingest(self, data_dir: str | None = None, reset: bool = False) -> dict:
         target_dir = Path(data_dir) if data_dir else settings.DATA_DIR
         if not target_dir.is_absolute():
@@ -23,7 +40,11 @@ class DocumentService:
             self.chroma_store.reset()
 
         documents, files_loaded = load_documents(target_dir)
-        chunks = self.splitter.split_documents(documents)
+
+        heading_chunks = [doc for doc in documents if doc.metadata.get("chunk_id")]
+        fallback_documents = [doc for doc in documents if not doc.metadata.get("chunk_id")]
+        fallback_chunks = self.splitter.split_documents(fallback_documents)
+        chunks = heading_chunks + self._ensure_chunk_metadata(fallback_chunks)
         self.chroma_store.add_documents(chunks)
 
         return {

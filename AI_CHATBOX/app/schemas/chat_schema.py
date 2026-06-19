@@ -12,11 +12,16 @@ class SourceDocument(BaseModel):
     source: str
     page: Optional[int] = None
     snippet: str
+    file_name: Optional[str] = None
+    category: Optional[str] = None
+    heading: Optional[str] = None
+    chunk_id: Optional[str] = None
+    score: Optional[float] = None
 
 
 class ChatResponse(BaseModel):
     answer: str
-    sources: List[SourceDocument] = []
+    sources: List[SourceDocument] = Field(default_factory=list)
 
 
 class IngestRequest(BaseModel):

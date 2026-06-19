@@ -4,6 +4,8 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
+from app.services.markdown_chunker import build_base_metadata, build_document_chunks
+
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
 
@@ -19,16 +21,25 @@ def list_supported_files(data_dir: Path) -> List[Path]:
     return files
 
 
-def load_file(path: Path) -> List[Document]:
+def load_file(path: Path, data_dir: Path) -> List[Document]:
     suffix = path.suffix.lower()
 
+    if suffix == ".md":
+        return build_document_chunks(path, data_dir)
+
     if suffix == ".pdf":
-        return PyPDFLoader(str(path)).load()
+        docs = PyPDFLoader(str(path)).load()
+    elif suffix == ".txt":
+        docs = TextLoader(str(path), encoding="utf-8").load()
+    else:
+        return []
 
-    if suffix in {".txt", ".md"}:
-        return TextLoader(str(path), encoding="utf-8").load()
+    base_metadata = build_base_metadata(path, data_dir)
+    for doc in docs:
+        doc.metadata.update(base_metadata)
+        doc.metadata.setdefault("heading", "Tài liệu")
 
-    return []
+    return docs
 
 
 def load_documents(data_dir: Path) -> tuple[List[Document], int]:
@@ -36,9 +47,6 @@ def load_documents(data_dir: Path) -> tuple[List[Document], int]:
     files = list_supported_files(data_dir)
 
     for file_path in files:
-        loaded_docs = load_file(file_path)
-        for doc in loaded_docs:
-            doc.metadata["source"] = str(file_path.relative_to(data_dir.parent))
-        documents.extend(loaded_docs)
+        documents.extend(load_file(file_path, data_dir))
 
     return documents, len(files)

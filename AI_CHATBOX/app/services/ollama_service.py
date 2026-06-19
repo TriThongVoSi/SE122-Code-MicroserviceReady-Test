@@ -1,15 +1,18 @@
+import logging
 import re
 import time
-import logging
-import requests
 
+import requests
 from langchain_ollama import ChatOllama
+
 from app.config import settings
+from app.services.rag_retrieval import INSUFFICIENT_DATA_MESSAGE
 
 logger = logging.getLogger(__name__)
 
-# Patterns to strip from model output
-_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+_THINK_OPEN_RE = re.compile(r"<think>.*", re.DOTALL | re.IGNORECASE)
+_THINK_TAG_ONLY_RE = re.compile(r"</?think>", re.IGNORECASE)
 _THINKING_BLOCK_RE = re.compile(
     r"(?:^|\n)\s*Thinking(?:\s*Process)?[:\.]?\s*\n.*?(?=\n\S|\Z)",
     re.DOTALL,
@@ -29,26 +32,20 @@ class OllamaService:
             top_p=settings.TOP_P,
             repeat_penalty=settings.REPEAT_PENALTY,
             keep_alive=settings.KEEP_ALIVE,
-            # Disable thinking/reasoning mode for qwen3.5 and similar models.
-            # Without this, the model spends all tokens on <think> blocks
-            # and returns empty content.
             reasoning=False,
-            # Force think=false at the top-level of the Ollama API request.
-            # extra_body keys are merged into the request JSON root.
             extra_body={"think": settings.OLLAMA_THINK},
         )
 
     @staticmethod
     def _clean_thinking(text: str) -> str:
-        """Strip <think>…</think> blocks and 'Thinking…' / 'Thinking Process:' text."""
         cleaned = _THINK_TAG_RE.sub("", text)
+        cleaned = _THINK_OPEN_RE.sub("", cleaned)
+        cleaned = _THINK_TAG_ONLY_RE.sub("", cleaned)
         cleaned = _THINKING_BLOCK_RE.sub("", cleaned)
         cleaned = _THINKING_LINE_RE.sub("", cleaned)
         return cleaned.strip()
 
     def _fallback_generate(self, prompt: str) -> str:
-        """Fallback: call Ollama /api/chat directly with think=false
-        when ChatOllama still returns empty content."""
         logger.warning("ChatOllama returned empty content, using /api/chat fallback")
         url = f"{settings.OLLAMA_BASE_URL}/api/chat"
         payload = {
@@ -77,15 +74,9 @@ class OllamaService:
         resp.raise_for_status()
         data = resp.json()
         content = data.get("message", {}).get("content", "")
-        return self._clean_thinking(content)
+        return self._clean_thinking(content) or INSUFFICIENT_DATA_MESSAGE
 
     def generate(self, prompt: str, chunks_count: int = 0) -> str:
-        """Generate a response via Ollama.
-
-        Args:
-            prompt: The full prompt string (system + context + question).
-            chunks_count: Number of RAG chunks used (for logging only).
-        """
         logger.info(
             "[OLLAMA] model=%s think=%s ctx=%d predict=%d chunks=%d prompt_chars=%d",
             settings.OLLAMA_MODEL,
@@ -99,7 +90,6 @@ class OllamaService:
         start = time.perf_counter()
         response = self.llm.invoke(prompt)
         elapsed_ms = (time.perf_counter() - start) * 1000
-
         content = self._clean_thinking(response.content or "")
 
         logger.info(
@@ -112,5 +102,4 @@ class OllamaService:
         if content:
             return content
 
-        # Fallback for edge cases where ChatOllama still returns empty
-        return self._fallback_generate(prompt)
+        return self._fallback_generate(prompt) or INSUFFICIENT_DATA_MESSAGE

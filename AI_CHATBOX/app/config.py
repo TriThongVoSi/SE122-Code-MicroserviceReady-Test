@@ -14,6 +14,12 @@ def _resolve_path(value: str) -> Path:
     return ROOT_DIR / path
 
 
+def _optional_float(value: str | None) -> float | None:
+    if value is None or value.strip() == "":
+        return None
+    return float(value)
+
+
 class Settings:
     ROOT_DIR: Path = ROOT_DIR
 
@@ -34,6 +40,8 @@ class Settings:
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "80"))
     DEFAULT_TOP_K: int = int(os.getenv("DEFAULT_TOP_K", "4"))
     MAX_CONTEXT_CHARS: int = int(os.getenv("MAX_CONTEXT_CHARS", "2200"))
+    MAX_DISTANCE_THRESHOLD: float | None = _optional_float(os.getenv("MAX_DISTANCE_THRESHOLD", "0.5"))
+    MIN_RETRIEVAL_SCORE: float | None = _optional_float(os.getenv("MIN_RETRIEVAL_SCORE", ""))
 
     NUM_PREDICT: int = int(os.getenv("NUM_PREDICT", "512"))
     NUM_CTX: int = int(os.getenv("NUM_CTX", "4096"))

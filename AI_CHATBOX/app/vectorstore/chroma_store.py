@@ -35,6 +35,15 @@ class ChromaStore:
             shutil.rmtree(chroma_dir)
         chroma_dir.mkdir(parents=True, exist_ok=True)
 
-    def similarity_search(self, query: str, k: int):
+    def similarity_search(self, query: str, k: int, filter: dict | None = None):
         vectorstore = self.get_vectorstore()
-        return vectorstore.similarity_search(query, k=k)
+        return vectorstore.similarity_search(query, k=k, filter=filter)
+
+    def similarity_search_with_score(self, query: str, k: int, filter: dict | None = None):
+        """Return documents with Chroma distance scores.
+
+        Chroma/LangChain returns distance here, not normalized similarity:
+        lower score means a closer match.
+        """
+        vectorstore = self.get_vectorstore()
+        return vectorstore.similarity_search_with_score(query, k=k, filter=filter)
