@@ -1,28 +1,33 @@
 ---
-doc_id: vietgap__quy-trinh-danh-gia
+doc_id: acm__vietgap__quy-trinh-danh-gia-vietgap
 title: Quy trình đánh giá và cấp chứng nhận VietGAP
 category: vietgap
-audience: admin
+audience: farmer
 language: vi
-version: 1.0
-updated_at: 2026-06-19
-tags: [vietgap, danh-gia, chung-nhan, audit, kiem-tra-noi-bo, nc]
-source_refs: [src_tcvn_11892_vsqi, src_tcvn_11892_tcvn]
+version: 1.1
+updated_at: 2026-06-21
+tags: [vietgap, nong-nghiep, danh-gia, chung-nhan, kiem-tra-noi-bo, khac-phuc]
+source_type: internal_summary
+project: ACM
 ---
 
 # Quy trình đánh giá và cấp chứng nhận VietGAP
 
 ## Mục đích
-Tài liệu này mô tả luồng chuẩn bị, đánh giá và duy trì chứng nhận VietGAP ở mức tổng quan để FarmTrace chatbot có thể hướng dẫn nông dân và hợp tác xã.
+
+Tài liệu tổng hợp nội bộ mô tả tổng quan luồng chuẩn bị, đánh giá và duy trì chứng nhận VietGAP.
 
 Tài liệu không thay thế quy trình chính thức của tổ chức chứng nhận.
 
 ## Đối tượng sử dụng
+
 - Chủ nông trại hoặc hợp tác xã muốn chuẩn bị chứng nhận.
 - Người phụ trách chất lượng nội bộ.
-- Quản trị viên FarmTrace cần theo dõi tiến độ chuẩn bị hồ sơ.
 
-## Tổng quan quy trình
+## Nội dung chính
+
+### Tổng quan quy trình đánh giá VietGAP
+
 Một quy trình đánh giá VietGAP thường gồm các giai đoạn chính:
 
 1. Khảo sát hiện trạng.
@@ -35,8 +40,9 @@ Một quy trình đánh giá VietGAP thường gồm các giai đoạn chính:
 8. Nhận chứng nhận hoặc tiếp tục hoàn thiện.
 9. Duy trì, giám sát và tái đánh giá theo yêu cầu.
 
-## Bước 1: Khảo sát hiện trạng
-Mục tiêu là xác định nông trại đang thiếu gì so với yêu cầu quản lý an toàn.
+### Bước 1 — Khảo sát hiện trạng
+
+Mục tiêu: xác định nông trại đang thiếu gì so với yêu cầu quản lý an toàn.
 
 Cần kiểm tra:
 
@@ -47,65 +53,61 @@ Cần kiểm tra:
 - Cách ghi nhật ký hiện tại.
 - Nhân sự chịu trách nhiệm quản lý.
 
-## Bước 2: Chuẩn hóa quy trình và hạ tầng
-Sau khảo sát, cơ sở sản xuất cần khắc phục các điểm rủi ro rõ ràng.
+### Bước 2 — Chuẩn hóa quy trình và hạ tầng
 
-Có thể cần:
+Sau khảo sát, cần khắc phục các điểm rủi ro rõ ràng:
 
 - Đánh mã lô đất.
-- Sắp xếp nơi chứa vật tư an toàn hơn.
+- Sắp xếp nơi chứa vật tư an toàn.
 - Tạo khu thu gom bao bì thuốc BVTV.
 - Tách khu sạch và khu bẩn trong sơ chế nếu có.
 - Chuẩn hóa biểu mẫu nhật ký.
 - Tập huấn người lao động về ghi chép và an toàn.
 
-## Bước 3: Vận hành và ghi nhật ký
-Cơ sở sản xuất cần vận hành quy trình trong thực tế và ghi lại dữ liệu.
+### Bước 3 — Vận hành và ghi nhật ký
 
-Dữ liệu cần ghi gồm:
+Vận hành quy trình thực tế và ghi lại dữ liệu:
 
 - Gieo trồng hoặc xuống giống.
 - Bón phân.
-- Phun thuốc bảo vệ thực vật.
-- Tưới nước, chăm sóc, làm cỏ nếu cần quản lý.
+- Phun thuốc BVTV.
+- Tưới nước, chăm sóc, làm cỏ.
 - Thu hoạch.
 - Sơ chế, nhập kho, xuất bán.
 
 Nhật ký phải đúng thời điểm, đúng lô đất và đúng người thực hiện.
 
-## Bước 4: Kiểm tra nội bộ
-Trước khi mời đánh giá bên ngoài, cơ sở sản xuất nên tự kiểm tra.
+### Bước 4 — Kiểm tra nội bộ
 
-Kiểm tra nội bộ cần trả lời:
+Trước khi mời đánh giá bên ngoài, nên tự kiểm tra:
 
 - Hồ sơ đã đủ chưa?
 - Nhật ký có bị thiếu giai đoạn nào không?
 - Có vật tư không rõ nguồn gốc không?
 - Có lô nào chưa hết thời gian cách ly không?
 - Thu hoạch và nhập kho có khớp sản lượng không?
-- Có lỗi nào cần khắc phục trước khi đánh giá không?
+- Có lỗi nào cần khắc phục trước đánh giá không?
 
-## Bước 5: Đăng ký đánh giá
-Cơ sở sản xuất lựa chọn tổ chức chứng nhận phù hợp và nộp hồ sơ theo yêu cầu.
+### Bước 5 — Đăng ký đánh giá
 
-FarmTrace có thể hỗ trợ xuất dữ liệu liên quan, nhưng hồ sơ chính thức cần theo biểu mẫu hoặc yêu cầu của tổ chức chứng nhận.
+Lựa chọn tổ chức chứng nhận phù hợp và nộp hồ sơ theo yêu cầu.
 
-## Bước 6: Đánh giá hồ sơ và hiện trường
+Hệ thống ACM có thể hỗ trợ xuất dữ liệu liên quan, nhưng hồ sơ chính thức cần theo biểu mẫu của tổ chức chứng nhận.
+
+### Bước 6 — Đánh giá hồ sơ và hiện trường
+
 Đánh giá thường gồm hai phần:
 
 | Phần đánh giá | Nội dung thường được xem xét |
 |---|---|
-| Hồ sơ | Nhật ký, chứng từ vật tư, hồ sơ lô đất, hồ sơ thu hoạch, kiểm tra nội bộ |
-| Hiện trường | Lô đất, nguồn nước, kho vật tư, khu sơ chế, dụng cụ, vệ sinh, phỏng vấn người lao động |
+| Hồ sơ | Nhật ký, chứng từ vật tư, hồ sơ lô đất, thu hoạch, kiểm tra nội bộ |
+| Hiện trường | Lô đất, nguồn nước, kho vật tư, khu sơ chế, vệ sinh, phỏng vấn người lao động |
 
 Đoàn đánh giá có thể đối chiếu chéo giữa hồ sơ và thực tế.
 
-Ví dụ: nhật ký ghi có phun thuốc ngày A, đoàn có thể kiểm tra hóa đơn, kho thuốc, người thực hiện và thời gian thu hoạch.
+### Bước 7 — Khắc phục điểm chưa phù hợp
 
-## Bước 7: Khắc phục điểm chưa phù hợp
-Nếu phát hiện điểm chưa phù hợp, cơ sở cần ghi nhận và khắc phục theo yêu cầu.
-
-Hành động khắc phục nên có:
+Nếu phát hiện điểm chưa phù hợp, cần ghi nhận và khắc phục:
 
 - Mô tả lỗi.
 - Nguyên nhân.
@@ -114,12 +116,9 @@ Hành động khắc phục nên có:
 - Bằng chứng sau khắc phục.
 - Trạng thái đã xử lý hay chưa.
 
-## Bước 8: Duy trì sau chứng nhận
-Sau khi đạt chứng nhận, cơ sở vẫn cần duy trì hệ thống.
+### Bước 8 — Duy trì sau chứng nhận
 
-Không nên chỉ ghi chép trong giai đoạn chuẩn bị đánh giá.
-
-Cần tiếp tục:
+Sau khi đạt chứng nhận, cần tiếp tục duy trì:
 
 - Ghi nhật ký sản xuất thường xuyên.
 - Cập nhật hồ sơ vật tư.
@@ -127,15 +126,38 @@ Cần tiếp tục:
 - Kiểm tra nội bộ định kỳ.
 - Lưu dữ liệu truy xuất nguồn gốc.
 
-## FarmTrace nên hỗ trợ gì
-- Dashboard tiến độ chuẩn bị hồ sơ.
-- Checklist kiểm tra nội bộ theo vai trò.
-- Cảnh báo thiếu nhật ký hoặc thiếu chứng từ.
-- Cảnh báo lô chưa hết thời gian cách ly.
-- Lưu bằng chứng ảnh cho lỗi và khắc phục.
-- Xuất báo cáo tổng hợp theo mùa vụ hoặc lô đất.
+Không nên chỉ ghi chép trong giai đoạn chuẩn bị đánh giá.
+
+## Việc nông dân cần làm
+
+1. Tự khảo sát hiện trạng nông trại.
+2. Khắc phục các điểm rủi ro rõ ràng.
+3. Bắt đầu ghi nhật ký sản xuất liên tục trên hệ thống ACM.
+4. Tự kiểm tra nội bộ trước khi đăng ký đánh giá.
+5. Lưu bằng chứng khắc phục lỗi.
+6. Duy trì ghi chép sau khi có chứng nhận.
+
+## Hồ sơ hoặc nhật ký cần chuẩn bị
+
+- Toàn bộ nhật ký sản xuất theo mùa vụ.
+- Hồ sơ vật tư đầu vào.
+- Nhật ký thu hoạch và nhập kho.
+- Checklist kiểm tra nội bộ.
+- Bằng chứng khắc phục lỗi.
+- Hồ sơ pháp lý và phân công trách nhiệm.
+
+## Checklist nhanh
+
+- [ ] Đã phân lô và tạo mã lô đất.
+- [ ] Đã có người phụ trách chất lượng nội bộ.
+- [ ] Đã có nhật ký sản xuất liên tục.
+- [ ] Đã có hồ sơ vật tư đầu vào.
+- [ ] Đã có nhật ký thu hoạch và nhập kho.
+- [ ] Đã tự kiểm tra nội bộ.
+- [ ] Đã xử lý các lỗi phát hiện trước đánh giá.
 
 ## Lỗi thường gặp
+
 - Chỉ chuẩn bị hồ sơ khi gần đến ngày đánh giá.
 - Hồ sơ ghi một đằng, thực tế làm một nẻo.
 - Nhân công không biết nội dung đã ghi trong nhật ký.
@@ -143,28 +165,32 @@ Cần tiếp tục:
 - Dữ liệu thu hoạch không khớp với diện tích hoặc mùa vụ.
 - Không duy trì ghi chép sau khi đã đạt chứng nhận.
 
-## Checklist nhanh
-- [ ] Đã phân lô và tạo mã lô.
-- [ ] Đã có người phụ trách chất lượng nội bộ.
-- [ ] Đã có nhật ký sản xuất liên tục.
-- [ ] Đã có hồ sơ vật tư đầu vào.
-- [ ] Đã có nhật ký thu hoạch và nhập kho.
-- [ ] Đã tự kiểm tra nội bộ.
-- [ ] Đã xử lý các lỗi phát hiện trước đánh giá.
-- [ ] Đã chuẩn bị dữ liệu xuất báo cáo từ FarmTrace nếu cần.
-
 ## Câu hỏi thường gặp
 
-### Câu hỏi: FarmTrace có thể tự cấp chứng nhận VietGAP không?
-Trả lời: Không. FarmTrace chỉ hỗ trợ quản lý dữ liệu và hồ sơ. Chứng nhận phải do tổ chức chứng nhận phù hợp thực hiện.
+### Quy trình đánh giá VietGAP diễn ra như thế nào?
 
-### Câu hỏi: Nếu bị phát hiện lỗi thì có chắc chắn không được chứng nhận không?
-Trả lời: Không thể kết luận chung. Cơ sở cần xem mức độ lỗi, yêu cầu của đoàn đánh giá và thời hạn khắc phục.
+Gồm: khảo sát hiện trạng → chuẩn hóa quy trình → vận hành và ghi nhật ký → kiểm tra nội bộ → đăng ký đánh giá → đánh giá hồ sơ và hiện trường → khắc phục lỗi → nhận chứng nhận → duy trì.
 
-### Câu hỏi: Đánh giá hiện trường thường kiểm tra gì?
-Trả lời: Thường kiểm tra sự phù hợp giữa hồ sơ, thực tế sản xuất, kho vật tư, khu sơ chế, vệ sinh, phỏng vấn người lao động và khả năng truy xuất nguồn gốc.
+### Hệ thống ACM có thể tự cấp chứng nhận VietGAP không?
 
-## Giới hạn áp dụng
-Quy trình trong tài liệu là mô hình tổng quan để hỗ trợ chuẩn bị dữ liệu.
+Không. Hệ thống ACM chỉ hỗ trợ quản lý dữ liệu và hồ sơ. Chứng nhận phải do tổ chức chứng nhận có thẩm quyền thực hiện.
 
-Khi thực hiện chứng nhận, cần làm theo hướng dẫn chính thức của tổ chức chứng nhận và quy định hiện hành.
+### Nếu bị phát hiện lỗi khi đánh giá thì có chắc chắn không được chứng nhận không?
+
+Không thể kết luận chung. Cần xem mức độ lỗi, yêu cầu của đoàn đánh giá và thời hạn khắc phục.
+
+### Đánh giá hiện trường thường kiểm tra gì?
+
+Thường kiểm tra sự phù hợp giữa hồ sơ và thực tế sản xuất, kho vật tư, khu sơ chế, vệ sinh, phỏng vấn người lao động và khả năng truy xuất nguồn gốc.
+
+### Sau khi có chứng nhận VietGAP rồi thì sao?
+
+Cần tiếp tục duy trì ghi nhật ký, cập nhật hồ sơ, kiểm tra nội bộ định kỳ và chuẩn bị cho tái đánh giá theo yêu cầu.
+
+### Kiểm tra nội bộ cần làm những gì?
+
+Cần kiểm tra: hồ sơ đã đủ chưa, nhật ký có thiếu giai đoạn nào, vật tư có rõ nguồn gốc, thời gian cách ly có được tuân thủ, sản lượng thu hoạch có khớp nhập kho.
+
+---
+
+> Tài liệu tổng hợp nội bộ hỗ trợ nông dân chuẩn bị VietGAP — dự án ACM. Khi thực hiện chứng nhận, cần làm theo hướng dẫn chính thức của tổ chức chứng nhận và quy định hiện hành.

@@ -13,5 +13,8 @@ if __name__ == "__main__":
 
     print("Ingest completed")
     print(f"Files loaded   : {result['files_loaded']}")
+    print(f"Files skipped  : {result['files_excluded_or_skipped']}")
+    print(f"Heading chunks : {result['heading_chunks']}")
+    print(f"Fallback chunks: {result['fallback_chunks']}")
     print(f"Chunks indexed : {result['chunks_indexed']}")
     print(f"Collection     : {result['collection_name']}")
