@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 # Folder name -> normalized metadata category.
 # Keep these values aligned with data_guide.md / README.md.
 CATEGORY_ALIASES = {
+    "acm": "acm",
+    "farmtrace": "acm",  # legacy alias -- normalized to 'acm'
     "vietgap": "vietgap",
-    "farmtrace": "farmtrace",
     "faq": "faq",
     "crops": "crop",
     "crop": "crop",
@@ -125,16 +126,18 @@ def build_base_metadata(file_path: Path, data_dir: Path, front_matter: dict | No
             continue
         metadata[key] = str(value)
 
-    # Prefer explicit category from front matter only when it is one of the
-    # normalized categories. Otherwise keep the safer path-derived category.
-    fm_category = str(front_matter.get("category", "")).strip().lower()
+    # Prefer explicit category from front matter, normalizing through
+    # CATEGORY_ALIASES for backward-compat (e.g. 'farmtrace' -> 'acm',
+    # 'ACM' -> 'acm'). Otherwise keep the safer path-derived category.
+    fm_category_raw = str(front_matter.get("category", "")).strip().lower()
+    fm_category = CATEGORY_ALIASES.get(fm_category_raw, fm_category_raw)
     if fm_category in VALID_CATEGORIES:
         metadata["category"] = fm_category
-    elif fm_category:
+    elif fm_category_raw:
         logger.warning(
             "[MARKDOWN] front matter category '%s' in %s is not valid %s; "
             "using path category '%s' instead",
-            fm_category,
+            fm_category_raw,
             file_path,
             sorted(VALID_CATEGORIES),
             path_category,

@@ -34,7 +34,7 @@ class Settings:
 
     CHROMA_DIR: Path = _resolve_path(os.getenv("CHROMA_DIR", "./chroma_db"))
     DATA_DIR: Path = _resolve_path(os.getenv("DATA_DIR", "./data"))
-    COLLECTION_NAME: str = os.getenv("COLLECTION_NAME", "farmtrace_knowledge")
+    COLLECTION_NAME: str = os.getenv("COLLECTION_NAME", "acm_knowledge")
 
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "650"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "100"))

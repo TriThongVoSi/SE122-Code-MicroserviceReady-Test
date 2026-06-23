@@ -1,4 +1,4 @@
----
+﻿---
 doc_id: crop__crops__rau_an_la__tong_quan
 title: Tổng quan rau ăn lá
 category: crop
@@ -15,7 +15,7 @@ review_required: true
 
 ## Mục đích
 
-Tài liệu này giúp nông dân hiểu các điểm cần quản lý khi sản xuất rau ăn lá trên FarmTrace, đặc biệt là dữ liệu phục vụ nhật ký sản xuất, kiểm tra giai đoạn và truy xuất nguồn gốc.
+Tài liệu này giúp nông dân hiểu các điểm cần quản lý khi sản xuất rau ăn lá trên ACM, đặc biệt là dữ liệu phục vụ nhật ký sản xuất, kiểm tra giai đoạn và truy xuất nguồn gốc.
 
 ## Đặc điểm nhóm rau ăn lá
 

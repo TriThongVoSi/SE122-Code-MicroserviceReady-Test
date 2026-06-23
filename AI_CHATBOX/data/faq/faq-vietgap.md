@@ -4,18 +4,25 @@ title: FAQ VietGAP
 category: faq
 audience: all
 language: vi
-version: 1.0
-updated_at: 2026-06-19
-tags: [faq, vietgap]
-source_type: internal_faq
-review_required: true
+version: 1.1
+updated_at: 2026-06-24
+tags: [faq, vietgap, chung-nhan, tieu-chuan, huu-co, an-toan]
+source_type: internal_demo
 ---
 
 # FAQ VietGAP
 
 ## Mục đích
 
-Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot FarmTrace khi hỗ trợ nhóm người dùng tương ứng.
+Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot ACM về các câu hỏi liên quan đến VietGAP.
+
+## Câu hỏi: VietGAP là gì?
+
+Trả lời: VietGAP là viết tắt của Vietnamese Good Agricultural Practices — Thực hành nông nghiệp tốt tại Việt Nam. VietGAP hướng dẫn cách sản xuất và sơ chế nông sản an toàn, có kiểm soát và có thể truy xuất nguồn gốc.
+
+## Câu hỏi: Thời gian cách ly là gì?
+
+Trả lời: Thời gian cách ly (PHI) là khoảng thời gian tối thiểu từ lần phun thuốc BVTV cuối cùng đến khi thu hoạch. Thời gian này ghi trên nhãn thuốc và phải được tuân thủ.
 
 ## Câu hỏi: VietGAP có phải hữu cơ không?
 
@@ -25,9 +32,9 @@ Trả lời: Không. VietGAP là thực hành sản xuất nông nghiệp tốt,
 
 Trả lời: Chưa thể kết luận. Nhật ký là một phần quan trọng nhưng cần hồ sơ, kiểm tra và chứng nhận phù hợp.
 
-## Câu hỏi: FarmTrace có cấp chứng nhận VietGAP không?
+## Câu hỏi: ACM có cấp chứng nhận VietGAP không?
 
-Trả lời: FarmTrace hỗ trợ quản lý hồ sơ và truy xuất. Việc cấp chứng nhận phụ thuộc vào tổ chức chứng nhận có thẩm quyền.
+Trả lời: ACM hỗ trợ quản lý hồ sơ và truy xuất. Việc cấp chứng nhận phụ thuộc vào tổ chức chứng nhận có thẩm quyền.
 
 ## Câu hỏi: Không có chứng nhận thì có được ghi VietGAP không?
 

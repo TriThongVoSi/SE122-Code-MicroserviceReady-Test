@@ -1,15 +1,15 @@
-# FarmTrace RAG Data
+﻿# ACM RAG Data
 
-Thư mục này chứa toàn bộ tài liệu dùng để nạp vào hệ thống RAG chatbot FarmTrace.
+Thư mục này chứa toàn bộ tài liệu dùng để nạp vào hệ thống RAG chatbot ACM.
 
-Chatbot FarmTrace hỗ trợ nông dân, người mua và quản trị viên trong các chủ đề:
+Chatbot ACM hỗ trợ nông dân, người mua và quản trị viên trong các chủ đề:
 
 * VietGAP
 * Quy trình sản xuất nông nghiệp
 * Nhật ký sản xuất
 * Truy xuất nguồn gốc
 * Quản lý nông trại, mùa vụ, kho và sản phẩm
-* Hướng dẫn sử dụng hệ thống FarmTrace
+* Hướng dẫn sử dụng hệ thống ACM
 * Câu hỏi thường gặp
 
 ## Cấu trúc thư mục
@@ -22,7 +22,7 @@ data/
 │
 ├── vietgap/
 ├── crops/
-├── farmtrace/
+├── ACM/
 ├── traceability/
 ├── templates/
 └── faq/
@@ -34,7 +34,7 @@ data/
 | --------------- | ----------------------------------------------------------------------------- |
 | `vietgap/`      | Lưu tài liệu tổng quan, yêu cầu, checklist và hướng dẫn liên quan đến VietGAP |
 | `crops/`        | Lưu tài liệu theo từng loại cây trồng như rau ăn lá, cà chua, dưa leo, xoài   |
-| `farmtrace/`    | Lưu hướng dẫn sử dụng các chức năng của hệ thống FarmTrace                    |
+| `ACM/`    | Lưu hướng dẫn sử dụng các chức năng của hệ thống ACM                    |
 | `traceability/` | Lưu tài liệu về truy xuất nguồn gốc, QR, dữ liệu hiển thị và bảo mật QR       |
 | `templates/`    | Lưu các mẫu nhật ký sản xuất, phiếu nhập kho, biên bản kiểm tra               |
 | `faq/`          | Lưu câu hỏi thường gặp theo từng nhóm người dùng và chủ đề                    |
@@ -109,7 +109,7 @@ Các giá trị đối tượng nên dùng thống nhất:
 | -------------- | ------------------------------------ |
 | `vietgap`      | Kiến thức và checklist VietGAP       |
 | `crop`         | Quy trình theo cây trồng             |
-| `farmtrace`    | Hướng dẫn sử dụng hệ thống FarmTrace |
+| `ACM`    | Hướng dẫn sử dụng hệ thống ACM |
 | `traceability` | Truy xuất nguồn gốc và QR            |
 | `template`     | Mẫu biểu, nhật ký, phiếu ghi nhận    |
 | `faq`          | Câu hỏi thường gặp                   |

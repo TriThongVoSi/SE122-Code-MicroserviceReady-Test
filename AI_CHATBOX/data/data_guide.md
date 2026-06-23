@@ -1,6 +1,6 @@
-# FarmTrace RAG Data Guide
+# ACM RAG Data Guide
 
-Tài liệu này quy định cách viết, đặt tên và chuẩn hóa nội dung trong thư mục `data/` để nạp vào hệ thống RAG chatbot FarmTrace.
+Tài liệu này quy định cách viết, đặt tên và chuẩn hóa nội dung trong thư mục `data/` để nạp vào hệ thống RAG chatbot ACM.
 
 Mục tiêu là giúp chatbot trả lời rõ ràng, đúng phạm vi tài liệu, hạn chế bịa thông tin và dễ truy xuất nguồn.
 
@@ -85,14 +85,14 @@ Mỗi file `.md` nên có phần metadata ở đầu file:
 
 ```md
 ---
-doc_id: farmtrace__tao-mua-vu
-title: Tạo mùa vụ trong FarmTrace
-category: farmtrace
+doc_id: ACM__tao-mua-vu
+title: Tạo mùa vụ trong ACM
+category: acm
 audience: farmer
 language: vi
 version: 1.0
 updated_at: 2026-06-19
-tags: [mua-vu, nong-dan, farmtrace]
+tags: [mua-vu, nong-dan, acm]
 ---
 ```
 
@@ -117,7 +117,7 @@ Chỉ nên dùng các giá trị sau:
 | -------------- | ---------------------------- |
 | `vietgap`      | Kiến thức VietGAP            |
 | `crop`         | Kiến thức theo cây trồng     |
-| `farmtrace`    | Hướng dẫn hệ thống FarmTrace |
+| `acm`          | Hướng dẫn hệ thống ACM       |
 | `traceability` | Truy xuất nguồn gốc          |
 | `template`     | Mẫu biểu, nhật ký            |
 | `faq`          | Câu hỏi thường gặp           |
@@ -170,9 +170,9 @@ Giúp nông dân sử dụng phân bón và thuốc bảo vệ thực vật an t
 - Tuân thủ thời gian cách ly trước thu hoạch.
 ```
 
-## 9. Cách viết tài liệu FarmTrace
+## 9. Cách viết tài liệu ACM
 
-Tài liệu FarmTrace nên mô tả đúng chức năng thật của hệ thống.
+Tài liệu ACM nên mô tả đúng chức năng thật của hệ thống.
 
 Cấu trúc khuyến nghị:
 
@@ -199,7 +199,7 @@ Cấu trúc khuyến nghị:
 Ví dụ:
 
 ```md
-# Tạo mùa vụ trong FarmTrace
+# Tạo mùa vụ trong ACM
 
 ## Mục đích
 Giúp nông dân tạo một mùa vụ mới để theo dõi quá trình sản xuất.
@@ -305,7 +305,7 @@ Trả lời: Nội dung trả lời.
 Ví dụ:
 
 ```md
-# FAQ FarmTrace
+# FAQ ACM
 
 ## Câu hỏi: Nông dân cần tạo nông trại trước hay tạo mùa vụ trước?
 Trả lời: Nông dân nên tạo nông trại trước, sau đó tạo mùa vụ và liên kết mùa vụ với nông trại đó.
@@ -353,7 +353,7 @@ Trước khi chạy ingest, kiểm tra:
 [ ] Nội dung không trùng lặp quá nhiều với file khác
 [ ] Không chứa thông tin nhạy cảm
 [ ] Không chứa dữ liệu người dùng thật
-[ ] Nội dung đúng với chức năng thật của FarmTrace
+[ ] Nội dung đúng với chức năng thật của ACM
 [ ] Nếu là VietGAP, không bịa tiêu chuẩn hoặc số liệu chưa xác minh
 ```
 

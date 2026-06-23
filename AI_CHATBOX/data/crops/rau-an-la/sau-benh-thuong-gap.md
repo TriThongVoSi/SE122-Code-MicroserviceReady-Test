@@ -1,4 +1,4 @@
----
+﻿---
 doc_id: crop__crops__rau_an_la__sau_benh_thuong_gap
 title: Sâu bệnh thường gặp trên rau ăn lá
 category: crop
@@ -35,7 +35,7 @@ Tài liệu này không đưa ra đơn thuốc hoặc liều lượng cụ thể
 | Biện pháp xử lý | Bắt thủ công, vệ sinh ruộng, dùng bẫy, dùng thuốc nếu có |
 | Người ghi nhận | Người kiểm tra hoặc xử lý |
 
-## Quy trình xử lý trên FarmTrace
+## Quy trình xử lý trên ACM
 
 1. Tạo nhật ký kiểm tra sâu bệnh.
 2. Ghi triệu chứng và khu vực ảnh hưởng.

@@ -1,4 +1,4 @@
----
+﻿---
 doc_id: crop__crops__rau_an_la__quy_trinh_san_xuat
 title: Quy trình sản xuất rau ăn lá
 category: crop
@@ -15,7 +15,7 @@ review_required: true
 
 ## Mục đích
 
-Mô tả quy trình sản xuất rau ăn lá theo các giai đoạn dễ ghi nhật ký trên FarmTrace.
+Mô tả quy trình sản xuất rau ăn lá theo các giai đoạn dễ ghi nhật ký trên ACM.
 
 ## Giai đoạn 1: Chuẩn bị đất và khu vực trồng
 
@@ -43,7 +43,7 @@ Nếu sử dụng thuốc bảo vệ thực vật, bắt buộc ghi tên thuốc
 
 Trước thu hoạch, kiểm tra nhật ký thuốc BVTV và tình trạng sản phẩm. Sau thu hoạch, tạo phiếu thu hoạch, ghi sản lượng và nhập kho để tạo lô hàng.
 
-## Kết quả cần có trên FarmTrace
+## Kết quả cần có trên ACM
 
 - Mùa vụ có đầy đủ giai đoạn.
 - Nhật ký sản xuất đủ theo hoạt động chính.

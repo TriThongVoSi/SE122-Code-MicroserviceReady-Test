@@ -1,4 +1,4 @@
----
+﻿---
 doc_id: crop__crops__rau_an_la__lich_giai_doan
 title: Lịch giai đoạn rau ăn lá
 category: crop
@@ -19,7 +19,7 @@ Giúp nông dân và admin theo dõi mùa vụ rau ăn lá theo giai đoạn tha
 
 ## Lưu ý về lịch sản xuất
 
-Thời gian từng giai đoạn phụ thuộc vào loại rau, giống, thời tiết, đất, nước và phương pháp canh tác. FarmTrace nên cho phép cấu hình hoặc điều chỉnh ngày dự kiến theo từng mùa vụ.
+Thời gian từng giai đoạn phụ thuộc vào loại rau, giống, thời tiết, đất, nước và phương pháp canh tác. ACM nên cho phép cấu hình hoặc điều chỉnh ngày dự kiến theo từng mùa vụ.
 
 ## Các giai đoạn đề xuất
 

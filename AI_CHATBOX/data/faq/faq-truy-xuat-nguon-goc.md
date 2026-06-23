@@ -1,4 +1,4 @@
----
+﻿---
 doc_id: faq__faq_truy_xuat_nguon_goc
 title: FAQ truy xuất nguồn gốc
 category: faq
@@ -15,7 +15,7 @@ review_required: true
 
 ## Mục đích
 
-Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot FarmTrace khi hỗ trợ nhóm người dùng tương ứng.
+Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot ACM khi hỗ trợ nhóm người dùng tương ứng.
 
 ## Câu hỏi: Truy xuất nguồn gốc cần dữ liệu gì?
 

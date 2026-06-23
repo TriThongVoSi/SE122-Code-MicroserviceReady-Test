@@ -1,13 +1,24 @@
 from pathlib import Path
 from typing import List
+import logging
 
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
 from app.services.markdown_chunker import build_base_metadata, build_document_chunks
 
+logger = logging.getLogger(__name__)
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
+
+# Files that live directly under the data root and are admin/guide documents,
+# not knowledge content. They are skipped early (before chunking) so no
+# spurious category warnings are emitted.
+ROOT_ADMIN_FILES = {
+    "README.md",
+    "data_guide.md",
+    "sources.jsonl",
+}
 
 
 def list_supported_files(data_dir: Path) -> List[Path]:
@@ -16,8 +27,19 @@ def list_supported_files(data_dir: Path) -> List[Path]:
 
     files: List[Path] = []
     for path in data_dir.rglob("*"):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
-            files.append(path)
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+        # Skip admin/guide files that sit directly in the data root
+        # (not inside a category subdirectory).
+        if path.parent == data_dir and path.name in ROOT_ADMIN_FILES:
+            logger.info(
+                "[MARKDOWN] skipping data guide/root metadata file: %s",
+                path.name,
+            )
+            continue
+        files.append(path)
     return files
 
 

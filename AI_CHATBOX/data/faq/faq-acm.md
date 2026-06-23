@@ -1,31 +1,31 @@
----
-doc_id: faq__faq_farmtrace
-title: FAQ FarmTrace
+﻿---
+doc_id: faq__faq_ACM
+title: FAQ ACM
 category: faq
 audience: all
 language: vi
 version: 1.0
 updated_at: 2026-06-19
-tags: [faq, farmtrace]
+tags: [faq, ACM]
 source_type: internal_faq
 review_required: true
 ---
 
-# FAQ FarmTrace
+# FAQ ACM
 
 ## Mục đích
 
-Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot FarmTrace khi hỗ trợ nhóm người dùng tương ứng.
+Tài liệu này cung cấp câu trả lời ngắn, nhất quán cho chatbot ACM khi hỗ trợ nhóm người dùng tương ứng.
 
-## Câu hỏi: FarmTrace dùng để làm gì?
+## Câu hỏi: ACM dùng để làm gì?
 
-Trả lời: FarmTrace hỗ trợ quản lý nông trại, mùa vụ, nhật ký sản xuất, kho, sản phẩm, chứng nhận và truy xuất nguồn gốc.
+Trả lời: ACM hỗ trợ quản lý nông trại, mùa vụ, nhật ký sản xuất, kho, sản phẩm, chứng nhận và truy xuất nguồn gốc.
 
-## Câu hỏi: Luồng cơ bản của FarmTrace là gì?
+## Câu hỏi: Luồng cơ bản của ACM là gì?
 
 Trả lời: Luồng cơ bản là nông trại → mùa vụ → nhật ký → thu hoạch → nhập kho → đăng bán → QR truy xuất.
 
-## Câu hỏi: FarmTrace có thay nông dân ghi nhật ký không?
+## Câu hỏi: ACM có thay nông dân ghi nhật ký không?
 
 Trả lời: Không. Hệ thống hỗ trợ lưu và kiểm tra dữ liệu, còn nông dân cần nhập đúng hoạt động thực tế.
 
