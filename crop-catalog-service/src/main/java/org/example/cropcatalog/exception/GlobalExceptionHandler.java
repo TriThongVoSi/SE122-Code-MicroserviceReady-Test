@@ -1,8 +1,7 @@
-package org.example.identity.exception;
+package org.example.cropcatalog.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.example.identity.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,15 +18,19 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleAppException(AppException ex, HttpServletRequest request) {
         log.warn("AppException on request: {} - code: {} - message: {}",
                 request.getRequestURI(), ex.getErrorCode().getCode(), ex.getMessage());
 
-        return ResponseEntity.status(ex.getErrorCode().getStatusCode())
-                .body(ApiResponse.error(
-                        ex.getErrorCode().getStatusCode(),
-                        ex.getErrorCode().getCode(),
-                        ex.getMessage()));
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(ex.getErrorCode().getStatusCode().value())
+                .error(ex.getErrorCode().getCode())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(ex.getErrorCode().getStatusCode()).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
