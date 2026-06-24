@@ -8,6 +8,7 @@ import { AppRoutes } from './app/routes';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { AccountLockedModal } from './shared/components/AccountLockedModal';
 import { PreferencesProvider } from './shared/contexts';
+import { ScrollToTop } from './shared/components';
 
 /**
  * Lazy-loaded so the chat Firebase SDK is not bundled into the main chunk.
@@ -46,6 +47,7 @@ export default function App() {
             <AuthProvider>
               <PreferencesProvider>
                 <BrowserRouter>
+                  <ScrollToTop />
                   <AppRoutes />
                   <Toaster />
                   <AccountLockedModal />

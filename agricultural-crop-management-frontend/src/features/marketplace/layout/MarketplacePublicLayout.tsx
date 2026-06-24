@@ -325,6 +325,7 @@ function MarketplaceFooter() {
                 <Link
                   to="/marketplace/products"
                   className="marketplace-footer__link"
+                  onClick={() => window.scrollTo(0, 0)}
                 >
                   Tất cả sản phẩm
                 </Link>

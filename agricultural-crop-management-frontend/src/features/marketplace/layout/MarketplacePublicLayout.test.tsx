@@ -24,6 +24,10 @@ vi.mock("../ai/BuyerAiAssistantDrawer", () => ({
   BuyerAiAssistantDrawer: () => null,
 }));
 
+vi.mock("@/components/ThemeToggle", () => ({
+  ThemeToggle: () => null,
+}));
+
 vi.mock("../hooks", () => ({
   useMarketplaceCartCount: () => 0,
   useMarketplaceCartMergeBridge: vi.fn(),
