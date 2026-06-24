@@ -81,13 +81,13 @@ export function ImageSearchModal({
       ? "analyzing"
       : validationError || searchMutation.isError
         ? "error"
-        : result && (!analysis?.agricultural || (analysis.confidence ?? 0) < 0.35)
-          ? "lowConfidence"
-          : result && products.length === 0
+        : result && products.length === 0
             ? "empty"
-            : result
-              ? "success"
-              : "idle";
+            : result && (!analysis?.agricultural || (analysis.confidence ?? 0) < 0.35)
+              ? "lowConfidence"
+              : result
+                ? "success"
+                : "idle";
 
   function resetState() {
     searchMutation.reset();
@@ -260,24 +260,41 @@ export function ImageSearchModal({
 
               {analysis ? (
                 <div className="space-y-3 rounded-lg border border-border p-4 lg:p-5">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="grid gap-3 text-sm">
                     {analysis.detectedProduct ? (
-                      <Badge className="bg-emerald-600 text-white">
-                        {analysis.detectedProduct}
-                      </Badge>
+                      <div>
+                        <p className="text-xs font-medium uppercase text-muted-foreground">
+                          {t("marketplaceBuyer.imageSearch.detectedProductLabel", {
+                            defaultValue: "Sản phẩm nhận diện",
+                          })}
+                        </p>
+                        <p className="mt-1 font-semibold text-foreground">{analysis.detectedProduct}</p>
+                      </div>
                     ) : null}
-                    <Badge variant="outline">
-                      {t(`marketplaceBuyer.imageSearch.confidence.${analysis.confidenceLabel}`, {
-                        defaultValue: analysis.confidenceLabel,
-                      })}
-                      {" "}
-                      {Math.round((analysis.confidence ?? 0) * 100)}%
-                    </Badge>
+                    <div>
+                      <p className="text-xs font-medium uppercase text-muted-foreground">
+                        {t("marketplaceBuyer.imageSearch.confidenceLabel", {
+                          defaultValue: "Độ tin cậy",
+                        })}
+                      </p>
+                      <p className="mt-1 font-semibold text-foreground">
+                        {Math.round((analysis.confidence ?? 0) * 100)}%
+                      </p>
+                    </div>
+                    {suggestedKeyword ? (
+                      <div>
+                        <p className="text-xs font-medium uppercase text-muted-foreground">
+                          {t("marketplaceBuyer.imageSearch.keywordShortLabel", {
+                            defaultValue: "Từ khóa",
+                          })}
+                        </p>
+                        <Badge className="mt-1 bg-emerald-600 text-white">{suggestedKeyword}</Badge>
+                      </div>
+                    ) : null}
                   </div>
                   {analysis.message ? (
                     <p className="text-sm leading-6 text-muted-foreground">{analysis.message}</p>
                   ) : null}
-                  <KeywordChips keywords={result?.searchKeywords ?? []} />
                 </div>
               ) : null}
 
@@ -410,35 +427,34 @@ function StatusBanner({
   );
 }
 
-function KeywordChips({ keywords }: { keywords: string[] }) {
-  if (keywords.length === 0) {
-    return null;
-  }
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {keywords.slice(0, 8).map((keyword) => (
-        <span
-          key={keyword}
-          className="max-w-full truncate rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-900"
-        >
-          {keyword}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function getSuggestedKeyword(result: MarketplaceImageSearchResult | null): string {
   if (!result) {
     return "";
   }
-  return (
-    result.searchKeywords[0]
-    ?? result.analysis.detectedProduct
-    ?? result.analysis.keywordsVi[0]
-    ?? result.analysis.keywords[0]
-    ?? ""
-  );
+  // Backend now guarantees searchKeywords[0] is the clean canonical Vietnamese keyword
+  return [
+    result.searchKeywords[0],
+    result.analysis.detectedProduct,
+    result.analysis.keywordsVi[0],
+    result.analysis.keywords[0],
+  ].map(cleanDisplayKeyword).find(Boolean) ?? "";
+}
+
+function cleanDisplayKeyword(value: string | null | undefined): string {
+  let normalized = value?.trim()
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/[`"{}]/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\s+/g, " ")
+    .trim() ?? "";
+  if (
+    !normalized
+    || normalized.length > 40
+    || /search_query|detected_product|keywords|confidence|\[|\]/i.test(normalized)
+  ) {
+    return "";
+  }
+  return normalized;
 }
 
 function getStatusMessage(

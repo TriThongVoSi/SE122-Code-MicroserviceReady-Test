@@ -5782,7 +5782,7 @@
         "analyzing": "Analyzing the image and searching for matching products...",
         "success": "Matching products were found for this image.",
         "lowConfidence": "AI is not confident enough to search automatically. Edit the keyword and search manually.",
-        "empty": "No matching products found. Edit the keyword or try another image.",
+        "empty": "No matching products found for this image. You can edit the keyword or try another image.",
         "error": "Image analysis is unavailable right now."
       },
       "errors": {

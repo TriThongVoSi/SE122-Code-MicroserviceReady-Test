@@ -14,6 +14,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -46,7 +47,6 @@ import org.example.QuanLyMuaVu.Enums.ProductWarehouseLotStatus;
 import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
-import org.example.QuanLyMuaVu.module.ai.service.GeminiService;
 import org.example.QuanLyMuaVu.module.cropcatalog.entity.Crop;
 import org.example.QuanLyMuaVu.module.cropcatalog.entity.Variety;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
@@ -86,8 +86,210 @@ public class MarketplaceImageSearchService {
     static Duration RATE_LIMIT_WINDOW = Duration.ofHours(1);
     static Set<String> ALLOWED_MIME_TYPES = Set.of("image/jpeg", "image/jpg", "image/png", "image/webp");
     static Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    // ── Noisy words: descriptive adjectives and plant parts to strip from AI captions ──
+    // These are removed ONLY when they appear as standalone noise, NOT when part of a real product name.
+    static final Set<String> NOISY_WORDS = Set.of(
+            // Plant parts (remove when descriptive noise)
+            "quả", "trái", "củ", "hạt", "lá", "ngọn", "bông", "thân", "rễ", "vỏ",
+            // Adjectives / states
+            "tươi", "chín", "xanh", "đỏ", "vàng", "non", "già",
+            // English adjectives
+            "organic", "fresh", "ripe", "green", "red", "yellow");
+    // Multi-word noisy phrases stripped before single-word removal
+    static final List<String> NOISY_PHRASES = List.of(
+            "trĩu hạt", "còn đất", "cắt đôi", "nguyên quả");
+    // Protected compound names — if input matches one of these exactly, do NOT strip noisy words from it
+    static final Set<String> PROTECTED_COMPOUND_NAMES = Set.of(
+            "hành lá", "rau má", "hạt giống", "nấm rơm", "đậu nành", "đậu xanh",
+            "đậu phộng", "đậu tương", "bắp cải", "rau xà lách", "dưa leo", "dưa hấu",
+            "dưa chuột", "khoai tây", "khoai lang", "cà chua", "cà rốt", "cà tím",
+            "hành tây", "sầu riêng", "thanh long", "chôm chôm");
 
-    GeminiService geminiService;
+    // ── Canonical alias map: maps all known aliases → canonical Vietnamese product name ──
+    static final Map<String, String> CANONICAL_PRODUCT_BY_ALIAS;
+    static {
+        Map<String, String> m = new LinkedHashMap<>();
+        // Lúa (rice plant / paddy)
+        for (String alias : List.of("lúa", "cây lúa", "bông lúa", "ngọn lúa", "lúa chín",
+                "hạt thóc", "thóc", "rice plant", "paddy", "rice panicle", "lua")) {
+            m.put(alias, "lúa");
+        }
+        // Gạo (milled rice grain)
+        for (String alias : List.of("gạo", "hạt gạo", "gạo trắng", "rice grain", "rice", "gao")) {
+            m.put(alias, "gạo");
+        }
+        // Cà chua
+        for (String alias : List.of("cà chua", "tomato", "quả cà chua", "trái cà chua",
+                "cà chua đỏ", "ca chua")) {
+            m.put(alias, "cà chua");
+        }
+        // Đậu nành
+        for (String alias : List.of("đậu nành", "soybean", "soy bean", "đậu tương",
+                "hạt đậu nành", "dau nanh", "dau tuong")) {
+            m.put(alias, "đậu nành");
+        }
+        // Ngô
+        for (String alias : List.of("ngô", "corn", "maize", "bắp", "trái bắp", "bắp ngô", "ngo", "bap")) {
+            m.put(alias, "ngô");
+        }
+        // Khoai tây
+        for (String alias : List.of("khoai tây", "potato", "củ khoai tây", "khoai tay")) {
+            m.put(alias, "khoai tây");
+        }
+        // Khoai lang
+        for (String alias : List.of("khoai lang", "sweet potato", "củ khoai lang")) {
+            m.put(alias, "khoai lang");
+        }
+        // Cà rốt
+        for (String alias : List.of("cà rốt", "carrot", "củ cà rốt", "ca rot")) {
+            m.put(alias, "cà rốt");
+        }
+        // Bắp cải
+        for (String alias : List.of("bắp cải", "cabbage", "bap cai")) {
+            m.put(alias, "bắp cải");
+        }
+        // Xà lách
+        for (String alias : List.of("xà lách", "lettuce", "rau xà lách", "xa lach", "rau xa lach")) {
+            m.put(alias, "xà lách");
+        }
+        // Hành tây
+        for (String alias : List.of("hành tây", "onion", "củ hành tây", "hanh tay")) {
+            m.put(alias, "hành tây");
+        }
+        // Hành lá
+        for (String alias : List.of("hành lá", "green onion", "spring onion", "hanh la")) {
+            m.put(alias, "hành lá");
+        }
+        // Tỏi
+        for (String alias : List.of("tỏi", "garlic", "củ tỏi", "toi")) {
+            m.put(alias, "tỏi");
+        }
+        // Ớt
+        for (String alias : List.of("ớt", "chili", "chilli", "pepper", "quả ớt", "trái ớt", "ot")) {
+            m.put(alias, "ớt");
+        }
+        // Chuối
+        for (String alias : List.of("chuối", "banana", "trái chuối", "quả chuối",
+                "buồng chuối", "chuoi")) {
+            m.put(alias, "chuối");
+        }
+        // Cam
+        for (String alias : List.of("cam", "orange", "quả cam", "trái cam")) {
+            m.put(alias, "cam");
+        }
+        // Táo
+        for (String alias : List.of("táo", "apple", "quả táo", "trái táo", "tao")) {
+            m.put(alias, "táo");
+        }
+        // Xoài
+        for (String alias : List.of("xoài", "mango", "quả xoài", "trái xoài", "xoai")) {
+            m.put(alias, "xoài");
+        }
+        // Dưa hấu
+        for (String alias : List.of("dưa hấu", "watermelon", "quả dưa hấu", "trái dưa hấu", "dua hau")) {
+            m.put(alias, "dưa hấu");
+        }
+        // Dứa
+        for (String alias : List.of("dứa", "pineapple", "thơm", "khóm", "dua")) {
+            m.put(alias, "dứa");
+        }
+        // Dưa leo
+        for (String alias : List.of("dưa leo", "cucumber", "dưa chuột", "dua leo")) {
+            m.put(alias, "dưa leo");
+        }
+        // Cà tím
+        for (String alias : List.of("cà tím", "eggplant", "aubergine", "ca tim")) {
+            m.put(alias, "cà tím");
+        }
+        // Đậu xanh
+        for (String alias : List.of("đậu xanh", "mung bean", "green bean", "dau xanh")) {
+            m.put(alias, "đậu xanh");
+        }
+        // Đậu phộng
+        for (String alias : List.of("đậu phộng", "peanut", "lạc", "dau phong")) {
+            m.put(alias, "đậu phộng");
+        }
+        // Mía
+        for (String alias : List.of("mía", "sugarcane", "mia")) {
+            m.put(alias, "mía");
+        }
+        // Sầu riêng
+        for (String alias : List.of("sầu riêng", "durian", "sau rieng")) {
+            m.put(alias, "sầu riêng");
+        }
+        // Thanh long
+        for (String alias : List.of("thanh long", "dragon fruit")) {
+            m.put(alias, "thanh long");
+        }
+        // Vải
+        for (String alias : List.of("vải", "lychee", "vai")) {
+            m.put(alias, "vải");
+        }
+        // Nhãn
+        for (String alias : List.of("nhãn", "longan", "nhan")) {
+            m.put(alias, "nhãn");
+        }
+        // Chôm chôm
+        for (String alias : List.of("chôm chôm", "rambutan", "chom chom")) {
+            m.put(alias, "chôm chôm");
+        }
+        // Ổi
+        for (String alias : List.of("ổi", "guava", "oi")) {
+            m.put(alias, "ổi");
+        }
+        // Bưởi
+        for (String alias : List.of("bưởi", "pomelo", "grapefruit", "buoi")) {
+            m.put(alias, "bưởi");
+        }
+        // Chanh
+        for (String alias : List.of("chanh", "lemon", "lime")) {
+            m.put(alias, "chanh");
+        }
+        // Nấm
+        for (String alias : List.of("nấm", "mushroom", "nam")) {
+            m.put(alias, "nấm");
+        }
+        CANONICAL_PRODUCT_BY_ALIAS = Collections.unmodifiableMap(m);
+    }
+
+    // ── Reverse map: canonical name → aliases for strict search expansion ──
+    static final Map<String, List<String>> ALIASES_BY_CANONICAL_PRODUCT = Map.ofEntries(
+            Map.entry("lúa", List.of("thóc", "rice plant", "paddy")),
+            Map.entry("gạo", List.of("rice", "gao")),
+            Map.entry("cà chua", List.of("tomato", "ca chua")),
+            Map.entry("đậu nành", List.of("soybean", "đậu tương", "dau nanh")),
+            Map.entry("ngô", List.of("corn", "maize", "bắp")),
+            Map.entry("khoai tây", List.of("potato")),
+            Map.entry("khoai lang", List.of("sweet potato")),
+            Map.entry("cà rốt", List.of("carrot")),
+            Map.entry("bắp cải", List.of("cabbage")),
+            Map.entry("xà lách", List.of("lettuce")),
+            Map.entry("hành tây", List.of("onion")),
+            Map.entry("hành lá", List.of("green onion", "spring onion")),
+            Map.entry("tỏi", List.of("garlic")),
+            Map.entry("ớt", List.of("chili", "pepper")),
+            Map.entry("chuối", List.of("banana")),
+            Map.entry("cam", List.of("orange")),
+            Map.entry("táo", List.of("apple")),
+            Map.entry("xoài", List.of("mango")),
+            Map.entry("dưa hấu", List.of("watermelon")),
+            Map.entry("dứa", List.of("pineapple", "thơm", "khóm")),
+            Map.entry("dưa leo", List.of("cucumber", "dưa chuột")),
+            Map.entry("cà tím", List.of("eggplant")),
+            Map.entry("đậu xanh", List.of("mung bean")),
+            Map.entry("đậu phộng", List.of("peanut", "lạc")),
+            Map.entry("mía", List.of("sugarcane")),
+            Map.entry("sầu riêng", List.of("durian")),
+            Map.entry("thanh long", List.of("dragon fruit")),
+            Map.entry("vải", List.of("lychee")),
+            Map.entry("nhãn", List.of("longan")),
+            Map.entry("chôm chôm", List.of("rambutan")),
+            Map.entry("ổi", List.of("guava")),
+            Map.entry("bưởi", List.of("pomelo", "grapefruit")),
+            Map.entry("chanh", List.of("lemon", "lime")),
+            Map.entry("nấm", List.of("mushroom")));
+
+    ImageAnalysisService imageAnalysisService;
     MarketplaceProductReviewRepository marketplaceProductReviewRepository;
     CurrentUserService currentUserService;
     AuditLogService auditLogService;
@@ -105,7 +307,7 @@ public class MarketplaceImageSearchService {
         try {
             ValidatedImage image = validateImage(file);
             imageHash = image.hash();
-            AnalysisResult result = resolveAnalysis(userId, image);
+            AnalysisResult result = resolveAnalysis(userId, image, file);
             logAudit(userId, imageHash, result.searchKeywords(), result.analysis().confidence(), startedNanos,
                     "MARKETPLACE_IMAGE_SEARCH_ANALYZE", "SUCCESS", null, result.cacheHit(), null);
             return result.analysis();
@@ -132,15 +334,16 @@ public class MarketplaceImageSearchService {
         try {
             ValidatedImage image = validateImage(file);
             imageHash = image.hash();
-            AnalysisResult result = resolveAnalysis(userId, image);
+            AnalysisResult result = resolveAnalysis(userId, image, file);
             PageResponse<MarketplaceProductSummaryResponse> products = shouldSearch(result)
                     ? searchProducts(result.searchKeywords(), region, traceable, minPrice, maxPrice, sort, page, size)
                     : emptyProducts(page, size);
+            MarketplaceImageSearchAnalysisResponse analysis = withSearchResultMessage(result.analysis(), products);
 
             logAudit(userId, imageHash, result.searchKeywords(), result.analysis().confidence(), startedNanos,
                     "MARKETPLACE_IMAGE_SEARCH", "SUCCESS", null, result.cacheHit(),
                     products.getItems() == null ? 0 : products.getItems().size());
-            return new MarketplaceImageSearchResponse(result.analysis(), products, result.searchKeywords(), imageHash);
+            return new MarketplaceImageSearchResponse(analysis, products, result.searchKeywords(), imageHash);
         } catch (AppException ex) {
             logAudit(userId, imageHash, List.of(), null, startedNanos,
                     "MARKETPLACE_IMAGE_SEARCH", "ERROR", ex.getErrorCode().getCode(), false, null);
@@ -176,16 +379,16 @@ public class MarketplaceImageSearchService {
         }
     }
 
-    private AnalysisResult resolveAnalysis(Long userId, ValidatedImage image) {
+    private AnalysisResult resolveAnalysis(Long userId, ValidatedImage image, MultipartFile file) {
         CachedAnalysis cached = getCachedAnalysis(image.hash());
         if (cached != null) {
             return new AnalysisResult(cached.analysis(), cached.searchKeywords(), image.hash(), true);
         }
 
         consumeRateLimit(userId);
-        String rawJson;
+        ImageAnalysisResult imageAnalysis;
         try {
-            rawJson = geminiService.analyzeMarketplaceImage(image.bytes(), image.mimeType());
+            imageAnalysis = imageAnalysisService.analyze(file);
         } catch (IllegalArgumentException ex) {
             throw new AppException(ErrorCode.MARKETPLACE_IMAGE_SEARCH_INVALID_IMAGE);
         } catch (IllegalStateException ex) {
@@ -193,11 +396,35 @@ public class MarketplaceImageSearchService {
             throw new AppException(ErrorCode.MARKETPLACE_IMAGE_SEARCH_AI_UNAVAILABLE);
         }
 
-        MarketplaceImageSearchAnalysisResponse analysis = parseAnalysis(rawJson);
-        List<String> searchKeywords = buildSearchKeywords(analysis);
+        List<String> searchKeywords = buildSearchKeywords(imageAnalysis);
+        MarketplaceImageSearchAnalysisResponse analysis = toMarketplaceAnalysis(imageAnalysis, searchKeywords);
         analysis = normalizeAnalysisMessage(analysis, searchKeywords);
         cacheAnalysis(image.hash(), analysis, searchKeywords);
         return new AnalysisResult(analysis, searchKeywords, image.hash(), false);
+    }
+
+    private MarketplaceImageSearchAnalysisResponse toMarketplaceAnalysis(
+            ImageAnalysisResult imageAnalysis,
+            List<String> searchKeywords) {
+        ImageAnalysisResult.Entities entities = imageAnalysis == null || imageAnalysis.entities() == null
+                ? ImageAnalysisResult.Entities.empty()
+                : imageAnalysis.entities();
+        String keyword = firstValue(searchKeywords);
+        String detectedProduct = displayKeyword(keyword);
+        List<String> visualAttributes = mergeLists(entities.colors(), entities.objects());
+        Double confidence = imageAnalysis == null ? 0D : clampConfidence(imageAnalysis.confidence());
+
+        return new MarketplaceImageSearchAnalysisResponse(
+                detectedProduct,
+                null,
+                keyword == null ? List.of() : List.of(keyword),
+                List.of(),
+                keyword == null ? List.of() : List.of(keyword),
+                cleanVisualAttributes(visualAttributes),
+                confidence,
+                normalizeConfidenceLabel(null, confidence),
+                !searchKeywords.isEmpty(),
+                null);
     }
 
     private MarketplaceImageSearchAnalysisResponse parseAnalysis(String rawJson) {
@@ -323,6 +550,10 @@ public class MarketplaceImageSearchService {
             MarketplaceImageSearchAnalysisResponse analysis,
             List<String> searchKeywords) {
         String message = normalizeNullable(analysis.message());
+        // Sanitize: never let raw AI content into the message
+        if (message != null && looksLikeRawAi(message)) {
+            message = null;
+        }
         if (message == null) {
             if (!Boolean.TRUE.equals(analysis.agricultural())) {
                 message = "Anh/chị hãy thử ảnh nông sản rõ hơn hoặc nhập từ khóa thủ công.";
@@ -347,10 +578,7 @@ public class MarketplaceImageSearchService {
     }
 
     private boolean shouldSearch(AnalysisResult result) {
-        return Boolean.TRUE.equals(result.analysis().agricultural())
-                && result.analysis().confidence() != null
-                && result.analysis().confidence() >= MIN_SEARCH_CONFIDENCE
-                && !result.searchKeywords().isEmpty();
+        return result != null && result.searchKeywords() != null && !result.searchKeywords().isEmpty();
     }
 
     private PageResponse<MarketplaceProductSummaryResponse> searchProducts(
@@ -371,12 +599,16 @@ public class MarketplaceImageSearchService {
                 maxPrice,
                 pageable);
 
+        String canonicalKeyword = firstValue(keywords);
         Map<Long, MarketplaceProductReviewRepository.ProductRatingProjection> ratings = aggregateProductRatings(
                 productPage.getContent().stream().map(MarketplaceProduct::getId).toList());
         List<MarketplaceProductSummaryResponse> items = productPage.getContent().stream()
+                .filter(product -> isRelevantToIdentityKeyword(product, canonicalKeyword))
                 .map(product -> toProductSummary(product, ratings.get(product.getId())))
                 .toList();
-        return PageResponse.of(productPage, items);
+        long filteredTotal = items.size();
+        Page<MarketplaceProductSummaryResponse> filteredPage = new PageImpl<>(items, pageable, filteredTotal);
+        return PageResponse.of(filteredPage, items);
     }
 
     private Page<MarketplaceProduct> executeProductSearch(
@@ -453,16 +685,13 @@ public class MarketplaceImageSearchService {
             predicates.add(cb.lessThanOrEqualTo(product.get("price"), maxPrice));
         }
 
+        Set<String> strictTerms = resolveStrictSearchTerms(firstValue(keywords));
         List<Predicate> keywordPredicates = new ArrayList<>();
-        for (String keyword : keywords) {
+        for (String keyword : strictTerms) {
             keywordPredicates.add(likeText(cb, product.get("name"), keyword));
             keywordPredicates.add(likeText(cb, product.get("category"), keyword));
-            keywordPredicates.add(likeText(cb, product.get("shortDescription"), keyword));
-            keywordPredicates.add(likeText(cb, product.get("description"), keyword));
-            keywordPredicates.add(likeText(cb, joins.farm().get("name"), keyword));
             keywordPredicates.add(likeText(cb, joins.lot().get("productName"), keyword));
             keywordPredicates.add(likeText(cb, joins.lot().get("productVariant"), keyword));
-            keywordPredicates.add(likeText(cb, joins.season().get("seasonName"), keyword));
             keywordPredicates.add(likeText(cb, joins.crop().get("cropName"), keyword));
             keywordPredicates.add(likeText(cb, joins.variety().get("name"), keyword));
         }
@@ -564,6 +793,330 @@ public class MarketplaceImageSearchService {
         addKeywords(keywords, analysis.keywordsVi());
         addKeywords(keywords, analysis.keywordsEn());
         return keywords.stream().limit(8).toList();
+    }
+
+    private List<String> buildSearchKeywords(ImageAnalysisResult analysis) {
+        if (analysis == null) {
+            return List.of();
+        }
+        ImageAnalysisResult.Entities entities = analysis.entities() == null
+                ? ImageAnalysisResult.Entities.empty()
+                : analysis.entities();
+
+        // Priority per user spec:
+        // 1. normalize(detected_product_vi) — from entity products
+        // 2. normalize(search_query)
+        // 3. normalize(first keyword) — from alternative queries + objects
+        // 4. normalize(short OCR only if product name/code exists)
+        // 5. normalize(short description only if all above are empty)
+        // Do NOT use full description as keyword.
+        List<String> primaryCandidates = new ArrayList<>();
+        primaryCandidates.addAll(entities.products());
+        primaryCandidates.add(analysis.searchQuery());
+        primaryCandidates.addAll(analysis.alternativeQueries());
+        primaryCandidates.addAll(entities.objects());
+        for (String candidate : primaryCandidates) {
+            String keyword = resolveCanonicalKeyword(candidate);
+            if (keyword != null) {
+                return List.of(keyword);
+            }
+        }
+
+        // Fallback: short OCR text (only if it looks like a product name/code, not a sentence)
+        String ocrText = normalizeNullable(analysis.ocrText());
+        if (ocrText != null && ocrText.length() <= 30 && !looksLikeRawAi(ocrText)) {
+            String keyword = resolveCanonicalKeyword(ocrText);
+            if (keyword != null) {
+                return List.of(keyword);
+            }
+        }
+
+        // Last resort: short description (only first 4 words, only if all above fail)
+        String desc = normalizeNullable(analysis.description());
+        if (desc != null && !looksLikeRawAi(desc)) {
+            String shortDesc = firstWords(desc, 4);
+            String keyword = resolveCanonicalKeyword(shortDesc);
+            if (keyword != null) {
+                return List.of(keyword);
+            }
+        }
+
+        return List.of();
+    }
+
+    private String resolveCanonicalKeyword(String value) {
+        String normalized = normalizeMarketplaceKeyword(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized;
+    }
+
+    /**
+     * Central normalization function for marketplace keywords.
+     * Takes raw AI output (captions, descriptions) and produces a clean, canonical
+     * Vietnamese product keyword suitable for marketplace search.
+     *
+     * Steps:
+     * 1. lowercase + trim
+     * 2. remove markdown/code fences
+     * 3. remove JSON fragments
+     * 4. remove {@code <think>...</think>} blocks
+     * 5. try direct alias match (before stripping words — handles compound aliases like "quả cà chua")
+     * 6. remove noisy phrases ("trĩu hạt", "còn đất", etc.)
+     * 7. remove noisy single words (adjectives, plant parts) unless protected
+     * 8. map remaining text to canonical Vietnamese crop/product name
+     */
+    String normalizeMarketplaceKeyword(String input) {
+        if (input == null) {
+            return null;
+        }
+        // Step 1: lowercase + trim
+        String value = input.toLowerCase(Locale.ROOT).trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+        // Step 2: remove markdown/code fences
+        value = value.replaceAll("(?s)```[a-z]*\\s*", "").replaceAll("(?s)```\\s*", "").trim();
+        // Step 3: remove JSON fragments
+        value = value.replaceAll("[{}\\[\\]\\\"]", "").trim();
+        // Step 4: remove <think>...</think>
+        value = value.replaceAll("(?s)<think>.*?</think>", "").trim();
+        // Reject if still looks like raw AI
+        if (value.isEmpty() || looksLikeRawAi(value)) {
+            return null;
+        }
+        // Reject if too long (sentence, not a product name)
+        if (value.length() > 40) {
+            value = firstWords(value, 4);
+        }
+        if (value.isBlank()) {
+            return null;
+        }
+
+        // Step 5: try direct alias match FIRST (handles "quả cà chua", "buồng chuối", etc.)
+        String directMatch = CANONICAL_PRODUCT_BY_ALIAS.get(value);
+        if (directMatch != null) {
+            return directMatch;
+        }
+        // Also try with diacritics-stripped lookup
+        String lookupKey = normalizeLookupKey(value);
+        if (lookupKey != null) {
+            for (Map.Entry<String, String> entry : CANONICAL_PRODUCT_BY_ALIAS.entrySet()) {
+                String entryKey = normalizeLookupKey(entry.getKey());
+                if (lookupKey.equals(entryKey)) {
+                    return entry.getValue();
+                }
+            }
+        }
+
+        // Step 6: remove noisy phrases
+        for (String phrase : NOISY_PHRASES) {
+            value = value.replace(phrase, " ");
+        }
+        value = value.replaceAll("\\s+", " ").trim();
+
+        // Step 7: remove noisy single words (unless the entire input is a protected compound name)
+        if (!PROTECTED_COMPOUND_NAMES.contains(value)) {
+            String[] words = value.split("\\s+");
+            List<String> kept = new ArrayList<>();
+            for (String word : words) {
+                if (!NOISY_WORDS.contains(word)) {
+                    kept.add(word);
+                }
+            }
+            value = String.join(" ", kept).trim();
+        }
+        if (value.isEmpty()) {
+            return null;
+        }
+
+        // Step 8: map to canonical name
+        directMatch = CANONICAL_PRODUCT_BY_ALIAS.get(value);
+        if (directMatch != null) {
+            return directMatch;
+        }
+        lookupKey = normalizeLookupKey(value);
+        if (lookupKey != null) {
+            for (Map.Entry<String, String> entry : CANONICAL_PRODUCT_BY_ALIAS.entrySet()) {
+                String entryKey = normalizeLookupKey(entry.getKey());
+                if (lookupKey.equals(entryKey)) {
+                    return entry.getValue();
+                }
+            }
+        }
+
+        // If nothing matched but the value is short and clean, return it as-is
+        if (value.length() <= 20 && !looksLikeRawAi(value) && value.split("\\s+").length <= 3) {
+            return value;
+        }
+        return null;
+    }
+
+    private Set<String> resolveStrictSearchTerms(String canonicalKeyword) {
+        String keyword = cleanShortKeyword(canonicalKeyword);
+        if (keyword == null) {
+            return Set.of();
+        }
+        keyword = resolveCanonicalKeyword(keyword);
+        LinkedHashSet<String> terms = new LinkedHashSet<>();
+        terms.add(keyword);
+        ALIASES_BY_CANONICAL_PRODUCT.getOrDefault(keyword, List.of()).forEach(terms::add);
+        return terms;
+    }
+
+    private boolean isRelevantToIdentityKeyword(MarketplaceProduct product, String canonicalKeyword) {
+        if (product == null) {
+            return false;
+        }
+        Set<String> terms = resolveStrictSearchTerms(canonicalKeyword);
+        if (terms.isEmpty()) {
+            return false;
+        }
+        List<String> fields = new ArrayList<>();
+        fields.add(product.getName());
+        fields.add(product.getCategory());
+        fields.add(product.getShortDescription());
+        fields.add(product.getDescription());
+        if (product.getLot() != null) {
+            fields.add(product.getLot().getProductName());
+            fields.add(product.getLot().getProductVariant());
+        }
+        if (product.getSeason() != null) {
+            if (product.getSeason().getCrop() != null) {
+                fields.add(product.getSeason().getCrop().getCropName());
+            }
+            if (product.getSeason().getVariety() != null) {
+                fields.add(product.getSeason().getVariety().getName());
+            }
+        }
+        return fields.stream()
+                .map(this::normalizeLookupKey)
+                .filter(Objects::nonNull)
+                .anyMatch(field -> terms.stream().map(this::normalizeLookupKey).anyMatch(field::contains));
+    }
+
+    private MarketplaceImageSearchAnalysisResponse withSearchResultMessage(
+            MarketplaceImageSearchAnalysisResponse analysis,
+            PageResponse<MarketplaceProductSummaryResponse> products) {
+        boolean hasProducts = products != null && products.getItems() != null && !products.getItems().isEmpty();
+        String message = hasProducts
+                ? "Đã nhận diện ảnh. Kết quả bên dưới được tìm theo từ khóa gợi ý."
+                : "Chưa tìm thấy sản phẩm phù hợp với ảnh. Bạn có thể chỉnh sửa từ khóa hoặc chọn ảnh khác.";
+        return new MarketplaceImageSearchAnalysisResponse(
+                analysis.detectedProduct(),
+                analysis.category(),
+                analysis.keywordsVi(),
+                analysis.keywordsEn(),
+                analysis.keywords(),
+                analysis.visualAttributes(),
+                analysis.confidence(),
+                analysis.confidenceLabel(),
+                analysis.agricultural(),
+                message);
+    }
+
+    private List<String> cleanVisualAttributes(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        LinkedHashSet<String> cleaned = new LinkedHashSet<>();
+        values.forEach(value -> {
+            String keyword = cleanShortKeyword(value);
+            if (keyword != null) {
+                cleaned.add(keyword);
+            }
+        });
+        return cleaned.stream().limit(4).toList();
+    }
+
+    private String cleanShortKeyword(String value) {
+        String normalized = cleanKeyword(value);
+        if (normalized == null || looksLikeRawAi(normalized)) {
+            return null;
+        }
+        // Strip <think> artifacts, quotes, backticks
+        normalized = normalized.replaceAll("(?s)<think>.*?</think>", "")
+                .replaceAll("[\"'`]+", "").replaceAll("\\s+", " ").trim();
+        if (normalized.length() > 40) {
+            normalized = firstWords(normalized, 4);
+        }
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private boolean looksLikeRawAi(String value) {
+        String normalized = value.toLowerCase(Locale.ROOT);
+        return normalized.contains("{")
+                || normalized.contains("}")
+                || normalized.contains("```")
+                || normalized.contains("<think>")
+                || normalized.contains("</think>")
+                || normalized.contains("search_query")
+                || normalized.contains("\"keywords\"")
+                || normalized.contains("detected_product")
+                || normalized.contains("\"confidence\"")
+                || normalized.contains("detected_product_vi");
+    }
+
+    private String firstWords(String value, int maxWords) {
+        String[] words = value.split("\\s+");
+        int count = Math.min(maxWords, words.length);
+        return String.join(" ", java.util.Arrays.copyOf(words, count)).trim();
+    }
+
+    private String displayKeyword(String keyword) {
+        String normalized = cleanShortKeyword(keyword);
+        if (normalized == null) {
+            return null;
+        }
+        if (normalized.length() == 1) {
+            return normalized.toUpperCase(Locale.ROOT);
+        }
+        return normalized.substring(0, 1).toUpperCase(Locale.ROOT) + normalized.substring(1);
+    }
+
+    private String normalizeLookupKey(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'd')
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{Alnum}\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private List<String> mergeLists(List<String> first, List<String> second) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        addKeywords(values, first);
+        addKeywords(values, second);
+        return values.stream().limit(8).toList();
+    }
+
+    private String firstValue(List<String> values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            String normalized = normalizeNullable(value);
+            if (normalized != null) {
+                return normalized;
+            }
+        }
+        return null;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        String normalizedFirst = normalizeNullable(first);
+        if (normalizedFirst != null) {
+            return normalizedFirst;
+        }
+        return normalizeNullable(second);
     }
 
     private void addKeywords(Set<String> target, List<String> values) {

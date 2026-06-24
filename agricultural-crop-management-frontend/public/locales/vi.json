@@ -5787,7 +5787,7 @@
         "analyzing": "Đang phân tích ảnh và tìm sản phẩm phù hợp...",
         "success": "Đã tìm thấy sản phẩm phù hợp với ảnh.",
         "lowConfidence": "AI chưa đủ tự tin để tự tìm. Bạn có thể sửa từ khóa và tìm thủ công.",
-        "empty": "Không có sản phẩm phù hợp. Hãy sửa từ khóa hoặc thử ảnh khác.",
+        "empty": "Chưa tìm thấy sản phẩm phù hợp với ảnh. Bạn có thể chỉnh sửa từ khóa hoặc chọn ảnh khác.",
         "error": "Không thể phân tích ảnh lúc này."
       },
       "errors": {
