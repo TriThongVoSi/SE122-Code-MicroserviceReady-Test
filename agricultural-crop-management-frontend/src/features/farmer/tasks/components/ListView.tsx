@@ -27,6 +27,7 @@ interface ListViewProps {
   selectedTasks: string[];
   onSelectAll: (checked: boolean) => void;
   onSelectTask: (taskId: string, checked: boolean) => void;
+  onComplete: (taskId: string) => void;
   onDelete: (taskId: string) => void;
   disableMutations?: boolean;
 }
@@ -36,6 +37,7 @@ export function ListView({
   selectedTasks,
   onSelectAll,
   onSelectTask,
+  onComplete,
   onDelete,
   disableMutations = false,
 }: ListViewProps) {
@@ -77,6 +79,7 @@ export function ListView({
                   const taskType = TASK_TYPES[task.type];
                   const TaskIcon = taskType.icon;
                   const taskColor = taskType.color;
+                  const canComplete = !disableMutations && task.status !== "completed";
 
                   return (
                     <TableRow key={task.id} className="border-b border-border hover:bg-muted/50">
@@ -122,9 +125,16 @@ export function ListView({
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`${STATUS_COLORS[task.status]} acm-rounded-sm`}>
-                          {t(STATUS_LABELS[task.status].labelKey, STATUS_LABELS[task.status].fallbackLabel)}
-                        </Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge className={`${STATUS_COLORS[task.status]} acm-rounded-sm`}>
+                            {t(STATUS_LABELS[task.status].labelKey, STATUS_LABELS[task.status].fallbackLabel)}
+                          </Badge>
+                          {task.hasCompletionReport && (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 acm-rounded-sm">
+                              {t("tasks.progressReports.awaitingConfirmation", "Employee reported 100% / Chờ xác nhận")}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {task.attachments > 0 ? (
@@ -153,10 +163,16 @@ export function ListView({
                               <Edit className="w-4 h-4 mr-2" />
                               {t("common.edit")}
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" disabled={disableMutations}>
-                              <Check className="w-4 h-4 mr-2" />
-                              {t("tasks.actions.complete")}
-                            </DropdownMenuItem>
+                            {task.status !== "completed" && (
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => canComplete && onComplete(task.id)}
+                                disabled={!canComplete}
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                {t("tasks.actions.complete")}
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               className="cursor-pointer text-destructive"
                               onClick={() => !disableMutations && onDelete(task.id)}

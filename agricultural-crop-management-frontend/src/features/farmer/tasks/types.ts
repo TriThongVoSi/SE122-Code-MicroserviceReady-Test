@@ -16,6 +16,10 @@ export interface Task {
   notes: string;
   attachments: number;
   priority: 'high' | 'medium' | 'low';
+  latestProgressPercent?: number;
+  latestProgressNote?: string | null;
+  latestProgressLoggedAt?: string | null;
+  hasCompletionReport?: boolean;
 }
 
 export interface FilterState {

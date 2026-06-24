@@ -42,6 +42,7 @@ export function TaskWorkspace() {
     assigneeOptions,
     handleTaskMove,
     handleBulkComplete,
+    handleCompleteTask,
     handleDeleteTask,
     handleSelectAll,
     handleSelectTask,
@@ -92,6 +93,7 @@ export function TaskWorkspace() {
             <BoardView
               tasks={scopedTasks}
               onTaskMove={handleTaskMove}
+              onComplete={handleCompleteTask}
               onDelete={handleDeleteTask}
               disableMutations={isSeasonWriteLocked}
             />
@@ -102,6 +104,7 @@ export function TaskWorkspace() {
               selectedTasks={selectedTasks}
               onSelectAll={handleSelectAll}
               onSelectTask={handleSelectTask}
+              onComplete={handleCompleteTask}
               onDelete={handleDeleteTask}
               disableMutations={isSeasonWriteLocked}
             />

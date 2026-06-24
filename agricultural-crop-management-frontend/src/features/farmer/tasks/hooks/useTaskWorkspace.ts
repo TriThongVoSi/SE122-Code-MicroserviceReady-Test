@@ -13,9 +13,10 @@ import {
   type TaskStatusUpdateRequest,
   type TaskUpdateRequest,
 } from '@/entities/task';
-import { useSeasonEmployees } from '@/entities/labor';
+import { useSeasonEmployees, useSeasonProgressLogs } from '@/entities/labor';
 import { useOptionalSeason } from '@/shared/contexts';
 import type { Task, TaskStatus, TaskType, ViewMode, FilterState } from '../types';
+import type { TaskProgressLog } from '@/entities/labor';
 
 /**
  * Transform API task to feature task format
@@ -196,6 +197,11 @@ export function useTaskWorkspace() {
     { page: 0, size: 200 },
     { enabled: seasonId > 0 }
   );
+  const { data: seasonProgressData } = useSeasonProgressLogs(
+    seasonId,
+    { page: 0, size: 200 },
+    { enabled: seasonId > 0 }
+  );
 
   const invalidateTaskQueries = useCallback(async () => {
     if (seasonId <= 0) {
@@ -294,10 +300,37 @@ export function useTaskWorkspace() {
     updateTaskMutation,
   ]);
 
+  const latestProgressByTaskId = useMemo(() => {
+    const map = new Map<number, TaskProgressLog>();
+    for (const log of seasonProgressData?.items ?? []) {
+      if (!log.taskId) continue;
+      const current = map.get(log.taskId);
+      const currentTime = current?.loggedAt ? new Date(current.loggedAt).getTime() : 0;
+      const nextTime = log.loggedAt ? new Date(log.loggedAt).getTime() : 0;
+      if (!current || nextTime >= currentTime) {
+        map.set(log.taskId, log);
+      }
+    }
+    return map;
+  }, [seasonProgressData?.items]);
+
   // Transformed data - no mock fallback
   const tasks = useMemo(() => {
-    return apiTasksData?.items?.map(transformApiToFeature) ?? [];
-  }, [apiTasksData]);
+    return apiTasksData?.items?.map((apiTask) => {
+      const task = transformApiToFeature(apiTask);
+      const latestProgress = latestProgressByTaskId.get(apiTask.taskId);
+      if (!latestProgress) {
+        return task;
+      }
+      return {
+        ...task,
+        latestProgressPercent: latestProgress.progressPercent,
+        latestProgressNote: latestProgress.note,
+        latestProgressLoggedAt: latestProgress.loggedAt,
+        hasCompletionReport: latestProgress.progressPercent >= 100 && task.status !== 'completed',
+      };
+    }) ?? [];
+  }, [apiTasksData, latestProgressByTaskId]);
 
   const isLoading = apiLoading;
   const error = apiError;
@@ -392,6 +425,30 @@ export function useTaskWorkspace() {
       setIsBulkApplying(false);
     }
   }, [invalidateTaskQueries, isSeasonWriteLocked, seasonWriteLockReason, selectedTasks, updateStatusMutation]);
+
+  const handleCompleteTask = useCallback(async (taskId: string) => {
+    if (isSeasonWriteLocked) {
+      toast.error(seasonWriteLockReason);
+      return;
+    }
+    const id = parseInt(taskId, 10);
+    if (Number.isNaN(id) || id <= 0) {
+      toast.error('Invalid task ID');
+      return;
+    }
+
+    try {
+      await updateStatusMutation.mutateAsync({
+        id,
+        data: buildStatusUpdatePayload('completed'),
+      });
+      await invalidateTaskQueries();
+      toast.success('Task completed');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      toast.error('Failed to complete task', { description: message });
+    }
+  }, [invalidateTaskQueries, isSeasonWriteLocked, seasonWriteLockReason, updateStatusMutation]);
 
   const handleDeleteTask = useCallback((taskId: string) => {
     if (isSeasonWriteLocked) {
@@ -503,7 +560,7 @@ export function useTaskWorkspace() {
     filterDrawerOpen, setFilterDrawerOpen, createTaskOpen, setCreateTaskOpen, reassignOpen, setReassignOpen, dueDateOpen, setDueDateOpen,
     tasks, filteredTasks, uniqueAssignees, uniquePlots, assigneeOptions,
     isLoading, error: error ?? null, refetch,
-    handleTaskMove, handleBulkComplete, handleDeleteTask, handleSelectAll, handleSelectTask, handleReassign, handleBulkDueDateChange, handleCreateTask,
+    handleTaskMove, handleBulkComplete, handleCompleteTask, handleDeleteTask, handleSelectAll, handleSelectTask, handleReassign, handleBulkDueDateChange, handleCreateTask,
     isCreating: createMutation.isPending,
     isUpdating: updateStatusMutation.isPending || updateTaskMutation.isPending || isBulkApplying,
     isDeleting: deleteMutation.isPending,

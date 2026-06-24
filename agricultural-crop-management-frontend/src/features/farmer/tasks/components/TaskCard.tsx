@@ -26,13 +26,15 @@ import { TASK_TYPES } from '../constants';
 
 interface TaskCardProps {
   task: Task;
+  onComplete: (taskId: string) => void;
   onDelete: (taskId: string) => void;
   disableMutations?: boolean;
 }
 
-export function TaskCard({ task, onDelete, disableMutations = false }: TaskCardProps) {
+export function TaskCard({ task, onComplete, onDelete, disableMutations = false }: TaskCardProps) {
   const { t, locale } = useI18n();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const canComplete = !disableMutations && task.status !== 'completed';
   const [{ isDragging }, drag] = useDrag({
     type: 'TASK',
     canDrag: !disableMutations,
@@ -54,9 +56,16 @@ export function TaskCard({ task, onDelete, disableMutations = false }: TaskCardP
       style={{ borderLeftWidth: '4px', borderLeftColor: taskColor }}
     >
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex items-center gap-2">
           <TaskIcon className="w-4 h-4" style={{ color: taskColor }} />
           <h4 className="text-sm text-foreground line-clamp-2">{task.title}</h4>
+          </div>
+          {task.hasCompletionReport && (
+            <Badge className="w-fit bg-amber-100 text-amber-700 border-amber-200 text-xs px-1.5 py-0">
+              {t('tasks.progressReports.awaitingConfirmation', 'Employee reported 100% / Chờ xác nhận')}
+            </Badge>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -74,10 +83,16 @@ export function TaskCard({ task, onDelete, disableMutations = false }: TaskCardP
               <Edit className="w-4 h-4 mr-2" />
               {t('common.edit')}
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" disabled={disableMutations}>
-              <Check className="w-4 h-4 mr-2" />
-              {t('tasks.actions.complete')}
-            </DropdownMenuItem>
+            {task.status !== 'completed' && (
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => canComplete && onComplete(task.id)}
+                disabled={!canComplete}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                {t('tasks.actions.complete')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               className="cursor-pointer text-destructive"
               onClick={() => !disableMutations && setDeleteDialogOpen(true)}

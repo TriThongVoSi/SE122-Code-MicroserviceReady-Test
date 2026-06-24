@@ -6,6 +6,7 @@ import { useI18n } from '@/hooks/useI18n';
 interface BoardViewProps {
   tasks: Task[];
   onTaskMove: (taskId: string, newStatus: TaskStatus) => void;
+  onComplete: (taskId: string) => void;
   onDelete: (taskId: string) => void;
   disableMutations?: boolean;
 }
@@ -13,6 +14,7 @@ interface BoardViewProps {
 export function BoardView({
   tasks,
   onTaskMove,
+  onComplete,
   onDelete,
   disableMutations = false,
 }: BoardViewProps) {
@@ -28,6 +30,7 @@ export function BoardView({
           color={column.color}
           tasks={tasks.filter((task) => task.status === column.status)}
           onTaskMove={onTaskMove}
+          onComplete={onComplete}
           onDelete={onDelete}
           disableMutations={disableMutations}
         />

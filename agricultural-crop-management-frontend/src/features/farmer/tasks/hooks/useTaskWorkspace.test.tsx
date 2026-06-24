@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   useUpdateTaskStatus: vi.fn(),
   useDeleteTask: vi.fn(),
   useSeasonEmployees: vi.fn(),
+  useSeasonProgressLogs: vi.fn(),
   useOptionalSeason: vi.fn(),
   updateTaskMutateAsync: vi.fn(),
   updateStatusMutate: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('@/entities/task', () => ({
 
 vi.mock('@/entities/labor', () => ({
   useSeasonEmployees: mocks.useSeasonEmployees,
+  useSeasonProgressLogs: mocks.useSeasonProgressLogs,
 }));
 
 vi.mock('@/shared/contexts', () => ({
@@ -112,6 +114,24 @@ describe('useTaskWorkspace bulk actions', () => {
         items: [
           { employeeUserId: 501, employeeName: 'Employee A', active: true },
           { employeeUserId: 502, employeeName: 'Employee B', active: true },
+        ],
+      },
+    });
+    mocks.useSeasonProgressLogs.mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 9001,
+            taskId: 102,
+            taskTitle: 'Inspect Plot',
+            seasonId: 33,
+            employeeUserId: 8,
+            employeeName: 'Worker Two',
+            progressPercent: 100,
+            note: 'Finished in field',
+            evidenceUrl: null,
+            loggedAt: '2026-06-04T09:30:00',
+          },
         ],
       },
     });
@@ -230,5 +250,42 @@ describe('useTaskWorkspace bulk actions', () => {
 
     expect(mocks.updateTaskMutateAsync).not.toHaveBeenCalled();
     expect(mocks.toastError).toHaveBeenCalled();
+  });
+
+  it('marks a single task complete from row/card actions', async () => {
+    const queryClient = createQueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useTaskWorkspace(), { wrapper });
+
+    await act(async () => {
+      await result.current.handleCompleteTask('102');
+    });
+
+    expect(mocks.updateStatusMutateAsync).toHaveBeenCalledWith({
+      id: 102,
+      data: expect.objectContaining({
+        status: 'DONE',
+        actualEndDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    });
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Task completed');
+  });
+
+  it('marks tasks with a 100 percent employee report as awaiting farmer confirmation', () => {
+    const queryClient = createQueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useTaskWorkspace(), { wrapper });
+
+    const reportedTask = result.current.tasks.find((task) => task.id === '102');
+
+    expect(reportedTask).toMatchObject({
+      latestProgressPercent: 100,
+      latestProgressNote: 'Finished in field',
+      hasCompletionReport: true,
+    });
   });
 });

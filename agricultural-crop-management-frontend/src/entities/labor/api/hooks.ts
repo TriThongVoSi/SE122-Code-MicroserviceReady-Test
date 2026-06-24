@@ -307,8 +307,11 @@ export const useEmployeeReportTaskProgress = (
       queryClient.invalidateQueries({ queryKey: laborKeys.employeeProgressBase(), exact: false });
       queryClient.invalidateQueries({ queryKey: laborKeys.employeePayrollBase(), exact: false });
       if (data.seasonId) {
+        queryClient.invalidateQueries({ queryKey: laborKeys.employeeSeasonPlanBase(data.seasonId), exact: false });
         queryClient.invalidateQueries({ queryKey: laborKeys.seasonProgressBase(data.seasonId), exact: false });
         queryClient.invalidateQueries({ queryKey: laborKeys.seasonPayrollBase(data.seasonId), exact: false });
+        queryClient.invalidateQueries({ queryKey: taskKeys.listBySeason(data.seasonId), exact: false });
+        queryClient.invalidateQueries({ queryKey: taskKeys.listWorkspace(), exact: false });
       }
       onSuccess?.(data, variables, onMutateResult, context);
     },
