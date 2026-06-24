@@ -80,7 +80,8 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-quanlymuavu}
       DB_USER: ${MYSQL_USER:-springuser}
       DB_PASS: ${MYSQL_PASSWORD:-springpass}
-      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder32characterslong!}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
       JWT_VALID_DURATION: ${JWT_VALID_DURATION:-3600}
       JWT_REFRESHABLE_DURATION: ${JWT_REFRESHABLE_DURATION:-36000}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -112,6 +113,36 @@ services:
       minio:
         condition: service_healthy
 
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: Dockerfile
+    container_name: identity_service_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8081
+      DB_URL: jdbc:mysql://mysql:3306/identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
+      JWT_VALID_DURATION: ${JWT_VALID_DURATION:-3600}
+      JWT_REFRESHABLE_DURATION: ${JWT_REFRESHABLE_DURATION:-36000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_AUTH: false
+      SMTP_STARTTLS: false
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8000}
+      DEV_BOOTSTRAP_ADMIN_ENABLED: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -123,9 +154,11 @@ services:
     environment:
       GATEWAY_PORT: 8000
       MONOLITH_URI: http://backend:8080
+      IDENTITY_SERVICE_URI: http://identity-service:8081
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
     depends_on:
       - backend
+      - identity-service
 
   frontend:
     build:

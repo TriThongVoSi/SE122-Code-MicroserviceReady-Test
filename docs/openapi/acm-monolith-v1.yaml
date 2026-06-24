@@ -5401,6 +5401,13 @@ paths:
               $ref: "#/components/schemas/AuthenticationRequest"
         required: true
       responses:
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              example:
+                code: INVALID_CREDENTIALS
+                message: Invalid username/email or password.
         "200":
           description: Login successful
           content:
@@ -5430,13 +5437,6 @@ paths:
               example:
                 code: USER_LOCKED
                 message: User account is not active.
-        "401":
-          description: Invalid credentials
-          content:
-            application/json:
-              example:
-                code: INVALID_CREDENTIALS
-                message: Invalid username/email or password.
   /api/v1/auth/reset-password:
     post:
       tags:
@@ -5469,18 +5469,18 @@ paths:
               $ref: "#/components/schemas/RefreshRequest"
         required: true
       responses:
-        "200":
-          description: Token refreshed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
         "401":
           description: Token invalid or expired
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /api/v1/auth/introspect:
     post:
       tags:
@@ -19226,15 +19226,15 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
-        numberOfElements:
-          type: integer
-          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
           type: boolean
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
         empty:
           type: boolean
     PageableObject:
@@ -19245,14 +19245,14 @@ components:
           format: int64
         sort:
           $ref: "#/components/schemas/SortObject"
-        paged:
-          type: boolean
         unpaged:
           type: boolean
-        pageNumber:
+        paged:
+          type: boolean
+        pageSize:
           type: integer
           format: int32
-        pageSize:
+        pageNumber:
           type: integer
           format: int32
     SortObject:
@@ -19260,9 +19260,9 @@ components:
       properties:
         empty:
           type: boolean
-        unsorted:
-          type: boolean
         sorted:
+          type: boolean
+        unsorted:
           type: boolean
     ApiResponseListDashboardRecentActivityResponse:
       type: object

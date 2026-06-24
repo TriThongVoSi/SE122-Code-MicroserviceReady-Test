@@ -1,0 +1,44 @@
+package org.example.identity.controller;
+
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.example.identity.dto.ApiResponse;
+import org.example.identity.dto.request.ChangePasswordRequest;
+import org.example.identity.dto.request.UserProfileUpdateRequest;
+import org.example.identity.dto.response.FarmerResponse;
+import org.example.identity.service.UserService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/user")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class UserController {
+
+    UserService userService;
+
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
+    @GetMapping("/me")
+    public ApiResponse<FarmerResponse> me() {
+        return ApiResponse.success(userService.getMyInfo());
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
+    @PutMapping("/profile")
+    public ApiResponse<FarmerResponse> updateProfile(@RequestBody UserProfileUpdateRequest request) {
+        return ApiResponse.success(userService.updateProfile(request));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER','FARMER','EMPLOYEE')")
+    @PutMapping("/change-password")
+    public ApiResponse<FarmerResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ApiResponse.success(userService.changeMyPassword(request));
+    }
+}

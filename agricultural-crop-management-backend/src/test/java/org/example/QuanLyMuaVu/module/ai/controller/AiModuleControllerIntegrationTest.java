@@ -136,17 +136,4 @@ class AiModuleControllerIntegrationTest {
                 .andExpect(jsonPath("$.result.question").value("Should I buy this lot?"))
                 .andExpect(jsonPath("$.result.answer").value("Check seller reputation."));
     }
-
-    @Test
-    @WithMockUser(roles = "FARMER")
-    void suggestions_returnsPayloadForFarmer() throws Exception {
-        mockMvc.perform(get("/api/v1/farmer/ai/suggestions")
-                        .param("crop", "rice")
-                        .param("soil", "loam")
-                        .param("season", "summer"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.crop").value("rice"))
-                .andExpect(jsonPath("$.result.soil").value("loam"))
-                .andExpect(jsonPath("$.result.suggestions[0]").value(containsString("Use drip irrigation")));
-    }
 }

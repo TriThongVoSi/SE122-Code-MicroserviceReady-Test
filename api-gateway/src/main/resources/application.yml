@@ -22,6 +22,10 @@ spring:
             allow-credentials: true
             max-age: 3600
       routes:
+        - id: identity-route
+          uri: ${IDENTITY_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**, /api/v1/user/**, /api/v1/preferences/**
         - id: monolith-route
           uri: ${MONOLITH_URI:http://localhost:8080}
           predicates:
