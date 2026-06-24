@@ -43,6 +43,8 @@ public class SecurityConfig {
         private final String[] SWAGGER_ENDPOINTS = {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
+                        "/v3/api-docs",
+                        "/v3/api-docs.yaml",
                         "/v3/api-docs/**",
                         "/swagger-resources/**",
                         "/webjars/**",
