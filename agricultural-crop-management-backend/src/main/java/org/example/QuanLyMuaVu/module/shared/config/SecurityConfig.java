@@ -77,7 +77,8 @@ public class SecurityConfig {
                                                                 "/api/v1/marketplace/products/**",
                                                                 "/api/v1/marketplace/product-images/**",
                                                                 "/api/v1/marketplace/farms/**",
-                                                                "/api/v1/marketplace/traceability/**")
+                                                                "/api/v1/marketplace/traceability/**",
+                                                                "/api/marketplace/analytics/**")
                                                 .permitAll()
                                                 .requestMatchers("/api/v1/marketplace/farmer/**").hasRole("FARMER")
                                                 .requestMatchers("/api/v1/marketplace/admin/**").hasRole("ADMIN")

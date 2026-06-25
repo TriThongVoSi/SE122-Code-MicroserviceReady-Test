@@ -7,6 +7,7 @@ from app.config import settings
 from app.prompts.system_prompt import SYSTEM_PROMPT, RAG_PROMPT_TEMPLATE
 from app.schemas.chat_schema import SourceDocument
 from app.services.ollama_service import OllamaService
+from app.services.marketplace_query_service import MarketplaceQueryService
 from app.services.question_router import (
     QuestionRouter,
     has_good_rag_context,
@@ -51,6 +52,7 @@ class RagService:
         self.chroma_store = ChromaStore()
         self.ollama_service = OllamaService()
         self.router = QuestionRouter()
+        self.marketplace_query_service = MarketplaceQueryService()
 
     def _search_candidates(
         self,
@@ -583,6 +585,12 @@ class RagService:
                 "answer": IDENTITY_MESSAGE,
                 "sources": [],
             }
+
+        if route.mode == "marketplace_query":
+            marketplace_service = getattr(self, "marketplace_query_service", None)
+            if marketplace_service is None:
+                marketplace_service = MarketplaceQueryService()
+            return marketplace_service.answer(question)
 
         if route.mode == "off_topic":
             return {

@@ -13,6 +13,7 @@ RouteMode = Literal[
     "restricted_agriculture",
     "rag_first",
     "general_agriculture_llm",
+    "marketplace_query",
     "off_topic",
 ]
 RouteConfidence = Literal["high", "medium", "low"]
@@ -31,6 +32,7 @@ def normalize_question(text: str) -> str:
     without_marks = "".join(
         char for char in decomposed if unicodedata.category(char) != "Mn"
     )
+    without_marks = without_marks.replace("đ", "d")
     without_marks = without_marks.replace("đ", "d")
     return re.sub(r"\s+", " ", without_marks).strip()
 
@@ -293,6 +295,40 @@ OFF_TOPIC_TERMS = (
     "thoi tiet hom nay",
 )
 
+MARKETPLACE_SUBJECT_TERMS = (
+    "san pham",
+    "nong trai",
+    "trang trai",
+    "gao",
+    "lua",
+    "rau",
+    "ca chua",
+    "chuoi",
+    "xoai",
+    "khoai tay",
+    "ngo",
+    "bap",
+    "dua leo",
+)
+
+MARKETPLACE_COMPARATIVE_TERMS = (
+    "mac nhat",
+    "dat nhat",
+    "gia cao nhat",
+    "re nhat",
+    "gia thap nhat",
+    "ban chay nhat",
+    "nhieu luot mua nhat",
+    "mua nhieu nhat",
+    "duoc mua nhieu nhat",
+    "nhieu danh gia nhat",
+    "nhieu danh gia 5 sao nhat",
+    "5 sao",
+    "nam sao",
+    "rating cao nhat",
+    "danh gia cao nhat",
+)
+
 
 class QuestionRouter:
     def route(self, question: str) -> QuestionRoute:
@@ -304,6 +340,14 @@ class QuestionRouter:
                 category="identity",
                 confidence="high",
                 reason="identity or capability question",
+            )
+
+        if self._is_marketplace_query(normalized):
+            return QuestionRoute(
+                mode="marketplace_query",
+                category="marketplace",
+                confidence="high",
+                reason="marketplace analytics question",
             )
 
         strict_category = self._strict_category(normalized)
@@ -368,6 +412,12 @@ class QuestionRouter:
     def _is_documented_crop_question(normalized: str) -> bool:
         return any(term in normalized for term in RAG_FIRST_CROP_TERMS) and any(
             term in normalized for term in RAG_FIRST_CROP_QUESTION_TERMS
+        )
+
+    @staticmethod
+    def _is_marketplace_query(normalized: str) -> bool:
+        return any(term in normalized for term in MARKETPLACE_SUBJECT_TERMS) and any(
+            term in normalized for term in MARKETPLACE_COMPARATIVE_TERMS
         )
 
     def _is_general_agriculture(self, normalized: str) -> bool:

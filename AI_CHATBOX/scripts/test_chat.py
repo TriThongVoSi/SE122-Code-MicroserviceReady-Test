@@ -11,6 +11,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from app.config import settings  # noqa: E402
 from app.constants import INSUFFICIENT_DATA_MESSAGE, OFF_TOPIC_MESSAGE  # noqa: E402
+from app.services.marketplace_query_service import MARKETPLACE_NO_DATA_MESSAGE  # noqa: E402
 from app.services.question_router import QuestionRouter  # noqa: E402
 from app.services.rag_service import RagService  # noqa: E402
 
@@ -52,6 +53,48 @@ class DemoCase:
 
 
 DEMO_CASES = [
+    DemoCase(
+        question="Gạo nào mắc nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Gạo nào rẻ nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Sản phẩm nào bán chạy nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Nông trại nào nhiều lượt mua nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Nông trại nào nhiều đánh giá 5 sao nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Rau nào được đánh giá cao nhất?",
+        expected_mode="marketplace_query",
+        exact_answer=MARKETPLACE_NO_DATA_MESSAGE,
+        max_answer_chars=120,
+        expect_sources=False,
+    ),
     DemoCase(
         question="Bạn là ai?",
         expected_mode="identity",

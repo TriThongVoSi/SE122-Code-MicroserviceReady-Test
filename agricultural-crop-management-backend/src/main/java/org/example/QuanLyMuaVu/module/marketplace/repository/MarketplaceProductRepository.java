@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.example.QuanLyMuaVu.module.farm.entity.Farm;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceProduct;
+import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -285,9 +286,137 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             @Param("statuses") Collection<MarketplaceProductStatus> statuses,
             Pageable pageable);
 
+    @Query("""
+            SELECT p.name AS productName,
+                   p.price AS price,
+                   p.unit AS unit,
+                   f.name AS farmName,
+                   (SELECT COALESCE(SUM(oi.quantity), 0)
+                    FROM MarketplaceOrderItem oi
+                    JOIN oi.order o
+                    WHERE oi.product = p
+                      AND o.status IN :orderStatuses) AS totalSold,
+                   p.averageRating AS rating,
+                   (SELECT COUNT(r.id)
+                    FROM MarketplaceProductReview r
+                    WHERE r.product = p
+                      AND r.hidden = false
+                      AND r.rating = 5) AS fiveStarReviews
+            FROM MarketplaceProduct p
+            LEFT JOIN p.farm f
+            LEFT JOIN p.season s
+            LEFT JOIN s.crop c
+            WHERE p.status IN :statuses
+              AND (:keyword IS NULL
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%')))
+            ORDER BY p.price DESC, p.id ASC
+            """)
+    List<AnalyticsProductProjection> findMostExpensiveAnalyticsProduct(
+            @Param("statuses") Collection<MarketplaceProductStatus> statuses,
+            @Param("orderStatuses") Collection<MarketplaceOrderStatus> orderStatuses,
+            @Param("keyword") String keyword,
+            @Param("keywordAscii") String keywordAscii,
+            Pageable pageable);
+
+    @Query("""
+            SELECT p.name AS productName,
+                   p.price AS price,
+                   p.unit AS unit,
+                   f.name AS farmName,
+                   (SELECT COALESCE(SUM(oi.quantity), 0)
+                    FROM MarketplaceOrderItem oi
+                    JOIN oi.order o
+                    WHERE oi.product = p
+                      AND o.status IN :orderStatuses) AS totalSold,
+                   p.averageRating AS rating,
+                   (SELECT COUNT(r.id)
+                    FROM MarketplaceProductReview r
+                    WHERE r.product = p
+                      AND r.hidden = false
+                      AND r.rating = 5) AS fiveStarReviews
+            FROM MarketplaceProduct p
+            LEFT JOIN p.farm f
+            LEFT JOIN p.season s
+            LEFT JOIN s.crop c
+            WHERE p.status IN :statuses
+              AND (:keyword IS NULL
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%')))
+            ORDER BY p.price ASC, p.id ASC
+            """)
+    List<AnalyticsProductProjection> findCheapestAnalyticsProduct(
+            @Param("statuses") Collection<MarketplaceProductStatus> statuses,
+            @Param("orderStatuses") Collection<MarketplaceOrderStatus> orderStatuses,
+            @Param("keyword") String keyword,
+            @Param("keywordAscii") String keywordAscii,
+            Pageable pageable);
+
+    @Query("""
+            SELECT p.name AS productName,
+                   p.price AS price,
+                   p.unit AS unit,
+                   f.name AS farmName,
+                   (SELECT COALESCE(SUM(oi.quantity), 0)
+                    FROM MarketplaceOrderItem oi
+                    JOIN oi.order o
+                    WHERE oi.product = p
+                      AND o.status IN :orderStatuses) AS totalSold,
+                   p.averageRating AS rating,
+                   (SELECT COUNT(r.id)
+                    FROM MarketplaceProductReview r
+                    WHERE r.product = p
+                      AND r.hidden = false
+                      AND r.rating = 5) AS fiveStarReviews
+            FROM MarketplaceProduct p
+            LEFT JOIN p.farm f
+            LEFT JOIN p.season s
+            LEFT JOIN s.crop c
+            WHERE p.status IN :statuses
+              AND p.ratingCount > 0
+              AND (:keyword IS NULL
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%')))
+            ORDER BY p.averageRating DESC, p.ratingCount DESC, p.id ASC
+            """)
+    List<AnalyticsProductProjection> findTopRatedAnalyticsProduct(
+            @Param("statuses") Collection<MarketplaceProductStatus> statuses,
+            @Param("orderStatuses") Collection<MarketplaceOrderStatus> orderStatuses,
+            @Param("keyword") String keyword,
+            @Param("keywordAscii") String keywordAscii,
+            Pageable pageable);
+
     interface FarmProductCountProjection {
         Integer getFarmId();
 
         Long getProductCount();
+    }
+
+    interface AnalyticsProductProjection {
+        String getProductName();
+
+        BigDecimal getPrice();
+
+        String getUnit();
+
+        String getFarmName();
+
+        BigDecimal getTotalSold();
+
+        Double getRating();
+
+        Long getFiveStarReviews();
     }
 }

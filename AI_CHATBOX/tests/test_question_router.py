@@ -75,6 +75,24 @@ class QuestionRouterTests(unittest.TestCase):
                 self.assertEqual(route.mode, "rag_first")
                 self.assertEqual(route.category, "crop")
 
+    def test_routes_marketplace_questions_before_rag_or_general_llm(self):
+        cases = [
+            "Gạo nào mắc nhất?",
+            "Gạo nào rẻ nhất?",
+            "Sản phẩm nào bán chạy nhất?",
+            "Nông trại nào nhiều lượt mua nhất?",
+            "Nông trại nào nhiều đánh giá 5 sao nhất?",
+            "Rau nào được đánh giá cao nhất?",
+        ]
+
+        for question in cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "marketplace_query")
+                self.assertEqual(route.category, "marketplace")
+                self.assertEqual(route.confidence, "high")
+
     def test_routes_undocumented_crop_questions_to_general_llm(self):
         cases = [
             "Ca phe can dieu kien khi hau gi?",

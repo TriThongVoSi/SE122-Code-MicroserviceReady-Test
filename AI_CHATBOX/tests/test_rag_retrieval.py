@@ -275,6 +275,42 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertEqual(result["answer"], OFF_TOPIC_MESSAGE)
         self.assertEqual(result["sources"], [])
 
+    def test_chat_marketplace_query_bypasses_retrieval_and_llm(self):
+        class FakeMarketplaceService:
+            called = False
+
+            def answer(self, question):
+                self.called = True
+                return {
+                    "answer": "Gạo mắc nhất hiện tại là Gạo ST25, giá 45.000đ/kg.",
+                    "sources": [],
+                }
+
+        class MarketplaceService(RagService):
+            def __init__(self):
+                self.router = QuestionRouter()
+                self.marketplace_query_service = FakeMarketplaceService()
+
+            def _retrieve_contexts(self, question, top_k):
+                raise AssertionError("marketplace questions must not retrieve")
+
+            def _answer_with_general_agriculture_llm(self, question):
+                raise AssertionError("marketplace questions must not call general LLM")
+
+            def _answer_with_restricted_agriculture_llm(self, question):
+                raise AssertionError("marketplace questions must not call restricted LLM")
+
+        service = MarketplaceService()
+
+        result = service.chat("Gạo nào mắc nhất?", top_k=2)
+
+        self.assertEqual(
+            result["answer"],
+            "Gạo mắc nhất hiện tại là Gạo ST25, giá 45.000đ/kg.",
+        )
+        self.assertEqual(result["sources"], [])
+        self.assertTrue(service.marketplace_query_service.called)
+
     def test_chat_restricted_agriculture_returns_safe_answer_without_sources(self):
         class FakeOllama:
             restricted_called = False

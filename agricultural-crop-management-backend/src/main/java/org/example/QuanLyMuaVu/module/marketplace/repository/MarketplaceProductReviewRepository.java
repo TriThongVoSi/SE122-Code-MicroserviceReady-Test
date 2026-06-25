@@ -67,6 +67,35 @@ public interface MarketplaceProductReviewRepository extends JpaRepository<Market
             """)
     SingleProductRatingProjection aggregateRatingByFarmId(@Param("farmId") Integer farmId);
 
+    @Query("""
+            SELECT f.name AS farmName,
+                   COUNT(r.id) AS aggregateCount,
+                   f.averageRating AS rating,
+                   f.ratingCount AS ratingCount
+            FROM MarketplaceProductReview r
+            JOIN r.product p
+            JOIN p.farm f
+            LEFT JOIN p.season s
+            LEFT JOIN s.crop c
+            WHERE r.hidden = false
+              AND r.rating = 5
+              AND p.status IN :productStatuses
+              AND (:keyword IS NULL
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
+                   OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%')))
+            GROUP BY f.id, f.name, f.averageRating, f.ratingCount
+            ORDER BY COUNT(r.id) DESC, f.id ASC
+            """)
+    List<MarketplaceOrderItemRepository.AnalyticsFarmProjection> findTopFarmByFiveStarReviews(
+            @Param("productStatuses") Collection<org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus> productStatuses,
+            @Param("keyword") String keyword,
+            @Param("keywordAscii") String keywordAscii,
+            Pageable pageable);
+
     interface ProductRatingProjection {
         Long getProductId();
 
