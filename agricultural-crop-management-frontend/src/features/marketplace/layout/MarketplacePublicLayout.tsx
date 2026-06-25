@@ -335,11 +335,27 @@ function MarketplaceFooter() {
 
           <div>
             <h3 className="marketplace-footer__heading mb-4 font-semibold">Hỗ trợ</h3>
-            <ul className="marketplace-footer__list space-y-2 text-sm">
-              <li>Câu hỏi thường gặp</li>
-              <li>Chính sách vận chuyển</li>
-              <li>Đổi trả và hoàn tiền</li>
-              <li>Liên hệ</li>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link to="/marketplace/faq" className="marketplace-footer__link">
+                  Câu hỏi thường gặp
+                </Link>
+              </li>
+              <li>
+                <Link to="/marketplace/shipping-policy" className="marketplace-footer__link">
+                  Chính sách vận chuyển
+                </Link>
+              </li>
+              <li>
+                <Link to="/marketplace/refund-policy" className="marketplace-footer__link">
+                  Đổi trả và hoàn tiền
+                </Link>
+              </li>
+              <li>
+                <Link to="/marketplace/contact" className="marketplace-footer__link">
+                  Liên hệ
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -349,12 +365,20 @@ function MarketplaceFooter() {
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/sign-up" className="marketplace-footer__link">
+                <Link to="/marketplace/sell" className="marketplace-footer__link">
                   Đăng ký bán hàng
                 </Link>
               </li>
-              <li className="marketplace-footer__muted">Hướng dẫn bán hàng</li>
-              <li className="marketplace-footer__muted">Tiêu chuẩn chất lượng</li>
+              <li>
+                <Link to="/marketplace/seller-guide" className="marketplace-footer__link">
+                  Hướng dẫn bán hàng
+                </Link>
+              </li>
+              <li>
+                <Link to="/marketplace/quality-standards" className="marketplace-footer__link">
+                  Tiêu chuẩn chất lượng
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

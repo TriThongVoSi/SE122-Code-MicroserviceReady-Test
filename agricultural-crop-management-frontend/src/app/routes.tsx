@@ -74,6 +74,29 @@ const MarketplaceFarmStorePage = lazy(() =>
   import('@/pages/marketplace').then((m) => ({ default: m.FarmStorePage }))
 );
 
+// Help center pages
+const FAQPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.FAQPage }))
+);
+const ShippingPolicyPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.ShippingPolicyPage }))
+);
+const RefundPolicyPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.RefundPolicyPage }))
+);
+const ContactPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.ContactPage }))
+);
+const SellerRegistrationPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.SellerRegistrationPage }))
+);
+const SellerGuidePage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.SellerGuidePage }))
+);
+const QualityStandardsPage = lazy(() =>
+  import('@/pages/marketplace/help').then((m) => ({ default: m.QualityStandardsPage }))
+);
+
 const CartPage = lazy(() =>
   import('@/pages/marketplace').then((m) => ({ default: m.CartPage }))
 );
@@ -397,6 +420,14 @@ export function AppRoutes() {
             <Route path="products/:slug" element={<MarketplaceProductDetailPage />} />
             <Route path="farms" element={<MarketplaceFarmsDiscoveryPage />} />
             <Route path="farms/:farmId" element={<MarketplaceFarmStorePage />} />
+            {/* Help center pages */}
+            <Route path="faq" element={<FAQPage />} />
+            <Route path="shipping-policy" element={<ShippingPolicyPage />} />
+            <Route path="refund-policy" element={<RefundPolicyPage />} />
+            <Route path="contact" element={<ContactPage />} />
+            <Route path="sell" element={<SellerRegistrationPage />} />
+            <Route path="seller-guide" element={<SellerGuidePage />} />
+            <Route path="quality-standards" element={<QualityStandardsPage />} />
             <Route
               path="cart"
               element={(
