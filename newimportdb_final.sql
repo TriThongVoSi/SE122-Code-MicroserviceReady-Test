@@ -252,8 +252,8 @@ INSERT INTO seasons
      initial_plant_count, current_plant_count, expected_yield_kg, actual_yield_kg, budget_amount, notes, created_at)
 VALUES
     ('Mùa vụ Ngô Luân Canh 2026', @plot_anphu_corn_id, @crop_corn_id, @variety_corn_lvn10_id,
-     '2026-02-10', '2026-06-20', NULL, 'ACTIVE', 52000, 50300, 4100.00, NULL, 36500000.00,
-     'Luân canh sau lúa để giảm áp lực sâu bệnh và cải thiện hữu cơ đất.', '2026-02-01 08:00:00');
+     '2026-02-10', '2026-06-20', '2026-06-24', 'COMPLETED', 52000, 50300, 4100.00, 960.00, 36500000.00,
+     'Đã hoàn tất thu sớm một phần và xuất hết cho hợp đồng sỉ; giữ làm dữ liệu lịch sử/kho.', '2026-02-01 08:00:00');
 SET @season_corn_2026_id = LAST_INSERT_ID();
 
 INSERT INTO seasons
@@ -261,7 +261,7 @@ INSERT INTO seasons
      initial_plant_count, current_plant_count, expected_yield_kg, actual_yield_kg, budget_amount, notes, created_at)
 VALUES
     ('Mùa vụ Rau Xanh Mưa Sớm 2026', @plot_binhminh_leafy_id, @crop_leafy_id, @variety_leafy_id,
-     '2026-05-05', '2026-06-20', NULL, 'ACTIVE', 24000, 23800, 1800.00, NULL, 18500000.00,
+     '2026-05-05', '2026-07-03', NULL, 'ACTIVE', 24000, 23800, 1800.00, NULL, 18500000.00,
      'Vụ rau phục vụ đơn hàng định kỳ cho cửa hàng thực phẩm an toàn.', '2026-05-01 06:45:00');
 SET @season_leafy_2026_id = LAST_INSERT_ID();
 
@@ -283,19 +283,19 @@ VALUES (@employee_minhquan_user_id, @season_rice_2026_id, 'Kiểm tra mực nư�
 SET @task_rice_water_id = LAST_INSERT_ID();
 
 INSERT INTO tasks (user_id, season_id, title, description, planned_date, due_date, status, actual_start_date, actual_end_date, notes, created_at)
-VALUES (@employee_lanthao_user_id, @season_rice_2026_id, 'Bón phân hữu cơ vi sinh đợt 2', 'Bón theo hàng, ưu tiên khu vực sinh trưởng chậm.', '2026-06-07', '2026-06-08', 'IN_PROGRESS', '2026-06-07', NULL, 'Đang hoàn thành khu ruộng phía đông.', '2026-06-02 07:10:00');
+VALUES (@employee_lanthao_user_id, @season_rice_2026_id, 'Bón phân hữu cơ vi sinh đợt 2', 'Bón theo hàng, ưu tiên khu vực sinh trưởng chậm.', '2026-06-25', '2026-06-27', 'IN_PROGRESS', '2026-06-25', NULL, 'Đang hoàn thành khu ruộng phía đông.', '2026-06-24 07:10:00');
 SET @task_rice_fertilizer_id = LAST_INSERT_ID();
 
 INSERT INTO tasks (user_id, season_id, title, description, planned_date, due_date, status, actual_start_date, actual_end_date, notes, created_at)
-VALUES (@employee_minhquan_user_id, @season_rice_2026_id, 'Phun phòng đạo ôn bằng thuốc sinh học', 'Phun đúng liều, giữ khoảng cách an toàn với kênh tưới.', '2026-05-28', '2026-05-30', 'OVERDUE', NULL, NULL, 'Cần xử lý ngay vì độ ẩm ruộng cao.', '2026-05-24 09:00:00');
+VALUES (@employee_minhquan_user_id, @season_rice_2026_id, 'Phun phòng đạo ôn bằng thuốc sinh học', 'Phun đúng liều, giữ khoảng cách an toàn với kênh tưới.', '2026-06-24', '2026-06-25', 'OVERDUE', NULL, NULL, 'Cần xử lý ngay vì độ ẩm ruộng cao.', '2026-06-24 09:00:00');
 SET @task_rice_blast_id = LAST_INSERT_ID();
 
 INSERT INTO tasks (user_id, season_id, title, description, planned_date, due_date, status, actual_start_date, actual_end_date, notes, created_at)
-VALUES (@employee_lanthao_user_id, @season_corn_2026_id, 'Làm cỏ hàng ngô giai đoạn trổ cờ', 'Dọn cỏ ven rãnh và giữ lớp phủ hữu cơ.', '2026-06-10', '2026-06-12', 'PENDING', NULL, NULL, 'Chuẩn bị nhân công sáng sớm để tránh nắng.', '2026-06-03 08:00:00');
+VALUES (@employee_lanthao_user_id, @season_corn_2026_id, 'Làm cỏ hàng ngô giai đoạn trổ cờ', 'Dọn cỏ ven rãnh và giữ lớp phủ hữu cơ.', '2026-06-22', '2026-06-24', 'DONE', '2026-06-22', '2026-06-24', 'Hoàn tất trước khi chốt thu sớm và đóng mùa vụ.', '2026-06-20 08:00:00');
 SET @task_corn_weeding_id = LAST_INSERT_ID();
 
 INSERT INTO tasks (user_id, season_id, title, description, planned_date, due_date, status, actual_start_date, actual_end_date, notes, created_at)
-VALUES (@employee_minhquan_user_id, @season_leafy_2026_id, 'Thu hoạch rau xanh lứa đầu', 'Cắt rau theo lô, cân riêng phần loại 1 và loại 2.', '2026-06-18', '2026-06-19', 'PENDING', NULL, NULL, 'Chuẩn bị thùng nhựa sạch và xe lạnh.', '2026-06-04 08:30:00');
+VALUES (@employee_minhquan_user_id, @season_leafy_2026_id, 'Thu hoạch rau xanh lứa tiếp theo', 'Cắt rau theo lô, cân riêng phần loại 1 và loại 2.', '2026-06-28', '2026-06-29', 'PENDING', NULL, NULL, 'Chuẩn bị thùng nhựa sạch và xe lạnh cho lứa sau ngày demo.', '2026-06-24 08:30:00');
 SET @task_leafy_harvest_id = LAST_INSERT_ID();
 
 INSERT INTO tasks (user_id, season_id, title, description, planned_date, due_date, status, actual_start_date, actual_end_date, notes, created_at)
@@ -305,16 +305,16 @@ SET @task_soy_drying_id = LAST_INSERT_ID();
 INSERT INTO field_logs (season_id, log_date, log_type, notes, created_by_user_id, created_at)
 VALUES
     (@season_rice_2026_id, '2026-05-20', 'GROWTH', 'Lúa đẻ nhánh đều, khu giữa ruộng xanh đậm hơn mép bờ.', @farmer_anphu_user_id, '2026-05-20 17:30:00'),
-    (@season_rice_2026_id, '2026-06-04', 'IRRIGATE', 'Điều tiết nước sau mưa, giữ mực nước 4-5 cm.', @employee_minhquan_user_id, '2026-06-04 11:00:00'),
-    (@season_corn_2026_id, '2026-05-28', 'WEED', 'Làm cỏ ven rãnh, bổ sung lớp phủ rơm ở hàng giữa.', @employee_lanthao_user_id, '2026-05-28 16:40:00'),
-    (@season_leafy_2026_id, '2026-06-01', 'PEST', 'Phát hiện rệp mềm rải rác, ưu tiên bẫy vàng trước khi phun sinh học.', @farmer_binhminh_user_id, '2026-06-01 10:20:00'),
+    (@season_rice_2026_id, '2026-06-25', 'IRRIGATE', 'Điều tiết nước sau mưa, giữ mực nước 4-5 cm.', @employee_minhquan_user_id, '2026-06-25 11:00:00'),
+    (@season_corn_2026_id, '2026-06-24', 'HARVEST', 'Chốt thu sớm phần ngô đạt chuẩn và đóng mùa vụ sau khi xuất hợp đồng sỉ.', @employee_lanthao_user_id, '2026-06-24 16:40:00'),
+    (@season_leafy_2026_id, '2026-06-24', 'PEST', 'Phát hiện rệp mềm rải rác, ưu tiên bẫy vàng trước khi phun sinh học.', @farmer_binhminh_user_id, '2026-06-24 10:20:00'),
     (@season_soy_2026_id, '2026-03-22', 'HARVEST', 'Thu hoạch đậu nành khi trái khô đồng đều, thất thoát thấp.', @employee_lanthao_user_id, '2026-03-22 17:10:00');
 
 INSERT INTO expenses (user_id, season_id, task_id, category, item_name, unit_price, quantity, total_cost, amount, payment_status, note, expense_date, created_at)
 VALUES
-    (@farmer_anphu_user_id, @season_rice_2026_id, @task_rice_fertilizer_id, 'FERTILIZER', 'Phân hữu cơ vi sinh Mekong Bio', 185000.00, 18, 3330000.00, 3330000.00, 'PAID', 'Mua theo hợp đồng vật tư tháng 5.', '2026-05-18', '2026-05-18 09:00:00'),
-    (@farmer_anphu_user_id, @season_rice_2026_id, @task_rice_blast_id, 'PESTICIDE', 'Chế phẩm sinh học phòng đạo ôn SafeRice', 240000.00, 6, 1440000.00, 1440000.00, 'UNPAID', 'Đợi đối chiếu sau khi phun xong.', '2026-05-27', '2026-05-27 14:00:00'),
-    (@farmer_anphu_user_id, @season_corn_2026_id, @task_corn_weeding_id, 'LABOR', 'Công làm cỏ hàng ngô', 320000.00, 3, 960000.00, 960000.00, 'PENDING', 'Dự kiến trả cuối tuần.', '2026-06-03', '2026-06-03 09:30:00'),
+    (@farmer_anphu_user_id, @season_rice_2026_id, @task_rice_fertilizer_id, 'FERTILIZER', 'Phân hữu cơ vi sinh Mekong Bio', 185000.00, 18, 3330000.00, 3330000.00, 'PAID', 'Mua theo hợp đồng vật tư tháng 5, xuất dùng cho đợt bón sát ngày demo.', '2026-06-24', '2026-06-24 09:00:00'),
+    (@farmer_anphu_user_id, @season_rice_2026_id, @task_rice_blast_id, 'PESTICIDE', 'Chế phẩm sinh học phòng đạo ôn SafeRice', 240000.00, 6, 1440000.00, 1440000.00, 'UNPAID', 'Đợi đối chiếu sau khi phun xong.', '2026-06-24', '2026-06-24 14:00:00'),
+    (@farmer_anphu_user_id, @season_corn_2026_id, @task_corn_weeding_id, 'LABOR', 'Công làm cỏ hàng ngô', 320000.00, 3, 960000.00, 960000.00, 'PAID', 'Đã thanh toán khi hoàn tất mùa vụ ngô.', '2026-06-24', '2026-06-24 09:30:00'),
     (@farmer_binhminh_user_id, @season_leafy_2026_id, NULL, 'SEED', 'Hạt giống cải xanh mưa sớm', 95000.00, 5, 475000.00, 475000.00, 'PAID', 'Gieo bổ sung khu nhà lưới phía tây.', '2026-05-04', '2026-05-04 07:15:00'),
     (@farmer_binhminh_user_id, @season_soy_2026_id, @task_soy_drying_id, 'LABOR', 'Công phơi và sàng đậu nành', 280000.00, 4, 1120000.00, 1120000.00, 'PAID', 'Hoàn tất sau khi nhập kho.', '2026-03-24', '2026-03-24 18:00:00');
 SET @expense_rice_biofungicide_id = (
@@ -332,15 +332,19 @@ VALUES (@season_soy_2026_id, '2026-03-22', 2240.00, 16000.00, 'A', 'Đậu nành
 SET @harvest_soy_2026_id = LAST_INSERT_ID();
 
 INSERT INTO harvests (season_id, harvest_date, quantity, unit, grade, note, created_at)
-VALUES (@season_leafy_2026_id, '2026-06-02', 620.00, 18000.00, 'B+', 'Thu tỉa lứa sớm phục vụ đơn đặt trước.', '2026-06-02 06:30:00');
+VALUES (@season_leafy_2026_id, '2026-06-23', 620.00, 18000.00, 'B+', 'Thu tỉa lứa sớm phục vụ đơn đặt trước, mùa vụ vẫn còn lứa tiếp theo.', '2026-06-23 06:30:00');
 SET @harvest_leafy_2026_id = LAST_INSERT_ID();
 
+INSERT INTO harvests (season_id, harvest_date, quantity, unit, grade, note, created_at)
+VALUES (@season_corn_2026_id, '2026-06-24', 960.00, 30000.00, 'B', 'Thu sớm một phần ngô LVN10 để hoàn tất hợp đồng sỉ trước ngày demo.', '2026-06-24 15:30:00');
+SET @harvest_corn_2026_id = LAST_INSERT_ID();
+
 INSERT INTO incidents (season_id, reported_by, incident_type, severity, description, status, deadline, resolved_at, created_at)
-VALUES (@season_rice_2026_id, @employee_minhquan_user_id, 'DISEASE', 'HIGH', 'Xuất hiện vết bệnh nghi đạo ôn trên lá sau mưa kéo dài.', 'IN_PROGRESS', '2026-06-08', NULL, '2026-06-01 09:20:00');
+VALUES (@season_rice_2026_id, @employee_minhquan_user_id, 'DISEASE', 'HIGH', 'Xuất hiện vết bệnh nghi đạo ôn trên lá sau mưa kéo dài.', 'IN_PROGRESS', '2026-06-28', NULL, '2026-06-24 09:20:00');
 SET @incident_rice_blast_id = LAST_INSERT_ID();
 
 INSERT INTO incidents (season_id, reported_by, incident_type, severity, description, status, deadline, resolved_at, created_at)
-VALUES (@season_leafy_2026_id, @farmer_binhminh_user_id, 'PEST', 'MEDIUM', 'Rệp mềm xuất hiện ở luống rau gần cửa nhà lưới.', 'OPEN', '2026-06-07', NULL, '2026-06-01 10:15:00');
+VALUES (@season_leafy_2026_id, @farmer_binhminh_user_id, 'PEST', 'MEDIUM', 'Rệp mềm xuất hiện ở luống rau gần cửa nhà lưới.', 'OPEN', '2026-06-29', NULL, '2026-06-24 10:15:00');
 SET @incident_leafy_aphid_id = LAST_INSERT_ID();
 
 INSERT INTO incidents (season_id, reported_by, incident_type, severity, description, status, deadline, resolved_at, created_at)
@@ -353,8 +357,8 @@ INSERT INTO disease_records
 VALUES
     (@season_rice_2026_id, @plot_anphu_rice_id, @crop_rice_id, @variety_om5451_id, @employee_minhquan_user_id,
      @incident_rice_blast_id, 'Đạo ôn lá', 'Vết bệnh hình thoi nhỏ trên lá giai đoạn đẻ nhánh.',
-     'HIGH', 'UNDER_TREATMENT', '2026-06-01 09:00:00', 430, 0.350, 'ha',
-     '/seed-evidence/disease/rice-blast-2026-06-01.jpg', 'Ưu tiên chế phẩm sinh học và rút nước nhẹ.', '2026-06-01 09:30:00', '2026-06-03 16:00:00');
+     'HIGH', 'UNDER_TREATMENT', '2026-06-24 09:00:00', 430, 0.350, 'ha',
+     '/seed-evidence/disease/rice-blast-2026-06-24.jpg', 'Ưu tiên chế phẩm sinh học và rút nước nhẹ.', '2026-06-24 09:30:00', '2026-06-25 16:00:00');
 SET @disease_rice_blast_id = LAST_INSERT_ID();
 
 -- =========================================================
@@ -428,11 +432,11 @@ SET @loc_binhminh_b02_id = LAST_INSERT_ID();
 INSERT INTO stock_movements (supply_lot_id, warehouse_id, location_id, movement_type, quantity, movement_date, season_id, task_id, note)
 VALUES
     (@lot_biofertilizer_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'IN', 60.000, '2026-05-18 08:30:00', @season_rice_2026_id, NULL, 'Nhập phân hữu cơ cho vụ lúa Hè Thu.'),
-    (@lot_biofertilizer_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'OUT', 18.000, '2026-06-07 07:00:00', @season_rice_2026_id, @task_rice_fertilizer_id, 'Xuất cho bón đợt 2.'),
+    (@lot_biofertilizer_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'OUT', 18.000, '2026-06-25 07:00:00', @season_rice_2026_id, @task_rice_fertilizer_id, 'Xuất cho bón đợt 2.'),
     (@lot_saferice_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'IN', 12.000, '2026-05-27 13:00:00', @season_rice_2026_id, NULL, 'Nhập chế phẩm phòng đạo ôn gần hạn.'),
-    (@lot_saferice_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'OUT', 4.000, '2026-06-02 06:30:00', @season_rice_2026_id, @task_rice_blast_id, 'Xuất xử lý điểm bệnh đầu tiên.'),
+    (@lot_saferice_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'OUT', 4.000, '2026-06-25 06:30:00', @season_rice_2026_id, @task_rice_blast_id, 'Xuất xử lý điểm bệnh đầu tiên.'),
     (@lot_yellow_trap_id, @warehouse_binhminh_mixed_id, @loc_binhminh_b02_id, 'IN', 80.000, '2026-05-29 09:00:00', @season_leafy_2026_id, NULL, 'Nhập bẫy vàng cho nhà lưới.'),
-    (@lot_yellow_trap_id, @warehouse_binhminh_mixed_id, @loc_binhminh_b02_id, 'OUT', 24.000, '2026-06-01 09:30:00', @season_leafy_2026_id, NULL, 'Treo bẫy sau khi phát hiện rệp mềm.'),
+    (@lot_yellow_trap_id, @warehouse_binhminh_mixed_id, @loc_binhminh_b02_id, 'OUT', 24.000, '2026-06-24 09:30:00', @season_leafy_2026_id, NULL, 'Treo bẫy sau khi phát hiện rệp mềm.'),
     (@lot_seed_rice_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'IN', 520.000, '2026-03-20 08:00:00', @season_rice_2026_id, NULL, 'Nhập giống OM5451 cho Hè Thu.'),
     (@lot_seed_rice_id, @warehouse_anphu_input_id, @loc_anphu_input_a01_id, 'OUT', 410.000, '2026-04-15 06:00:00', @season_rice_2026_id, NULL, 'Xuất giống trước gieo sạ.');
 
@@ -447,10 +451,10 @@ INSERT INTO disease_treatments
     (disease_record_id, treated_at, method, supply_item_id, supply_lot_id, material_name, quantity_used, unit,
      cost_amount, expense_id, effectiveness, result_summary, next_review_at, notes, created_by_user_id, created_at, updated_at)
 VALUES
-    (@disease_rice_blast_id, '2026-06-02 06:30:00', 'Phun chế phẩm sinh học buổi sáng sớm',
+    (@disease_rice_blast_id, '2026-06-25 06:30:00', 'Phun chế phẩm sinh học buổi sáng sớm',
      @item_saferice_id, @lot_saferice_id, 'Chế phẩm sinh học phòng đạo ôn SafeRice', 4.000, 'chai',
      960000.00, @expense_rice_biofungicide_id, 'GOOD', 'Vết bệnh không lan thêm sau 48 giờ đầu.',
-     '2026-06-08', 'Tiếp tục theo dõi khu ruộng phía đông.', @farmer_anphu_user_id, '2026-06-02 10:00:00', '2026-06-04 17:00:00');
+     '2026-06-28', 'Tiếp tục theo dõi khu ruộng phía đông.', @farmer_anphu_user_id, '2026-06-25 10:00:00', '2026-06-25 17:00:00');
 
 -- =========================================================
 -- 6. Sustainability
@@ -490,8 +494,8 @@ VALUES
      '/seed-evidence/fdn/water-rice-2026.pdf', 'Đạm từ nước tưới theo phân tích mẫu.', @farmer_anphu_user_id, '2026-05-05 16:30:00'),
     (@season_soy_2026_id, @plot_binhminh_soy_id, 'BIOLOGICAL_FIXATION', 126.0000, '2026-02-10', FALSE, 'system-estimate', 'SYSTEM_ESTIMATED',
      '/seed-evidence/fdn/soy-fixation-2026.pdf', 'Ước tính cố định đạm sinh học của đậu nành.', @farmer_binhminh_user_id, '2026-02-10 08:00:00'),
-    (@season_leafy_2026_id, @plot_binhminh_leafy_id, 'CONTROL_SUPPLY', 4.2000, '2026-06-01', TRUE, 'pest-control-log', 'USER_ENTERED',
-     '/seed-evidence/fdn/leafy-control-2026.pdf', 'Đầu vào kiểm soát rệp, không tính như phân bón chính.', @farmer_binhminh_user_id, '2026-06-01 11:00:00');
+    (@season_leafy_2026_id, @plot_binhminh_leafy_id, 'CONTROL_SUPPLY', 4.2000, '2026-06-24', TRUE, 'pest-control-log', 'USER_ENTERED',
+     '/seed-evidence/fdn/leafy-control-2026.pdf', 'Đầu vào kiểm soát rệp, không tính như phân bón chính.', @farmer_binhminh_user_id, '2026-06-24 11:00:00');
 
 -- =========================================================
 -- 7. Product warehouse and traceability
@@ -528,9 +532,9 @@ INSERT INTO product_warehouse_lots
 VALUES
     ('PW-BINHMINH-LEAFY-2026-001', NULL, 'Rau cải xanh Bình Minh', 'Thùng 5 kg', @season_leafy_2026_id, @farm_binhminh_id,
      @plot_binhminh_leafy_id, @harvest_leafy_2026_id, @warehouse_binhminh_mixed_id, @loc_binhminh_b02_id,
-     '2026-06-02', '2026-06-02 09:00:00', 'kg', 620.000, 410.000, 'B+', 'HOLD',
-     '{"farm":"Trang trại Rau Sạch Bình Minh","plot":"Nhà Lưới Rau Ăn Lá 01","season":"Mùa vụ Rau Xanh Mưa Sớm 2026","harvest_date":"2026-06-02"}',
-     'Đang giữ kiểm tra chất lượng trước khi mở bán rộng.', 'HOLD', @farmer_binhminh_user_id, '2026-06-02 09:00:00', '2026-06-03 10:00:00');
+     '2026-06-23', '2026-06-23 09:00:00', 'kg', 620.000, 410.000, 'B+', 'HOLD',
+     '{"farm":"Trang trại Rau Sạch Bình Minh","plot":"Nhà Lưới Rau Ăn Lá 01","season":"Mùa vụ Rau Xanh Mưa Sớm 2026","harvest_date":"2026-06-23"}',
+     'Đang giữ kiểm tra chất lượng trước khi mở bán rộng.', 'HOLD', @farmer_binhminh_user_id, '2026-06-23 09:00:00', '2026-06-25 10:00:00');
 SET @pwlot_leafy_id = LAST_INSERT_ID();
 
 INSERT INTO product_warehouse_lots
@@ -538,11 +542,23 @@ INSERT INTO product_warehouse_lots
      harvested_at, received_at, unit, initial_quantity, on_hand_quantity, grade, quality_status, traceability_data, note,
      status, created_by, created_at, updated_at)
 VALUES
+    ('PW-BINHMINH-LEAFY-2026-REJ-001', NULL, 'Rau cải xanh Bình Minh', 'Thùng 5 kg', @season_leafy_2026_id, @farm_binhminh_id,
+     @plot_binhminh_leafy_id, NULL, @warehouse_binhminh_mixed_id, @loc_binhminh_b02_id,
+     '2026-06-24', '2026-06-25 14:30:00', 'kg', 0.000, 0.000, 'C', 'HOLD',
+     '{"farm":"Trang trại Rau Sạch Bình Minh","plot":"Nhà Lưới Rau Ăn Lá 01","season":"Mùa vụ Rau Xanh Mưa Sớm 2026","issue":"Thiếu liên kết harvest và tồn kho không khớp"}',
+     'Lô nháp dùng cho kịch bản admin từ chối do thiếu thông tin truy xuất và tồn kho không khớp.', 'HOLD', @farmer_binhminh_user_id, '2026-06-25 14:30:00', '2026-06-25 15:30:00');
+SET @pwlot_leafy_rejected_id = LAST_INSERT_ID();
+
+INSERT INTO product_warehouse_lots
+    (lot_code, product_id, product_name, product_variant, season_id, farm_id, plot_id, harvest_id, warehouse_id, location_id,
+     harvested_at, received_at, unit, initial_quantity, on_hand_quantity, grade, quality_status, traceability_data, note,
+     status, created_by, created_at, updated_at)
+VALUES
     ('PW-ANPHU-CORN-LVN10-2026-001', NULL, 'Ngô hạt LVN10 An Phú', 'Bao 25 kg', @season_corn_2026_id, @farm_anphu_id,
-     @plot_anphu_corn_id, NULL, @warehouse_anphu_product_id, @loc_anphu_product_p01_id,
-     '2026-06-01', '2026-06-01 16:00:00', 'kg', 960.000, 0.000, 'B', 'PASSED',
-     '{"farm":"Trang trại Lúa Hữu Cơ An Phú","plot":"Thửa Ngô Luân Canh 02","season":"Mùa vụ Ngô Luân Canh 2026","harvest_date":"2026-06-01"}',
-     'Lô đã xuất hết cho hợp đồng sỉ.', 'DEPLETED', @farmer_anphu_user_id, '2026-06-01 16:00:00', '2026-06-04 10:00:00');
+     @plot_anphu_corn_id, @harvest_corn_2026_id, @warehouse_anphu_product_id, @loc_anphu_product_p01_id,
+     '2026-06-24', '2026-06-24 16:00:00', 'kg', 960.000, 0.000, 'B', 'PASSED',
+     '{"farm":"Trang trại Lúa Hữu Cơ An Phú","plot":"Thửa Ngô Luân Canh 02","season":"Mùa vụ Ngô Luân Canh 2026","harvest_date":"2026-06-24"}',
+     'Lô đã xuất hết cho hợp đồng sỉ.', 'DEPLETED', @farmer_anphu_user_id, '2026-06-24 16:00:00', '2026-06-25 10:00:00');
 SET @pwlot_corn_id = LAST_INSERT_ID();
 
 INSERT INTO product_warehouse_transactions
@@ -552,10 +568,10 @@ VALUES
     (@pwlot_rice_st25_id, 'STOCK_OUT', 2420.000, 'kg', 4820.000, 'WHOLESALE_ORDER', 'WS-2025-041', 'Xuất cho kênh bán sỉ trước khi mở marketplace.', @farmer_anphu_user_id, '2025-04-12 09:00:00'),
     (@pwlot_soy_ags398_id, 'RECEIPT_FROM_HARVEST', 2240.000, 'kg', 2240.000, 'HARVEST', @harvest_soy_2026_id, 'Nhập kho đậu nành sau phơi.', @farmer_binhminh_user_id, '2026-03-24 08:05:00'),
     (@pwlot_soy_ags398_id, 'STOCK_OUT', 1920.000, 'kg', 320.000, 'CONTRACT', 'CT-BM-2026-018', 'Xuất phần lớn cho hợp đồng chuỗi thực phẩm.', @farmer_binhminh_user_id, '2026-05-10 09:00:00'),
-    (@pwlot_leafy_id, 'RECEIPT_FROM_HARVEST', 620.000, 'kg', 620.000, 'HARVEST', @harvest_leafy_2026_id, 'Nhập lứa rau thu tỉa sớm.', @farmer_binhminh_user_id, '2026-06-02 09:05:00'),
-    (@pwlot_leafy_id, 'ADJUSTMENT', 410.000, 'kg', 410.000, 'QUALITY_CHECK', 'QC-BM-2026-0602', 'Loại ra phần rau dập sau kiểm tra.', @farmer_binhminh_user_id, '2026-06-03 10:00:00'),
-    (@pwlot_corn_id, 'RECEIPT_FROM_HARVEST', 960.000, 'kg', 960.000, 'MANUAL', 'PARTIAL-CORN-2026-0601', 'Nhập lô ngô thu sớm.', @farmer_anphu_user_id, '2026-06-01 16:05:00'),
-    (@pwlot_corn_id, 'STOCK_OUT', 960.000, 'kg', 0.000, 'WHOLESALE_ORDER', 'WS-2026-099', 'Xuất hết cho hợp đồng sỉ.', @farmer_anphu_user_id, '2026-06-04 10:00:00');
+    (@pwlot_leafy_id, 'RECEIPT_FROM_HARVEST', 620.000, 'kg', 620.000, 'HARVEST', @harvest_leafy_2026_id, 'Nhập lứa rau thu tỉa sớm.', @farmer_binhminh_user_id, '2026-06-23 09:05:00'),
+    (@pwlot_leafy_id, 'ADJUSTMENT', 410.000, 'kg', 410.000, 'QUALITY_CHECK', 'QC-BM-2026-0625', 'Loại ra phần rau dập sau kiểm tra.', @farmer_binhminh_user_id, '2026-06-25 10:00:00'),
+    (@pwlot_corn_id, 'RECEIPT_FROM_HARVEST', 960.000, 'kg', 960.000, 'HARVEST', @harvest_corn_2026_id, 'Nhập lô ngô thu sớm.', @farmer_anphu_user_id, '2026-06-24 16:05:00'),
+    (@pwlot_corn_id, 'STOCK_OUT', 960.000, 'kg', 0.000, 'WHOLESALE_ORDER', 'WS-2026-099', 'Xuất hết cho hợp đồng sỉ.', @farmer_anphu_user_id, '2026-06-25 10:00:00');
 
 -- =========================================================
 -- 8. Marketplace
@@ -602,8 +618,8 @@ VALUES
      26000.00, 'kg', 410.000, '/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg',
      '["/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg"]',
      @farmer_binhminh_user_id, @farm_binhminh_id, @season_leafy_2026_id, @pwlot_leafy_id,
-     TRUE, 0.0, 0, 'PENDING_REVIEW', NULL, '2026-06-03 11:00:00', @farmer_binhminh_user_id,
-     NULL, '2026-06-03 11:00:00', '2026-06-03 11:00:00');
+     TRUE, 0.0, 0, 'PENDING_REVIEW', NULL, '2026-06-25 11:00:00', @farmer_binhminh_user_id,
+     NULL, '2026-06-25 11:00:00', '2026-06-25 11:00:00');
 SET @product_leafy_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_products
@@ -617,9 +633,24 @@ VALUES
      30000.00, 'kg', 0.000, '/demo-evidence/products/corn.jpg',
      '["/demo-evidence/products/corn.jpg","/demo-evidence/products/corn field.jpg"]',
      @farmer_anphu_user_id, @farm_anphu_id, @season_corn_2026_id, @pwlot_corn_id,
-     TRUE, 0.0, 0, 'SOLD_OUT', NULL, '2026-06-04 10:15:00', @farmer_anphu_user_id,
-     '2026-06-02 08:00:00', '2026-06-01 18:00:00', '2026-06-04 10:15:00');
+     TRUE, 0.0, 0, 'SOLD_OUT', NULL, '2026-06-25 10:15:00', @farmer_anphu_user_id,
+     '2026-06-24 18:00:00', '2026-06-24 18:00:00', '2026-06-25 10:15:00');
 SET @product_corn_id = LAST_INSERT_ID();
+
+INSERT INTO marketplace_products
+    (version, slug, name, category, short_description, description, price, unit, stock_quantity, image_url, image_urls_json,
+     farmer_user_id, farm_id, season_id, lot_id, traceable, average_rating, rating_count, status, status_reason,
+     status_changed_at, status_changed_by_user_id, published_at, created_at, updated_at)
+VALUES
+    (0, 'rau-cai-xanh-binh-minh-2026-lo-bi-tu-choi', 'Rau cải xanh Bình Minh - lô cần bổ sung hồ sơ', 'VEGETABLE',
+     'Lô demo bị từ chối để admin kiểm tra lý do duyệt sản phẩm.',
+     'Dùng cho kịch bản admin từ chối sản phẩm khi ảnh chưa đạt, thông tin lô truy xuất thiếu và tồn kho không khớp.',
+     26000.00, 'kg', 0.000, '/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg',
+     '["/seed-evidence/products/rau-cai-xanh-binh-minh-2026.jpg"]',
+     @farmer_binhminh_user_id, @farm_binhminh_id, @season_leafy_2026_id, @pwlot_leafy_rejected_id,
+     TRUE, 0.0, 0, 'REJECTED', 'Ảnh sản phẩm chưa đạt, thiếu thông tin lô truy xuất và tồn kho không khớp.',
+     '2026-06-25 15:30:00', @admin_user_id, NULL, '2026-06-25 14:45:00', '2026-06-25 15:30:00');
+SET @product_leafy_rejected_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_carts (user_id, created_at, updated_at)
 VALUES (@buyer_nongsanxanh_user_id, '2026-06-04 09:00:00', '2026-06-04 09:20:00');
@@ -643,8 +674,12 @@ VALUES ('MOG-2026-ANPHU-0001', @buyer_nongsanxanh_user_id, 'nongsanxanh-20260520
 SET @order_group_1_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_order_groups (group_code, buyer_user_id, idempotency_key, request_fingerprint, created_at)
-VALUES ('MOG-2026-ANTOAN-0002', @buyer_thucphamantoan_user_id, 'thucphamantoan-20260604-bank-transfer', 'fp-thucphamantoan-20260604-bank-transfer', '2026-06-04 10:00:00');
+VALUES ('MOG-2026-ANTOAN-0002', @buyer_thucphamantoan_user_id, 'thucphamantoan-20260625-bank-transfer', 'fp-thucphamantoan-20260625-bank-transfer', '2026-06-25 10:00:00');
 SET @order_group_2_id = LAST_INSERT_ID();
+
+INSERT INTO marketplace_order_groups (group_code, buyer_user_id, idempotency_key, request_fingerprint, created_at)
+VALUES ('MOG-2026-ANPHU-0003', @buyer_nongsanxanh_user_id, 'nongsanxanh-20260625-preparing-rice', 'fp-nongsanxanh-20260625-preparing-rice', '2026-06-25 09:10:00');
+SET @order_group_3_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_orders
     (order_group_id, order_code, buyer_user_id, farmer_user_id, status, payment_method, payment_verification_status,
@@ -673,10 +708,10 @@ INSERT INTO marketplace_orders
      shipping_address_line, note, subtotal, shipping_fee, total_amount, created_at, updated_at)
 VALUES
     (@order_group_2_id, 'MPO-2026-0002', @buyer_thucphamantoan_user_id, @farmer_anphu_user_id, 'PAYMENT_SUBMITTED', 'BANK_TRANSFER', 'SUBMITTED',
-     'proof-mpo-2026-0002.jpg', 'image/jpeg', 'storage/marketplace/payment-proofs/MPO-2026-0002/proof.jpg', '2026-06-04 10:15:00',
+     'proof-mpo-2026-0002.jpg', 'image/jpeg', 'storage/marketplace/payment-proofs/MPO-2026-0002/proof.jpg', '2026-06-25 10:15:00',
      NULL, NULL, 'Đang chờ admin xác minh giao dịch chuyển khoản.', 'Công ty Thực Phẩm An Toàn', '0904000002',
      '15 Quốc lộ 13, Hiệp Bình Chánh, Thành phố Thủ Đức, Hồ Chí Minh', 'Đơn đang chờ xác minh thanh toán.',
-     2760000.00, 65000.00, 2825000.00, '2026-06-04 10:00:00', '2026-06-04 10:15:00');
+     2760000.00, 65000.00, 2825000.00, '2026-06-25 10:00:00', '2026-06-25 10:15:00');
 SET @order_payment_submitted_rice_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_order_items
@@ -692,11 +727,11 @@ INSERT INTO marketplace_orders
      payment_verified_at, payment_verified_by_user_id, payment_verification_note, shipping_recipient_name, shipping_phone,
      shipping_address_line, note, subtotal, shipping_fee, total_amount, created_at, updated_at)
 VALUES
-    (@order_group_1_id, 'MPO-2026-0003', @buyer_nongsanxanh_user_id, @farmer_anphu_user_id, 'PREPARING', 'BANK_TRANSFER', 'VERIFIED',
-     'proof-mpo-2026-0003.png', 'image/png', 'storage/marketplace/payment-proofs/MPO-2026-0003/proof.png', '2026-05-21 09:20:00',
-     '2026-05-21 10:05:00', @admin_user_id, 'Đã đối chiếu sao kê, cho phép chuẩn bị hàng.', 'Cửa hàng Nông Sản Xanh', '0904000001',
+    (@order_group_3_id, 'MPO-2026-0003', @buyer_nongsanxanh_user_id, @farmer_anphu_user_id, 'PREPARING', 'BANK_TRANSFER', 'VERIFIED',
+     'proof-mpo-2026-0003.png', 'image/png', 'storage/marketplace/payment-proofs/MPO-2026-0003/proof.png', '2026-06-25 09:20:00',
+     '2026-06-25 10:05:00', @admin_user_id, 'Đã đối chiếu sao kê, cho phép chuẩn bị hàng.', 'Cửa hàng Nông Sản Xanh', '0904000001',
      '88 Nguyễn Lương Bằng, Tân Phú, Quận 7, Hồ Chí Minh', 'Đơn đã xác minh, farmer đang đóng gói.',
-     1380000.00, 45000.00, 1425000.00, '2026-05-21 09:10:00', '2026-05-21 10:10:00');
+     1380000.00, 45000.00, 1425000.00, '2026-06-25 09:10:00', '2026-06-25 10:10:00');
 SET @order_preparing_rice_id = LAST_INSERT_ID();
 
 INSERT INTO marketplace_order_items
@@ -727,15 +762,15 @@ VALUES
 INSERT INTO task_progress_logs (task_id, employee_user_id, progress_percent, note, evidence_url, logged_at)
 VALUES
     (@task_rice_water_id, @employee_minhquan_user_id, 100, 'Hoàn tất đo mực nước và gửi ảnh hiện trường.', '/seed-evidence/tasks/rice-water-2026-06-04.jpg', '2026-06-04 11:15:00'),
-    (@task_rice_fertilizer_id, @employee_lanthao_user_id, 55, 'Đã bón xong khu phía đông, còn khu phía nam.', '/seed-evidence/tasks/rice-fertilizer-2026-06-07.jpg', '2026-06-07 10:30:00'),
+    (@task_rice_fertilizer_id, @employee_lanthao_user_id, 55, 'Đã bón xong khu phía đông, còn khu phía nam.', '/seed-evidence/tasks/rice-fertilizer-2026-06-25.jpg', '2026-06-25 10:30:00'),
     (@task_soy_drying_id, @employee_lanthao_user_id, 100, 'Đậu nành đã đạt độ khô trước khi nhập kho.', '/seed-evidence/tasks/soy-drying-2026-03-24.jpg', '2026-03-24 16:45:00');
 
 INSERT INTO payroll_records
     (employee_user_id, season_id, period_start, period_end, total_assigned_tasks, total_completed_tasks,
      wage_per_task, total_amount, generated_at, note)
 VALUES
-    (@employee_minhquan_user_id, @season_rice_2026_id, '2026-06-01', '2026-06-30', 2, 1, 180000.00, 180000.00, '2026-06-05 18:00:00', 'Một việc đã hoàn tất, một việc quá hạn cần xử lý.'),
-    (@employee_lanthao_user_id, @season_rice_2026_id, '2026-06-01', '2026-06-30', 1, 0, 180000.00, 0.00, '2026-06-05 18:05:00', 'Công việc bón phân đang thực hiện.'),
+    (@employee_minhquan_user_id, @season_rice_2026_id, '2026-06-01', '2026-06-30', 2, 1, 180000.00, 180000.00, '2026-06-25 18:00:00', 'Một việc đã hoàn tất, một việc quá hạn cần xử lý.'),
+    (@employee_lanthao_user_id, @season_rice_2026_id, '2026-06-01', '2026-06-30', 1, 0, 180000.00, 0.00, '2026-06-25 18:05:00', 'Công việc bón phân đang thực hiện.'),
     (@employee_lanthao_user_id, @season_soy_2026_id, '2026-03-01', '2026-03-31', 1, 1, 170000.00, 170000.00, '2026-03-31 18:00:00', 'Hoàn tất phơi và sàng đậu nành.');
 
 INSERT INTO alerts
@@ -744,7 +779,7 @@ INSERT INTO alerts
 VALUES
     ('DISEASE_RISK', 'HIGH', 'OPEN', @farm_anphu_id, @season_rice_2026_id, @plot_anphu_rice_id, @crop_rice_id,
      'Nguy cơ đạo ôn tăng sau mưa', 'Độ ẩm ruộng cao và đã có ghi nhận vết bệnh trên lá lúa.',
-     'OPEN_TASK', '/farmer/seasons', CONCAT('[', @farmer_anphu_user_id, ']'), '2026-06-01 09:45:00', '2026-06-01 09:50:00');
+     'OPEN_TASK', '/farmer/seasons', CONCAT('[', @farmer_anphu_user_id, ']'), '2026-06-24 09:45:00', '2026-06-25 09:50:00');
 SET @alert_rice_blast_id = LAST_INSERT_ID();
 
 INSERT INTO alerts
@@ -753,16 +788,16 @@ INSERT INTO alerts
 VALUES
     ('INVENTORY_LOW_STOCK', 'MEDIUM', 'OPEN', @farm_binhminh_id, @season_soy_2026_id, @plot_binhminh_soy_id, @crop_soy_id,
      'Tồn kho đậu nành sắp thấp', 'Lô đậu nành AGS398 chỉ còn 320 kg sau các đơn gần đây.',
-     'VIEW_WAREHOUSE', '/farmer/product-warehouse', CONCAT('[', @farmer_binhminh_user_id, ']'), '2026-05-30 09:30:00', '2026-05-30 09:35:00');
+     'VIEW_WAREHOUSE', '/farmer/product-warehouse', CONCAT('[', @farmer_binhminh_user_id, ']'), '2026-06-24 09:30:00', '2026-06-24 09:35:00');
 SET @alert_soy_lowstock_id = LAST_INSERT_ID();
 
 INSERT INTO notifications (user_id, title, message, link, alert_id, created_at, read_at)
 VALUES
-    (@farmer_anphu_user_id, 'Cảnh báo đạo ôn trên lúa', 'Kiểm tra nhiệm vụ phun phòng đạo ôn đang quá hạn.', '/farmer/seasons', @alert_rice_blast_id, '2026-06-01 09:50:00', NULL),
-    (@farmer_binhminh_user_id, 'Tồn kho đậu nành sắp thấp', 'Cân nhắc cập nhật sản phẩm marketplace hoặc nhập thêm hàng.', '/farmer/product-warehouse', @alert_soy_lowstock_id, '2026-05-30 09:35:00', '2026-05-30 10:00:00'),
-    (@admin_user_id, 'Đơn chuyển khoản cần xác minh', 'Đơn MPO-2026-0002 đã gửi chứng từ thanh toán.', '/admin/marketplace/orders', NULL, '2026-06-04 10:18:00', NULL),
+    (@farmer_anphu_user_id, 'Cảnh báo đạo ôn trên lúa', 'Kiểm tra nhiệm vụ phun phòng đạo ôn đang quá hạn.', '/farmer/seasons', @alert_rice_blast_id, '2026-06-25 09:50:00', NULL),
+    (@farmer_binhminh_user_id, 'Tồn kho đậu nành sắp thấp', 'Cân nhắc cập nhật sản phẩm marketplace hoặc nhập thêm hàng.', '/farmer/product-warehouse', @alert_soy_lowstock_id, '2026-06-24 09:35:00', '2026-06-24 10:00:00'),
+    (@admin_user_id, 'Đơn chuyển khoản cần xác minh', 'Đơn MPO-2026-0002 đã gửi chứng từ thanh toán.', '/admin/marketplace/orders', NULL, '2026-06-25 10:18:00', NULL),
     (@buyer_nongsanxanh_user_id, 'Đơn hàng đã hoàn tất', 'Đơn MPO-2026-0001 đã giao thành công và có thể đánh giá.', '/buyer/orders', NULL, '2026-05-22 16:10:00', '2026-05-23 08:30:00'),
-    (@employee_minhquan_user_id, 'Công việc mới trong vụ lúa', 'Bạn có nhiệm vụ kiểm tra nước và theo dõi đạo ôn trong tuần này.', '/employee/tasks', NULL, '2026-06-01 08:00:00', NULL);
+    (@employee_minhquan_user_id, 'Công việc mới trong vụ lúa', 'Bạn có nhiệm vụ kiểm tra nước và theo dõi đạo ôn trong tuần này.', '/employee/tasks', NULL, '2026-06-24 08:00:00', NULL);
 
 INSERT INTO documents
     (title, url, description, crop, stage, topic, is_active, is_public, created_by, document_type,
@@ -790,12 +825,12 @@ SET @document_calendar_id = LAST_INSERT_ID();
 
 INSERT INTO document_favorites (user_id, document_id, created_at)
 VALUES
-    (@farmer_anphu_user_id, @document_rice_blast_id, '2026-06-01 10:00:00'),
+    (@farmer_anphu_user_id, @document_rice_blast_id, '2026-06-24 10:00:00'),
     (@farmer_binhminh_user_id, @document_soy_fdn_id, '2026-05-25 09:00:00');
 
 INSERT INTO document_recent_opens (user_id, document_id, opened_at)
 VALUES
-    (@farmer_anphu_user_id, @document_rice_blast_id, '2026-06-01 10:10:00'),
+    (@farmer_anphu_user_id, @document_rice_blast_id, '2026-06-24 10:10:00'),
     (@farmer_anphu_user_id, @document_calendar_id, '2026-05-28 08:30:00'),
     (@farmer_binhminh_user_id, @document_soy_fdn_id, '2026-05-25 09:10:00');
 
@@ -806,9 +841,9 @@ VALUES
      '{"email":"farmer@acm.local","role":"FARMER"}', 'Gắn dữ liệu seed vào tài khoản farmer mặc định của ApplicationInitConfig.', '127.0.0.1'),
     ('SEASON', @season_rice_2026_id, 'CREATE', 'farmer@acm.local', '2026-04-10 07:30:00',
      '{"season":"Mùa vụ Lúa Hè Thu 2026","status":"ACTIVE"}', 'Khởi tạo mùa vụ Hè Thu và kế hoạch chi phí.', '127.0.0.1'),
-    ('MARKETPLACE_ORDER', @order_payment_submitted_rice_id, 'PAYMENT_PROOF_SUBMITTED', 'buyer.thucphamantoan@example.com', '2026-06-04 10:15:00',
+    ('MARKETPLACE_ORDER', @order_payment_submitted_rice_id, 'PAYMENT_PROOF_SUBMITTED', 'buyer.thucphamantoan@example.com', '2026-06-25 10:15:00',
      '{"order_code":"MPO-2026-0002","payment_verification_status":"SUBMITTED"}', 'Buyer gửi chứng từ thanh toán chờ admin xác minh.', '127.0.0.1'),
-    ('PRODUCT_WAREHOUSE_LOT', @pwlot_soy_ags398_id, 'LOW_STOCK_REVIEW', 'farmer.binhminh@example.com', '2026-05-30 09:30:00',
+    ('PRODUCT_WAREHOUSE_LOT', @pwlot_soy_ags398_id, 'LOW_STOCK_REVIEW', 'farmer.binhminh@example.com', '2026-06-24 09:30:00',
      '{"lot_code":"PW-BINHMINH-SOY-AGS398-2026-001","on_hand_quantity":320}', 'Kiểm tra tồn kho thấp sau các đơn hàng.', '127.0.0.1');
 
 -- =========================================================
