@@ -6,6 +6,8 @@ import org.example.QuanLyMuaVu.module.financial.entity.Expense;
 
 public interface ExpenseQueryPort {
 
+    java.util.Optional<Expense> findExpenseById(Integer id);
+
     BigDecimal sumTotalCostBySeasonId(Integer seasonId);
 
     boolean existsExpenseBySeasonId(Integer seasonId);

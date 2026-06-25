@@ -3523,7 +3523,7 @@ paths:
   /api/v1/public/lookup/notifications:
     post:
       tags:
-      - public-internal-lookup-controller
+      - public-incident-lookup-controller
       operationId: createNotification
       requestBody:
         content:
@@ -3537,7 +3537,7 @@ paths:
   /api/v1/public/lookup/inventory/receive-harvest:
     post:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: receiveFromHarvest
       parameters:
       - name: harvestId
@@ -3568,7 +3568,7 @@ paths:
   /api/v1/public/lookup/inventory/lots/{lotId}/sync:
     post:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: syncLinkedLotFromHarvest
       parameters:
       - name: lotId
@@ -5442,6 +5442,13 @@ paths:
               example:
                 code: INVALID_CREDENTIALS
                 message: Invalid username/email or password.
+        "403":
+          description: User locked or no role
+          content:
+            application/json:
+              example:
+                code: USER_LOCKED
+                message: User account is not active.
         "200":
           description: Login successful
           content:
@@ -5464,13 +5471,6 @@ paths:
                         provinceId: 24
                         wardId: 25112
                       redirectTo: /farmer
-        "403":
-          description: User locked or no role
-          content:
-            application/json:
-              example:
-                code: USER_LOCKED
-                message: User account is not active.
   /api/v1/auth/reset-password:
     post:
       tags:
@@ -5503,18 +5503,18 @@ paths:
               $ref: "#/components/schemas/RefreshRequest"
         required: true
       responses:
-        "200":
-          description: Token refreshed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
         "401":
           description: Token invalid or expired
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
   /api/v1/auth/introspect:
     post:
       tags:
@@ -7550,7 +7550,7 @@ paths:
   /api/v1/public/lookup/supplies/validate-lot:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: validateSupplyLot
       parameters:
       - name: lotId
@@ -7583,7 +7583,7 @@ paths:
   /api/v1/public/lookup/supplies/validate-item:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: validateSupplyItem
       parameters:
       - name: itemId
@@ -7610,7 +7610,7 @@ paths:
   /api/v1/public/lookup/supplies/lots/{id}/batch-code:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: getSupplyLotBatchCode
       parameters:
       - name: id
@@ -7629,7 +7629,7 @@ paths:
   /api/v1/public/lookup/supplies/items/{id}/name:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: getSupplyItemName
       parameters:
       - name: id
@@ -7648,7 +7648,7 @@ paths:
   /api/v1/public/lookup/inventory/stock-context:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: findHarvestStockContext
       parameters:
       - name: farmId
@@ -7683,7 +7683,7 @@ paths:
   /api/v1/public/lookup/inventory/lots/by-seasons:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: findLotsBySeasonIds
       parameters:
       - name: seasonIds
@@ -7706,7 +7706,7 @@ paths:
   /api/v1/public/lookup/inventory/lots/by-harvests:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: findLotsByHarvestIds
       parameters:
       - name: harvestIds
@@ -7729,7 +7729,7 @@ paths:
   /api/v1/public/lookup/inventory/lots/by-harvest/{harvestId}:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: findLotByHarvestId
       parameters:
       - name: harvestId
@@ -7748,7 +7748,7 @@ paths:
   /api/v1/public/lookup/inventory/exists-by-harvest/{harvestId}:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-inventory-lookup-controller
       operationId: existsProductWarehouseLotByHarvestId
       parameters:
       - name: harvestId
@@ -7767,7 +7767,7 @@ paths:
   /api/v1/public/lookup/incidents/{incidentId}/validate-season/{seasonId}:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-incident-lookup-controller
       operationId: validateIncidentSeason
       parameters:
       - name: incidentId
@@ -7792,7 +7792,7 @@ paths:
   /api/v1/public/lookup/expenses/{expenseId}/validate-season/{seasonId}:
     get:
       tags:
-      - public-internal-lookup-controller
+      - public-financial-lookup-controller
       operationId: validateExpenseSeason
       parameters:
       - name: expenseId
@@ -18640,12 +18640,12 @@ components:
           $ref: "#/components/schemas/MetricValue"
         estimatedYieldMetric:
           $ref: "#/components/schemas/MetricValue"
-        nsurplusMetric:
-          $ref: "#/components/schemas/MetricValue"
-        noutputMetric:
-          $ref: "#/components/schemas/MetricValue"
         nsurplus:
           type: number
+        noutputMetric:
+          $ref: "#/components/schemas/MetricValue"
+        nsurplusMetric:
+          $ref: "#/components/schemas/MetricValue"
         noutput:
           type: number
         nOutput:
@@ -19629,6 +19629,8 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -19636,8 +19638,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -19648,16 +19648,16 @@ components:
           format: int64
         sort:
           $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
         pageNumber:
           type: integer
           format: int32
         pageSize:
           type: integer
           format: int32
-        unpaged:
-          type: boolean
-        paged:
-          type: boolean
     SortObject:
       type: object
       properties:
