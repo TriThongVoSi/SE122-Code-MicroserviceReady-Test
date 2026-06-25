@@ -7,7 +7,14 @@ from app.config import settings
 from app.services.rag_quality import analyze_document_quality
 
 
-RouteMode = Literal["strict_rag", "rag_first", "general_agriculture_llm", "off_topic"]
+RouteMode = Literal[
+    "identity",
+    "strict_rag",
+    "restricted_agriculture",
+    "rag_first",
+    "general_agriculture_llm",
+    "off_topic",
+]
 RouteConfidence = Literal["high", "medium", "low"]
 
 
@@ -28,6 +35,20 @@ def normalize_question(text: str) -> str:
     return re.sub(r"\s+", " ", without_marks).strip()
 
 
+IDENTITY_TERMS = (
+    "ban la ai",
+    "ban la gi",
+    "ban lam duoc gi",
+    "ban co the lam gi",
+    "ban ho tro gi",
+    "ban giup gi",
+    "chatbot nay la gi",
+    "chatbot la gi",
+    "tro ly nay la gi",
+    "gioi thieu ban",
+)
+
+
 STRICT_CATEGORY_TERMS: dict[str, tuple[str, ...]] = {
     "vietgap": (
         "vietgap",
@@ -40,6 +61,8 @@ STRICT_CATEGORY_TERMS: dict[str, tuple[str, ...]] = {
         "phap ly",
         "tuân thu",
         "tuan thu",
+        "su dung thuoc bvtv an toan",
+        "thuoc bao ve thuc vat an toan",
     ),
     "acm": (
         "acm",
@@ -49,6 +72,11 @@ STRICT_CATEGORY_TERMS: dict[str, tuple[str, ...]] = {
         "trang trai",
         "nhat ky san xuat",
         "nhat ky canh tac",
+        "nhat ky",
+        "ghi nhat ky",
+        "ghi chep",
+        "thuoc bvtv can ghi",
+        "thuoc bao ve thuc vat can ghi",
         "nhap kho",
         "ton kho",
         "dang ban",
@@ -103,6 +131,9 @@ RAG_FIRST_CROP_QUESTION_TERMS = (
 GENERAL_AGRICULTURE_TERMS = (
     "cay",
     "rau",
+    "mua mua",
+    "dua leo",
+    "xoai",
     "lua",
     "gao",
     "ca chua",
@@ -138,6 +169,7 @@ GENERAL_AGRICULTURE_TERMS = (
     "bac mau",
     "nong nghiep",
     "khi hau",
+    "thoi tiet",
     "mat do",
     "sinh truong",
 )
@@ -167,6 +199,66 @@ GENERAL_SYMPTOM_TERMS = (
     "tuoi nuoc",
 )
 
+PESTICIDE_TERMS = (
+    "thuoc bvtv",
+    "thuoc bao ve thuc vat",
+    "thuoc tru sau",
+    "thuoc sau",
+    "thuoc diet co",
+    "thuoc nam",
+    "thuoc tri benh",
+    "thuoc",
+    "hoa chat",
+    "hoa chat nong nghiep",
+)
+
+RESTRICTED_DOSE_TERMS = (
+    "lieu",
+    "lieu luong",
+    "bao nhieu",
+    "may ml",
+    "may gam",
+    "ml/lit",
+    "g/binh",
+    "cc/16l",
+    "kg/ha",
+)
+
+RESTRICTED_MIXING_TERMS = (
+    "pha",
+    "ty le pha",
+    "ti le pha",
+    "nong do",
+    "tron",
+    "pha chung",
+    "pha voi",
+)
+
+RESTRICTED_PRODUCT_TERMS = (
+    "dung thuoc gi",
+    "nen dung thuoc nao",
+    "thuoc nao",
+    "loai thuoc nao",
+    "goi y thuoc",
+    "ten thuoc",
+)
+
+RESTRICTED_SPRAY_TERMS = (
+    "phun moi",
+    "moi may ngay",
+    "phun bao lau",
+    "lich phun",
+    "phun dinh ky",
+    "may ngay mot lan",
+)
+
+SEVERE_RISK_TERMS = (
+    "chet hang loat",
+    "ngo doc",
+    "benh nang",
+    "lan nhanh",
+)
+
 OFFICIAL_REQUIREMENT_TERMS = (
     "chinh thuc",
     "bat buoc",
@@ -189,9 +281,15 @@ OFF_TOPIC_TERMS = (
     "react",
     "python",
     "lap trinh",
+    "code",
+    "viet code",
     "bai tho",
     "tinh yeu",
     "bong da",
+    "manchester united",
+    "mu da",
+    "chinh tri",
+    "giai tri",
     "thoi tiet hom nay",
 )
 
@@ -200,6 +298,14 @@ class QuestionRouter:
     def route(self, question: str) -> QuestionRoute:
         normalized = normalize_question(question)
 
+        if self._is_identity(normalized):
+            return QuestionRoute(
+                mode="identity",
+                category="identity",
+                confidence="high",
+                reason="identity or capability question",
+            )
+
         strict_category = self._strict_category(normalized)
         if strict_category:
             return QuestionRoute(
@@ -207,6 +313,14 @@ class QuestionRouter:
                 category=strict_category,
                 confidence="high",
                 reason=f"strict signal for {strict_category}",
+            )
+
+        if self._is_restricted_agriculture(normalized):
+            return QuestionRoute(
+                mode="restricted_agriculture",
+                category="restricted_agriculture",
+                confidence="high",
+                reason="direct pesticide or chemical risk question",
             )
 
         if any(term in normalized for term in OFF_TOPIC_TERMS) and not self._is_agriculture(normalized):
@@ -241,20 +355,39 @@ class QuestionRouter:
         )
 
     @staticmethod
+    def _is_identity(normalized: str) -> bool:
+        return any(term in normalized for term in IDENTITY_TERMS)
+
+    @staticmethod
     def _is_agriculture(normalized: str) -> bool:
-        return any(term in normalized for term in GENERAL_AGRICULTURE_TERMS)
+        return any(term in normalized for term in GENERAL_AGRICULTURE_TERMS) or any(
+            term in normalized for term in PESTICIDE_TERMS
+        )
 
     @staticmethod
     def _is_documented_crop_question(normalized: str) -> bool:
-        return any(term in normalized for term in RAG_FIRST_CROP_TERMS) and (
-            any(term in normalized for term in RAG_FIRST_CROP_QUESTION_TERMS)
-            or any(term in normalized for term in GENERAL_SYMPTOM_TERMS)
+        return any(term in normalized for term in RAG_FIRST_CROP_TERMS) and any(
+            term in normalized for term in RAG_FIRST_CROP_QUESTION_TERMS
         )
 
     def _is_general_agriculture(self, normalized: str) -> bool:
         return self._is_agriculture(normalized) and any(
             term in normalized for term in GENERAL_SYMPTOM_TERMS
         )
+
+    @staticmethod
+    def _is_restricted_agriculture(normalized: str) -> bool:
+        has_pesticide_signal = any(term in normalized for term in PESTICIDE_TERMS)
+        direct_risk = (
+            any(term in normalized for term in RESTRICTED_DOSE_TERMS)
+            or any(term in normalized for term in RESTRICTED_MIXING_TERMS)
+            or any(term in normalized for term in RESTRICTED_PRODUCT_TERMS)
+            or any(term in normalized for term in RESTRICTED_SPRAY_TERMS)
+        )
+        severe_with_treatment = any(term in normalized for term in SEVERE_RISK_TERMS) and (
+            has_pesticide_signal or "phun" in normalized or "xu ly" in normalized
+        )
+        return (has_pesticide_signal and direct_risk) or severe_with_treatment
 
     @staticmethod
     def _strict_category(normalized: str) -> str | None:
@@ -264,6 +397,26 @@ class QuestionRouter:
             return "traceability"
         if "acm" in normalized:
             return "acm"
+        if (
+            ("nhat ky" in normalized or "ghi chep" in normalized)
+            and any(term in normalized for term in PESTICIDE_TERMS)
+        ):
+            return "acm"
+        if any(term in normalized for term in PESTICIDE_TERMS) and any(
+            term in normalized
+            for term in (
+                "an toan",
+                "nguyen tac",
+                "quy dinh",
+                "yeu cau",
+                "tuan thu",
+                "compliance",
+                "truy xuat",
+                "ho so",
+                "chung nhan",
+            )
+        ):
+            return "vietgap"
         if any(term in normalized for term in STRICT_CATEGORY_TERMS["acm"]) and (
             "he thong" in normalized
             or "mua vu" in normalized

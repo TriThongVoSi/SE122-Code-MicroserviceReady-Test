@@ -15,6 +15,9 @@ class QuestionRouterTests(unittest.TestCase):
             "VietGAP yêu cầu pH đất chính xác bao nhiêu?",
             "Hồ sơ chứng nhận VietGAP cần gì?",
             "ACM có hỗ trợ blockchain không?",
+            "Nhật ký thuốc BVTV cần ghi những thông tin gì?",
+            "VietGAP yêu cầu sử dụng thuốc BVTV an toàn như thế nào?",
+            "QR truy xuất nguồn gốc có hiển thị lịch sử phun thuốc không?",
         ]
 
         for question in cases:
@@ -23,6 +26,39 @@ class QuestionRouterTests(unittest.TestCase):
 
                 self.assertEqual(route.mode, "strict_rag")
                 self.assertEqual(route.confidence, "high")
+
+    def test_routes_identity_questions_to_static_identity(self):
+        cases = [
+            "Bạn là ai?",
+            "Bạn có thể làm gì?",
+            "Bạn hỗ trợ gì?",
+            "Chatbot này là gì?",
+        ]
+
+        for question in cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "identity")
+                self.assertEqual(route.category, "identity")
+                self.assertEqual(route.confidence, "high")
+
+    def test_routes_direct_pesticide_risk_questions_to_restricted_agriculture(self):
+        cases = [
+            "Nên phun thuốc trừ sâu liều bao nhiêu?",
+            "Cách pha thuốc BVTV cho cây xoài?",
+            "Dùng thuốc gì để trị bệnh héo lá dưa leo?",
+            "Phun thuốc mỗi mấy ngày một lần?",
+            "Có thể trộn hai loại hóa chất này để phun không?",
+            "Cây chết hàng loạt thì phun thuốc gì?",
+        ]
+
+        for question in cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "restricted_agriculture")
+                self.assertEqual(route.category, "restricted_agriculture")
 
     def test_routes_crop_document_questions_to_rag_first(self):
         cases = [
@@ -92,6 +128,8 @@ class QuestionRouterTests(unittest.TestCase):
             "Cây thiếu kali có biểu hiện gì?",
             "Đất bị chai cứng thì nên cải tạo như thế nào?",
             "Tưới nước cho rau nên lưu ý gì?",
+            "Cây cà chua bị vàng lá thì làm sao?",
+            "Dưa leo bị héo lá nên xử lý thế nào?",
         ]
 
         for question in cases:

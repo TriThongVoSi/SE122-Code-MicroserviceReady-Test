@@ -241,6 +241,25 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertEqual(result["answer"], INSUFFICIENT_DATA_MESSAGE)
         self.assertEqual(result["sources"], [])
 
+    def test_chat_identity_returns_static_answer_without_retrieval_or_llm(self):
+        class IdentityService(RagService):
+            def __init__(self):
+                self.router = QuestionRouter()
+
+            def _retrieve_contexts(self, question, top_k):
+                raise AssertionError("identity questions must not retrieve")
+
+            def _answer_with_general_agriculture_llm(self, question):
+                raise AssertionError("identity questions must not call LLM")
+
+        service = IdentityService()
+
+        result = service.chat("Bạn là ai?", top_k=2)
+
+        self.assertIn("trợ lý nông nghiệp ACM", result["answer"])
+        self.assertIn("VietGAP", result["answer"])
+        self.assertEqual(result["sources"], [])
+
     def test_chat_off_topic_returns_refusal_without_retrieval(self):
         class OffTopicService(RagService):
             def __init__(self):
@@ -254,6 +273,48 @@ class RagRetrievalTests(unittest.TestCase):
         result = service.chat("Bitcoin hom nay gia bao nhieu?", top_k=2)
 
         self.assertEqual(result["answer"], OFF_TOPIC_MESSAGE)
+        self.assertEqual(result["sources"], [])
+
+    def test_chat_restricted_agriculture_returns_safe_answer_without_sources(self):
+        class FakeOllama:
+            restricted_called = False
+
+            def generate_restricted_agriculture_answer(self, question):
+                self.restricted_called = True
+                return "- Xác định đúng sâu bệnh trước khi xử lý.\n- Đọc nhãn thuốc và hỏi cán bộ kỹ thuật."
+
+        class RestrictedService(RagService):
+            def __init__(self):
+                self.router = QuestionRouter()
+                self.ollama_service = FakeOllama()
+
+            def _retrieve_contexts(self, question, top_k):
+                raise AssertionError("restricted questions must not retrieve")
+
+        service = RestrictedService()
+
+        result = service.chat("Nên phun thuốc trừ sâu liều bao nhiêu?", top_k=2)
+
+        self.assertIn("Đọc nhãn thuốc", result["answer"])
+        self.assertEqual(result["sources"], [])
+        self.assertTrue(service.ollama_service.restricted_called)
+
+    def test_chat_pesticide_documentation_question_prefers_strict_rag(self):
+        class EmptyService(RagService):
+            def __init__(self):
+                self.router = QuestionRouter()
+
+            def _retrieve_contexts(self, question, top_k):
+                return [], False
+
+            def _answer_with_general_agriculture_llm(self, question):
+                raise AssertionError("strict pesticide documentation questions must not call general LLM")
+
+        service = EmptyService()
+
+        result = service.chat("Nhật ký thuốc BVTV cần ghi những thông tin gì?", top_k=2)
+
+        self.assertEqual(result["answer"], INSUFFICIENT_DATA_MESSAGE)
         self.assertEqual(result["sources"], [])
 
     def test_strict_rag_never_falls_back_to_general_llm_when_context_is_weak(self):
@@ -549,7 +610,46 @@ class RagRetrievalTests(unittest.TestCase):
         self.assertNotIn("chac chan dat vietgap", normalized)
         self.assertNotIn("confidor", normalized)
         self.assertNotIn("100ml/ha", normalized)
-        self.assertIn("tham khao chung", normalized)
+        self.assertIn("doc nhan", normalized)
+        self.assertIn("bao ho", normalized)
+
+    def test_general_agriculture_safety_postcheck_replaces_concrete_dose_patterns(self):
+        service = OllamaService.__new__(OllamaService)
+
+        def fake_generate(prompt, chunks_count=0, num_predict=None):
+            return "Pha 20ml/lít nước và phun mỗi 7 ngày cho đến khi hết sâu."
+
+        service.generate = fake_generate
+
+        answer = service.generate_general_agriculture_answer("Nên phun thuốc trừ sâu liều bao nhiêu?")
+        normalized = normalize_question(answer)
+
+        self.assertNotIn("20ml/lit", normalized)
+        self.assertNotIn("phun moi 7 ngay", normalized)
+        self.assertIn("doc nhan", normalized)
+        self.assertIn("bao ho", normalized)
+
+    def test_restricted_agriculture_answer_uses_prompt_and_safety_postcheck(self):
+        service = OllamaService.__new__(OllamaService)
+        captured = {}
+
+        def fake_generate(prompt, chunks_count=0, num_predict=None):
+            captured["prompt"] = prompt
+            captured["chunks_count"] = chunks_count
+            captured["num_predict"] = num_predict
+            return "Dùng thuốc A liều 10g/bình 16L và phun mỗi 5 ngày."
+
+        service.generate = fake_generate
+
+        answer = service.generate_restricted_agriculture_answer("Cách pha thuốc BVTV cho cây xoài?")
+        normalized = normalize_question(answer)
+
+        self.assertIn("Cách pha thuốc BVTV cho cây xoài?", captured["prompt"])
+        self.assertEqual(captured["chunks_count"], 0)
+        self.assertNotIn("10g/binh", normalized)
+        self.assertNotIn("phun moi 5 ngay", normalized)
+        self.assertIn("khong dua lieu luong", normalized)
+        self.assertIn("thoi gian cach ly", normalized)
 
     def test_general_agriculture_cleanup_removes_dangling_list_marker(self):
         answer = OllamaService._finalize_general_answer(

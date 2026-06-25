@@ -1,13 +1,14 @@
 import logging
 import re
 import time
+import unicodedata
 
 import requests
 from langchain_ollama import ChatOllama
 
 from app.config import settings
-from app.constants import INSUFFICIENT_DATA_MESSAGE
-from app.prompts.system_prompt import GENERAL_AGRICULTURE_PROMPT
+from app.constants import INSUFFICIENT_DATA_MESSAGE, SAFE_PESTICIDE_CHECKLIST
+from app.prompts.system_prompt import GENERAL_AGRICULTURE_PROMPT, RESTRICTED_AGRICULTURE_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,14 @@ _PESTICIDE_SPECIFIC_RE = re.compile(
     r"\b(?:confidor|regent|actara|antracol|ridomil|score)\b|"
     r"\b\d+(?:[,.]\d+)?\s*(?:ml|l|g|kg)\s*/\s*(?:ha|lit|l|binh|bình)\b|"
     r"\bphun\s+(?:co\s+dinh|cố\s+định)?\s*(?:moi|mỗi)?\s*\d+\s*ngay\b",
+    re.IGNORECASE,
+)
+_CONCRETE_DOSE_OR_SCHEDULE_RE = re.compile(
+    r"\b(?:confidor|regent|actara|antracol|ridomil|score|carbendazim|iprodion|iprodione)\b|"
+    r"\b\d+(?:[,.]\d+)?\s*(?:ml|cc|g|kg|l)\s*/\s*(?:ha|l|lit|lít|binh|bình|16l)\b|"
+    r"\b\d+(?:[,.]\d+)?(?:\s*-\s*\d+(?:[,.]\d+)?)?\s*(?:lit|lít|l)\s*/\s*(?:ngay|ngày)\b|"
+    r"\bphun\s+(?:moi|mỗi)\s+\d+\s+ngay\b|"
+    r"\bphun\s+\d+\s+ngay\s+mot\s+lan\b",
     re.IGNORECASE,
 )
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?。])\s+")
@@ -168,6 +177,45 @@ class OllamaService:
             trimmed = window.rstrip(" ,;:-") + "."
         return re.sub(r"(?:\n|\s)*(?:[-*]|\d+[\.)])\s*$", "", trimmed).rstrip()
 
+    @staticmethod
+    def _contains_concrete_dose_or_schedule(text: str) -> bool:
+        normalized = (
+            text.casefold()
+            .replace("í", "i")
+            .replace("ì", "i")
+            .replace("ị", "i")
+            .replace("ỉ", "i")
+            .replace("ĩ", "i")
+        )
+        return bool(
+            _CONCRETE_DOSE_OR_SCHEDULE_RE.search(text)
+            or _CONCRETE_DOSE_OR_SCHEDULE_RE.search(normalized)
+        )
+
+    @staticmethod
+    def _normalize_safety_text(text: str) -> str:
+        decomposed = unicodedata.normalize("NFD", text.casefold())
+        without_marks = "".join(
+            char for char in decomposed if unicodedata.category(char) != "Mn"
+        )
+        return re.sub(r"\s+", " ", without_marks.replace("đ", "d")).strip()
+
+    @staticmethod
+    def _ensure_general_guidance_prefix(text: str) -> str:
+        if "tham khảo chung" in text.casefold():
+            return text
+        return f"{_GENERAL_GUIDANCE_PREFIX}\n\n{text}".strip()
+
+    @classmethod
+    def _restricted_answer_is_safe_enough(cls, text: str) -> bool:
+        normalized = cls._normalize_safety_text(text)
+        return (
+            "nhan thuoc" in normalized
+            and "thoi gian cach ly" in normalized
+            and "bao ho" in normalized
+            and ("ipm" in normalized or "bien phap canh tac" in normalized)
+        )
+
     def _fallback_generate(self, prompt: str, num_predict: int | None = None) -> str:
         logger.warning("ChatOllama returned empty content, using /api/chat fallback")
         url = f"{settings.OLLAMA_BASE_URL}/api/chat"
@@ -254,6 +302,30 @@ class OllamaService:
         )
         if answer == INSUFFICIENT_DATA_MESSAGE:
             return answer
+        if self._contains_concrete_dose_or_schedule(answer):
+            return SAFE_PESTICIDE_CHECKLIST
         cleaned = self._clean_general_answer(answer, question=question)
         cleaned = self._finalize_general_answer(cleaned)
+        cleaned = self._ensure_general_guidance_prefix(cleaned)
+        if self._contains_concrete_dose_or_schedule(cleaned):
+            return SAFE_PESTICIDE_CHECKLIST
         return cleaned or INSUFFICIENT_DATA_MESSAGE
+
+    def generate_restricted_agriculture_answer(self, question: str) -> str:
+        prompt = RESTRICTED_AGRICULTURE_PROMPT.format(question=question)
+        answer = self.generate(
+            prompt,
+            chunks_count=0,
+            num_predict=settings.GENERAL_AGRICULTURE_MAX_TOKENS,
+        )
+        if answer == INSUFFICIENT_DATA_MESSAGE:
+            return SAFE_PESTICIDE_CHECKLIST
+        if self._contains_concrete_dose_or_schedule(answer):
+            return SAFE_PESTICIDE_CHECKLIST
+        cleaned = self._clean_general_answer(answer, question=question)
+        cleaned = self._finalize_general_answer(cleaned)
+        if not cleaned or self._contains_concrete_dose_or_schedule(cleaned):
+            return SAFE_PESTICIDE_CHECKLIST
+        if not self._restricted_answer_is_safe_enough(cleaned):
+            return SAFE_PESTICIDE_CHECKLIST
+        return cleaned

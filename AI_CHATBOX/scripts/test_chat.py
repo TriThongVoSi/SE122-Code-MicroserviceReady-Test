@@ -6,6 +6,8 @@ import requests
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT_DIR))
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 from app.config import settings  # noqa: E402
 from app.constants import INSUFFICIENT_DATA_MESSAGE, OFF_TOPIC_MESSAGE  # noqa: E402
@@ -51,6 +53,20 @@ class DemoCase:
 
 DEMO_CASES = [
     DemoCase(
+        question="Bạn là ai?",
+        expected_mode="identity",
+        required_keywords=("trợ lý nông nghiệp ACM", "VietGAP", "QR"),
+        max_answer_chars=650,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Bạn có thể làm gì?",
+        expected_mode="identity",
+        required_keywords=("trợ lý nông nghiệp ACM", "nhật ký", "truy xuất"),
+        max_answer_chars=650,
+        expect_sources=False,
+    ),
+    DemoCase(
         question="VietGAP là gì?",
         expected_mode="strict_rag",
         required_keywords=("Vietnamese Good Agricultural Practices", "Thực hành nông nghiệp tốt"),
@@ -66,6 +82,21 @@ DEMO_CASES = [
         expected_source_category="acm",
         expected_source_file="tong-quan-he-thong.md",
         max_answer_chars=420,
+        expect_sources=True,
+    ),
+    DemoCase(
+        question="Sau khi tạo mùa vụ tôi cần làm gì?",
+        expected_mode="strict_rag",
+        required_keywords=("nhật ký", "thu hoạch"),
+        expected_source_category="acm",
+        expected_source_file="tao-mua-vu.md",
+        expect_sources=True,
+    ),
+    DemoCase(
+        question="QR truy xuất nguồn gốc dùng để làm gì?",
+        expected_mode="strict_rag",
+        required_keywords=("người mua", "sản phẩm"),
+        expected_source_category="traceability",
         expect_sources=True,
     ),
     DemoCase(
@@ -107,6 +138,36 @@ DEMO_CASES = [
         expected_source_category="acm",
         expected_source_file="lien-ket-gio-hang-nong-trai.md",
         expect_sources=True,
+    ),
+    DemoCase(
+        question="Cây cà chua bị vàng lá thì làm sao?",
+        expected_mode="general_agriculture_llm",
+        required_keywords=("tham khảo chung",),
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Trồng rau mùa mưa cần chú ý gì?",
+        expected_mode="general_agriculture_llm",
+        required_keywords=("tham khảo chung",),
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Dưa leo bị héo lá nên xử lý thế nào?",
+        expected_mode="general_agriculture_llm",
+        required_keywords=("tham khảo chung",),
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Nên phun thuốc trừ sâu liều bao nhiêu?",
+        expected_mode="restricted_agriculture",
+        required_keywords=("Đọc nhãn thuốc", "bảo hộ", "thời gian cách ly"),
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Cách pha thuốc BVTV cho cây xoài?",
+        expected_mode="restricted_agriculture",
+        required_keywords=("Đọc nhãn thuốc", "cán bộ kỹ thuật", "IPM"),
+        expect_sources=False,
     ),
     DemoCase(
         question="Cà chua thường gặp sâu bệnh nào?",
@@ -159,6 +220,18 @@ DEMO_CASES = [
         question="Cây con sau khi trồng cần chăm sóc ra sao?",
         expected_mode="general_agriculture_llm",
         required_keywords=("tham khảo chung",),
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Hôm qua Manchester United đá thế nào?",
+        expected_mode="off_topic",
+        exact_answer=OFF_TOPIC_MESSAGE,
+        expect_sources=False,
+    ),
+    DemoCase(
+        question="Viết code React giúp tôi",
+        expected_mode="off_topic",
+        exact_answer=OFF_TOPIC_MESSAGE,
         expect_sources=False,
     ),
     DemoCase(

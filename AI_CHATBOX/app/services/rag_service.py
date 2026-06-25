@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List
 
-from app.constants import INSUFFICIENT_DATA_MESSAGE, OFF_TOPIC_MESSAGE
+from app.constants import IDENTITY_MESSAGE, INSUFFICIENT_DATA_MESSAGE, OFF_TOPIC_MESSAGE
 from app.config import settings
 from app.prompts.system_prompt import SYSTEM_PROMPT, RAG_PROMPT_TEMPLATE
 from app.schemas.chat_schema import SourceDocument
@@ -535,6 +535,16 @@ class RagService:
             "sources": [],
         }
 
+    def _answer_with_restricted_agriculture_llm(self, question: str) -> dict:
+        answer = self.ollama_service.generate_restricted_agriculture_answer(question)
+        answer = self._postprocess_answer(answer, question=question, is_definition=False)
+        if not answer:
+            answer = INSUFFICIENT_DATA_MESSAGE
+        return {
+            "answer": answer,
+            "sources": [],
+        }
+
     @staticmethod
     def _rag_first_answer_needs_general_fallback(answer: str) -> bool:
         cleaned = (answer or "").strip()
@@ -568,11 +578,20 @@ class RagService:
             route.reason,
         )
 
+        if route.mode == "identity":
+            return {
+                "answer": IDENTITY_MESSAGE,
+                "sources": [],
+            }
+
         if route.mode == "off_topic":
             return {
                 "answer": OFF_TOPIC_MESSAGE,
                 "sources": [],
             }
+
+        if route.mode == "restricted_agriculture":
+            return self._answer_with_restricted_agriculture_llm(question)
 
         if route.mode == "general_agriculture_llm":
             return self._answer_with_general_agriculture_llm(question)
