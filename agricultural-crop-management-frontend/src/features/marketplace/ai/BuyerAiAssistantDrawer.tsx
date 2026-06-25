@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Bot, RotateCcw, Send, ShieldCheck, ShoppingBasket, Sparkles, Star, ArrowRight, Package } from 'lucide-react';
+import { Bot, RotateCcw, Send, ShieldCheck, ShoppingBasket, Sparkles, Star, ArrowRight, Package, MapPin, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatVnd } from '@/features/marketplace/lib/format';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
@@ -20,9 +20,107 @@ type BuyerAiAssistantDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   buyerContext?: string;
+  buyerProduct?: any;
   initialPrompt?: string;
   requestId: number;
 };
+
+interface ProductInfo {
+  id?: number | string;
+  name?: string;
+  category?: string;
+  price?: string;
+  unit?: string;
+  availableQuantity?: string;
+  farmName?: string;
+  region?: string;
+  ratingAverage?: number;
+  ratingCount?: number;
+  traceable?: boolean;
+  imageUrl?: string;
+  seasonName?: string;
+  traceabilityCode?: string;
+  shortDescription?: string;
+}
+
+function parseProductContext(contextStr?: string | null, product?: any): ProductInfo | null {
+  const trimmed = contextStr?.trim() ?? '';
+  if (!trimmed) return null;
+
+  // Check if it contains product details.
+  if (!trimmed.includes('Sản phẩm:')) {
+    return null;
+  }
+
+  const lines = trimmed.split('\n');
+  const info: ProductInfo = {};
+
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex === -1) continue;
+    const key = line.slice(0, colonIndex).trim();
+    const value = line.slice(colonIndex + 1).trim();
+
+    if (key === 'Sản phẩm') {
+      info.name = value;
+    } else if (key === 'Danh mục') {
+      info.category = value;
+    } else if (key === 'Giá') {
+      const parts = value.split('/');
+      info.price = parts[0]?.trim();
+      if (parts[1]) {
+        info.unit = parts[1]?.trim();
+      }
+    } else if (key === 'Số lượng còn') {
+      info.availableQuantity = value;
+    } else if (key === 'Nông trại/người bán') {
+      info.farmName = value;
+    } else if (key === 'Khu vực') {
+      info.region = value;
+    } else if (key === 'Đánh giá') {
+      const ratingMatch = value.match(/^([\d.,]+)\/5\s*(?:\((.*)\))?/);
+      if (ratingMatch) {
+        info.ratingAverage = parseFloat(ratingMatch[1].replace(',', '.'));
+        const countMatch = ratingMatch[2]?.match(/(\d+)\s*đánh giá/);
+        if (countMatch) {
+          info.ratingCount = parseInt(countMatch[1], 10);
+        }
+      }
+    } else if (key === 'Truy xuất nguồn gốc') {
+      info.traceable = value.toLowerCase() === 'có' || value.toLowerCase() === 'yes';
+    } else if (key === 'Mùa vụ') {
+      info.seasonName = value;
+    } else if (key === 'Mã truy xuất') {
+      info.traceabilityCode = value;
+    } else if (key === 'Mô tả ngắn') {
+      info.shortDescription = value;
+    }
+  }
+
+  // Supplement with product object details if provided
+  if (product) {
+    if (product.id) info.id = product.id;
+    if (product.name) info.name = product.name;
+    if (product.imageUrl) info.imageUrl = product.imageUrl;
+    if (product.category) info.category = product.category;
+    if (product.price !== undefined) {
+      info.price = formatVnd(product.price);
+    }
+    if (product.unit) info.unit = product.unit;
+    if (product.farmName) info.farmName = product.farmName;
+    if (product.ratingAverage !== undefined) info.ratingAverage = product.ratingAverage;
+    if (product.ratingCount !== undefined) info.ratingCount = product.ratingCount;
+    if (product.region) info.region = product.region;
+    if (product.traceable !== undefined) info.traceable = product.traceable;
+  }
+
+  return info;
+}
+
+function renderStars(rating: number = 5) {
+  const score = Math.min(Math.max(Math.round(rating), 1), 5);
+  return '★'.repeat(score) + '☆'.repeat(5 - score);
+}
 
 const QUICK_PROMPTS = [
   {
@@ -47,10 +145,75 @@ const QUICK_PROMPTS = [
   },
 ];
 
+type CollapsibleMessageContentProps = {
+  content: string;
+};
+
+function CollapsibleMessageContent({ content }: CollapsibleMessageContentProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const checkTruncation = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      
+      // If not expanded, check if scrollHeight exceeds clientHeight
+      if (!isExpanded) {
+        setShowButton(el.scrollHeight > el.clientHeight);
+      }
+    };
+
+    const timer = setTimeout(checkTruncation, 50);
+    window.addEventListener('resize', checkTruncation);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkTruncation);
+    };
+  }, [content, isExpanded]);
+
+  return (
+    <div>
+      <div
+        ref={containerRef}
+        className={cn(
+          "transition-all duration-300 ease-in-out overflow-hidden",
+          !isExpanded && "line-clamp-8"
+        )}
+        style={!isExpanded ? {
+          display: '-webkit-box',
+          WebkitLineClamp: 8,
+          WebkitBoxOrient: 'vertical',
+        } as React.CSSProperties : undefined}
+      >
+        <MarkdownMessage content={content} variant="buyer" />
+      </div>
+      
+      {showButton && (
+        <div className={cn(
+          "mt-2 flex justify-start",
+          !isExpanded && "pt-2 border-t border-dashed border-border/40"
+        )}>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline focus:outline-none flex items-center gap-1"
+          >
+            {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BuyerAiAssistantDrawer({
   open,
   onOpenChange,
   buyerContext,
+  buyerProduct,
   initialPrompt,
   requestId,
 }: BuyerAiAssistantDrawerProps) {
@@ -59,16 +222,86 @@ export function BuyerAiAssistantDrawer({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
+  const [activeContext, setActiveContext] = useState<string | undefined>(buyerContext);
+  const [activeProduct, setActiveProduct] = useState<any>(buyerProduct);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsTransitioning(true);
+      const timer = setTimeout(() => {
+        setActiveContext(buyerContext);
+        setActiveProduct(buyerProduct);
+        setIsTransitioning(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [buyerContext, buyerProduct, requestId, open]);
+
+  const handleRemoveContext = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setActiveContext(undefined);
+      setActiveProduct(undefined);
+      setIsTransitioning(false);
+    }, 150);
+  };
+
   const handleProductClick = (productId: number | string) => {
     onOpenChange(false);
     navigate(`/products/${productId}`);
   };
 
-  const contextPreview = useMemo(() => {
-    const trimmed = buyerContext?.trim() ?? '';
-    if (!trimmed) return '';
-    return trimmed.length > 180 ? `${trimmed.slice(0, 180)}...` : trimmed;
-  }, [buyerContext]);
+  const parsedInfo = useMemo(() => {
+    return parseProductContext(activeContext, activeProduct);
+  }, [activeContext, activeProduct]);
+
+  const badges = useMemo(() => {
+    if (!parsedInfo) return [];
+    const list: string[] = [];
+
+    if (parsedInfo.traceable) {
+      list.push('Có truy xuất');
+    }
+
+    const isVietGap = 
+      parsedInfo.name?.toLowerCase().includes('vietgap') || 
+      parsedInfo.shortDescription?.toLowerCase().includes('vietgap') ||
+      activeContext?.toLowerCase().includes('vietgap');
+    if (isVietGap) {
+      list.push('VietGAP');
+    }
+
+    const isOrganic = 
+      parsedInfo.name?.toLowerCase().includes('hữu cơ') || 
+      parsedInfo.name?.toLowerCase().includes('organic') || 
+      parsedInfo.farmName?.toLowerCase().includes('hữu cơ') ||
+      parsedInfo.farmName?.toLowerCase().includes('organic') || 
+      parsedInfo.shortDescription?.toLowerCase().includes('hữu cơ') ||
+      parsedInfo.shortDescription?.toLowerCase().includes('organic') ||
+      activeContext?.toLowerCase().includes('hữu cơ') ||
+      activeContext?.toLowerCase().includes('organic');
+    if (isOrganic) {
+      list.push('Hữu cơ');
+    }
+
+    const isFast = 
+      parsedInfo.name?.toLowerCase().includes('giao nhanh') || 
+      parsedInfo.shortDescription?.toLowerCase().includes('giao nhanh') || 
+      parsedInfo.name?.toLowerCase().includes('hỏa tốc') || 
+      parsedInfo.shortDescription?.toLowerCase().includes('hỏa tốc') || 
+      activeContext?.toLowerCase().includes('giao nhanh') ||
+      activeContext?.toLowerCase().includes('hỏa tốc');
+    if (isFast) {
+      list.push('Giao nhanh');
+    }
+
+    if (parsedInfo.category) {
+      list.push(parsedInfo.category);
+    }
+
+    return list;
+  }, [parsedInfo, activeContext]);
 
   useEffect(() => {
     if (open && initialPrompt) {
@@ -79,7 +312,9 @@ export function BuyerAiAssistantDrawer({
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+        if (typeof bottomRef.current?.scrollIntoView === 'function') {
+          bottomRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
+        }
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -99,14 +334,16 @@ export function BuyerAiAssistantDrawer({
   }, [open]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (typeof bottomRef.current?.scrollIntoView === 'function') {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [messages, isSending]);
 
   const handleSend = () => {
     const trimmed = draft.trim();
     if (!trimmed || isSending) return;
     setDraft('');
-    void sendMessage(trimmed, buyerContext);
+    void sendMessage(trimmed, activeContext);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -168,13 +405,125 @@ export function BuyerAiAssistantDrawer({
             </Button>
           </div>
 
-          {contextPreview && (
-            <div className="rounded-2xl border border-primary/25 bg-card px-4 py-3 text-sm text-foreground shadow-sm">
-              <div className="mb-1.5 flex items-center gap-2 font-semibold text-primary">
-                <ShieldCheck className="h-4 w-4" />
-                Sản phẩm đang xem
+          {parsedInfo && (
+            <div 
+              className={cn(
+                "rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/20 px-4 py-3.5 shadow-sm transition-all duration-150 ease-in-out",
+                isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"
+              )}
+            >
+              {/* Header: Title & Close Button */}
+              <div className="mb-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Đang phân tích sản phẩm
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveContext}
+                  className="rounded-full p-1 text-muted-foreground hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:text-foreground transition-colors"
+                  aria-label="Bỏ sản phẩm đang xem"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <p className="line-clamp-3 break-words leading-6">{contextPreview}</p>
+
+              {/* Card Body: responsive layout (horizontal card) */}
+              <div className="flex flex-row items-start gap-3">
+                {/* Thumbnail */}
+                <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border border-emerald-100/80 dark:border-emerald-900/20 bg-background flex items-center justify-center shadow-sm">
+                  {parsedInfo.imageUrl ? (
+                    <img
+                      src={parsedInfo.imageUrl}
+                      alt={parsedInfo.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const fallback = parent.querySelector('.fallback-icon');
+                          if (fallback) fallback.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div className={cn(
+                    "fallback-icon flex h-full w-full items-center justify-center text-emerald-600 dark:text-emerald-400",
+                    parsedInfo.imageUrl ? "hidden" : ""
+                  )}>
+                    <Package className="h-6 w-6 stroke-1" />
+                  </div>
+                </div>
+
+                {/* Right: Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  {/* Tên sản phẩm */}
+                  <h4 className="font-bold text-foreground text-sm sm:text-base leading-tight truncate">
+                    {parsedInfo.name}
+                  </h4>
+
+                  {/* Giá */}
+                  {parsedInfo.price && (
+                    <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                      {parsedInfo.price}
+                      {parsedInfo.unit ? ` / ${parsedInfo.unit}` : ''}
+                    </div>
+                  )}
+
+                  {/* Nông trại / Rating */}
+                  {(parsedInfo.farmName || parsedInfo.ratingAverage !== undefined) && (
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground mt-0.5">
+                      {parsedInfo.farmName && (
+                        <span className="font-medium text-foreground/80 truncate max-w-[150px] sm:max-w-[200px]">
+                          {parsedInfo.farmName}
+                        </span>
+                      )}
+                      {parsedInfo.ratingAverage !== undefined && (
+                        <span className="flex items-center gap-0.5 text-amber-500 font-semibold">
+                          <span className="text-[11px]">{renderStars(parsedInfo.ratingAverage)}</span>
+                          <span>{parsedInfo.ratingAverage.toFixed(1).replace('.', ',')}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Badges */}
+                  {badges.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {badges.map((badge, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center rounded-full bg-emerald-100/50 dark:bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:text-emerald-300 border border-emerald-200/20 dark:border-emerald-800/10"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Khu vực */}
+                  {parsedInfo.region && (
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                      <span className="truncate">{parsedInfo.region}</span>
+                    </div>
+                  )}
+
+                  {/* Button Xem sản phẩm */}
+                  {parsedInfo.id && (
+                    <div className="mt-2.5 flex">
+                      <button
+                        type="button"
+                        onClick={() => handleProductClick(parsedInfo.id!)}
+                        className="inline-flex h-8 items-center justify-center rounded-lg bg-emerald-600 dark:bg-emerald-700 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 dark:hover:bg-emerald-600"
+                      >
+                        Xem sản phẩm
+                        <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -198,17 +547,17 @@ export function BuyerAiAssistantDrawer({
                       )}
                       <div
                         className={cn(
-                          'max-w-[84%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm',
+                          'rounded-2xl px-5 py-4 text-sm leading-[1.6] shadow-sm',
                           isUser
-                            ? 'bg-emerald-700 text-white'
-                            : 'border border-border bg-background text-foreground',
+                            ? 'max-w-[84%] bg-emerald-700 text-white'
+                            : 'max-w-[76%] sm:max-w-[72%] border border-border bg-background text-foreground',
                         )}
                       >
                         {isUser ? (
                           <p className="whitespace-pre-wrap">{message.content}</p>
                         ) : (
                           <>
-                            <MarkdownMessage content={message.content} />
+                            <CollapsibleMessageContent content={message.content} />
                             <AiChatSources sources={message.sources} />
                             {message.metadata?.type === 'marketplace_product' && message.metadata.product && (
                               <div

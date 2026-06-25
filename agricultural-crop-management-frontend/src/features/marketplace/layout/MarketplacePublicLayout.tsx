@@ -531,6 +531,7 @@ export function MarketplacePublicLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [buyerAiOpen, setBuyerAiOpen] = useState(false);
   const [buyerAiContext, setBuyerAiContext] = useState("");
+  const [buyerAiProduct, setBuyerAiProduct] = useState<any>(null);
   const [buyerAiInitialPrompt, setBuyerAiInitialPrompt] = useState("");
   const [buyerAiRequestId, setBuyerAiRequestId] = useState(0);
   const showPortalAction = isAuthenticated && user?.role !== "buyer";
@@ -538,6 +539,7 @@ export function MarketplacePublicLayout() {
 
   const openBuyerAiAssistant = useCallback((input: BuyerAiAssistantOpenInput = {}) => {
     setBuyerAiContext(input.context ?? "");
+    setBuyerAiProduct(input.product ?? null);
     setBuyerAiInitialPrompt(input.prompt ?? "");
     setBuyerAiRequestId((current) => current + 1);
     setBuyerAiOpen(true);
@@ -785,6 +787,7 @@ export function MarketplacePublicLayout() {
               open={buyerAiOpen}
               onOpenChange={setBuyerAiOpen}
               buyerContext={buyerAiContext}
+              buyerProduct={buyerAiProduct}
               initialPrompt={buyerAiInitialPrompt}
               requestId={buyerAiRequestId}
             />

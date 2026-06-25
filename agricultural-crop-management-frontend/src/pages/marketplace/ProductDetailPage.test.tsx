@@ -117,6 +117,7 @@ describe('ProductDetailPage', () => {
     expect(mocks.openAssistant).toHaveBeenCalledWith({
       context: expect.stringContaining('Sản phẩm: Đậu đen hữu cơ'),
       prompt: expect.stringContaining('Có nên mua sản phẩm này không?'),
+      product: expect.any(Object),
     });
     expect(mocks.openAssistant.mock.calls[0][0].context).toContain('Mã lô: LOT-10');
   });

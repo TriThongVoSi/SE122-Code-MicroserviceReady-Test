@@ -307,6 +307,7 @@ export function ProductDetailPage() {
                       onClick={() => openAssistant({
                         context: buyerProductContext,
                         prompt: "Có nên mua sản phẩm này không? Hãy đánh giá rủi ro trước khi chốt đơn.",
+                        product: product,
                       })}
                     >
                       <Bot /> Hỏi AI về sản phẩm này

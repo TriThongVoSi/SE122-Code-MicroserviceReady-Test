@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 export type BuyerAiAssistantOpenInput = {
   context?: string;
   prompt?: string;
+  product?: any;
 };
 
 type BuyerAiAssistantContextValue = {
