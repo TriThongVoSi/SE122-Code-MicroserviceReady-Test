@@ -40,6 +40,10 @@ spring:
               uri: ${FARM_SERVICE_URI:-http://localhost:8084}
               predicates:
                 - Path=/api/v1/farms, /api/v1/farms/**, /api/v1/plots, /api/v1/plots/**, /api/v1/address, /api/v1/address/**, /api/v1/locations, /api/v1/locations/**
+            - id: finance-route
+              uri: ${FINANCE_SERVICE_URI:-http://localhost:8087}
+              predicates:
+                - Path=/api/v1/expenses, /api/v1/expenses/**, /api/v1/public/expenses, /api/v1/public/expenses/**, /api/v1/public/lookup, /api/v1/public/lookup/**, /api/v1/seasons/*/expenses, /api/v1/seasons/*/expenses/**, /api/v1/seasons/**/expenses, /api/v1/seasons/**/expenses/**
             - id: season-route
               uri: ${SEASON_SERVICE_URI:-http://localhost:8085}
               predicates:

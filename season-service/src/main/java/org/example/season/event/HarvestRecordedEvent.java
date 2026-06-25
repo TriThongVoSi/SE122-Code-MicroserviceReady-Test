@@ -7,7 +7,6 @@ import lombok.experimental.SuperBuilder;
 import org.example.season.entity.Harvest;
 
 @Getter
-@SuperBuilder
 public class HarvestRecordedEvent extends DomainEvent {
 
     private final Integer harvestId;
@@ -24,15 +23,15 @@ public class HarvestRecordedEvent extends DomainEvent {
     private final String note;
     private final Long actorUserId;
 
-    public HarvestRecordedEvent(Harvest harvest, Long actorUserId) {
+    public HarvestRecordedEvent(Harvest harvest, Long actorUserId, Integer farmId, String cropName, String varietyName) {
         super("Harvest", harvest.getId() != null ? harvest.getId().toString() : "unknown");
         this.harvestId = harvest.getId();
         this.seasonId = harvest.getSeason() != null ? harvest.getSeason().getId() : null;
         this.seasonName = harvest.getSeason() != null ? harvest.getSeason().getSeasonName() : null;
         this.plotId = harvest.getSeason() != null ? harvest.getSeason().getPlotId() : null;
-        this.farmId = harvest.getSeason() != null ? harvest.getSeason().getFarmId() : null;
-        this.cropName = harvest.getSeason() != null && harvest.getSeason().getCropName() != null ? harvest.getSeason().getCropName() : null;
-        this.varietyName = harvest.getSeason() != null && harvest.getSeason().getVarietyName() != null ? harvest.getSeason().getVarietyName() : null;
+        this.farmId = farmId;
+        this.cropName = cropName;
+        this.varietyName = varietyName;
         this.harvestDate = harvest.getHarvestDate();
         this.quantity = harvest.getQuantity();
         this.unit = harvest.getUnit() != null ? harvest.getUnit().toString() : "kg";
