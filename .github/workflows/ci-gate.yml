@@ -177,6 +177,7 @@ jobs:
           - api-gateway
           - farm-service
           - season-service
+          - inventory-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -217,6 +218,8 @@ jobs:
             database: farm_service_ci
           - service: season-service
             database: season_service_ci
+          - service: inventory-service
+            database: inventory_service_ci
     defaults:
       run:
         working-directory: ${{ matrix.service }}

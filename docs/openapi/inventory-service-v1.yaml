@@ -1711,14 +1711,14 @@ components:
         id:
           type: integer
           format: int32
-        name:
-          type: string
-        type:
-          type: string
         farmId:
           type: integer
           format: int32
         farmName:
+          type: string
+        name:
+          type: string
+        type:
           type: string
         provinceId:
           type: integer

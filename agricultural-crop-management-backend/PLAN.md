@@ -43,7 +43,7 @@
 - Shared code is limited to DTO/event envelopes, observability, error shape, and security helpers. Do not share JPA entities/repositories.
 
 ## Migration Phases
-
+ 
 1. Foundation
    - Add Gateway, RabbitMQ, MinIO, observability, service template, CI build matrix.
    - Freeze public API contracts from current controllers.

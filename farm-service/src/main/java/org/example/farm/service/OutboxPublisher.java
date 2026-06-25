@@ -9,6 +9,7 @@ import org.example.farm.dto.event.FarmUpdatedEvent;
 import org.example.farm.entity.OutboxEvent;
 import org.example.farm.repository.OutboxEventRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "app.outbox-publisher.enabled", havingValue = "true", matchIfMissing = true)
 public class OutboxPublisher {
 
     private final OutboxEventRepository outboxEventRepository;
