@@ -192,6 +192,14 @@ public class MarketplaceService {
     public MarketplaceProductDetailResponse getProductBySlug(String slug) {
         MarketplaceProduct product = marketplaceProductRepository
                 .findSellableBySlugAndStatusIn(slug, buyerVisibleProductStatuses())
+                .or(() -> {
+                    try {
+                        Long id = Long.parseLong(slug);
+                        return marketplaceProductRepository.findSellableByIdAndStatusIn(id, buyerVisibleProductStatuses());
+                    } catch (NumberFormatException e) {
+                        return Optional.empty();
+                    }
+                })
                 .orElseThrow(() -> new AppException(ErrorCode.MARKETPLACE_PRODUCT_NOT_FOUND));
 
         validateTraceabilityChain(product);

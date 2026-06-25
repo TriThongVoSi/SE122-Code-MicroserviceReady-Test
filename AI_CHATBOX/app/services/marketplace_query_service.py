@@ -63,9 +63,28 @@ class MarketplaceQueryService:
                 "sources": [],
             }
 
+        metadata = None
+        if intent in ("most_expensive_product", "cheapest_product", "best_selling_product", "top_rated_product"):
+            product_id = result.get("product_id")
+            if product_id is not None:
+                metadata = {
+                    "type": "marketplace_product",
+                    "product": {
+                        "id": product_id,
+                        "name": result.get("product_name"),
+                        "price": result.get("price"),
+                        "unit": result.get("unit"),
+                        "farmName": result.get("farm_name"),
+                        "rating": result.get("rating"),
+                        "soldQuantity": result.get("total_orders"),
+                        "imageUrl": result.get("image_url"),
+                    }
+                }
+
         return {
             "answer": self._format_answer(intent, result, product_keyword),
             "sources": [],
+            "metadata": metadata,
         }
 
     @staticmethod

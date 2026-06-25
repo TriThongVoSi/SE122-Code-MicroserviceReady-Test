@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 import { useSeason } from '@/shared/contexts';
 import { CartProvider } from '@/features/buyer/providers/CartProvider';
@@ -391,10 +391,16 @@ function PublicLayoutWrapper() {
  * - CartProvider scoped to public routes only
  * - Strict layout separation between public and dashboard
  */
+function ProductRedirect() {
+  const { productId } = useParams<{ productId: string }>();
+  return <Navigate to={`/marketplace/products/${productId}`} replace />;
+}
+
 export function AppRoutes() {
   return (
     <Suspense fallback={<RouteSuspenseFallback />}>
       <Routes>
+        <Route path="/products/:productId" element={<ProductRedirect />} />
         {/* ━━━ Auth Routes ━━━ */}
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />

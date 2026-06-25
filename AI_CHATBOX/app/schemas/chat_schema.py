@@ -22,9 +22,26 @@ class SourceDocument(BaseModel):
     snippet: str
 
 
+class ProductMetadata(BaseModel):
+    id: Optional[int] = None
+    name: Optional[str] = None
+    price: Optional[float] = None
+    unit: Optional[str] = None
+    farmName: Optional[str] = None
+    rating: Optional[float] = None
+    soldQuantity: Optional[int] = None
+    imageUrl: Optional[str] = None
+
+
+class ChatMetadata(BaseModel):
+    type: Optional[str] = None
+    product: Optional[ProductMetadata] = None
+
+
 class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceDocument] = Field(default_factory=list)
+    metadata: Optional[ChatMetadata] = None
 
 
 class IngestRequest(BaseModel):

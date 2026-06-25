@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { BuyerAiAssistantDrawer } from './BuyerAiAssistantDrawer';
 
@@ -30,12 +31,14 @@ vi.mock('@/features/ai', async (importOriginal) => ({
 describe('BuyerAiAssistantDrawer RAG sources', () => {
   it('renders clean source details under assistant answers', () => {
     render(
-      <BuyerAiAssistantDrawer
-        open
-        onOpenChange={vi.fn()}
-        requestId={1}
-        buyerContext="black beans"
-      />,
+      <MemoryRouter>
+        <BuyerAiAssistantDrawer
+          open
+          onOpenChange={vi.fn()}
+          requestId={1}
+          buyerContext="black beans"
+        />
+      </MemoryRouter>,
     );
 
     expect(screen.getByText('Nguồn tham khảo')).toBeInTheDocument();

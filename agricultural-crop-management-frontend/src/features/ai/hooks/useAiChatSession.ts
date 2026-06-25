@@ -9,6 +9,19 @@ export type AiChatMessage = {
     content: string;
     createdAt: string;
     sources?: AiChatSource[];
+    metadata?: {
+        type?: 'marketplace_product' | 'marketplace_farm';
+        product?: {
+            id: number | string;
+            name: string;
+            price?: number;
+            unit?: string;
+            farmName?: string;
+            rating?: number;
+            soldQuantity?: number;
+            imageUrl?: string;
+        };
+    };
 };
 
 type AiChatSessionOptions = {
@@ -26,12 +39,14 @@ const createMessage = (
     role: AiChatRole,
     content: string,
     sources?: AiChatSource[],
+    metadata?: AiChatMessage['metadata'],
 ): AiChatMessage => ({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     role,
     content,
     createdAt: new Date().toISOString(),
     ...(sources?.length ? { sources } : {}),
+    ...(metadata ? { metadata } : {}),
 });
 
 function buildContextualMessage(userMessage: string, cropContext?: string | null) {
@@ -75,7 +90,7 @@ export function useAiChatSession(options: AiChatSessionOptions = {}) {
         try {
             const response = await sendAiChatMessage(buildContextualMessage(trimmedMessage, cropContext));
             const assistantText = response.answer?.trim() || fallbackMessage;
-            const assistantMessage = createMessage('assistant', assistantText, response.sources);
+            const assistantMessage = createMessage('assistant', assistantText, response.sources, response.metadata);
             setMessages((prev) => [...prev, assistantMessage]);
             return assistantMessage;
         } catch {

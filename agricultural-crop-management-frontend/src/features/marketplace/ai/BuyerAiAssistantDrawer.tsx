@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Bot, RotateCcw, Send, ShieldCheck, ShoppingBasket, Sparkles } from 'lucide-react';
+import { Bot, RotateCcw, Send, ShieldCheck, ShoppingBasket, Sparkles, Star, ArrowRight, Package } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { formatVnd } from '@/features/marketplace/lib/format';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
 import { AiChatSources, useBuyerAiChatSession } from '@/features/ai';
 import { cn } from '@/shared/lib';
@@ -55,6 +57,12 @@ export function BuyerAiAssistantDrawer({
   const { messages, isSending, sendMessage, reset } = useBuyerAiChatSession();
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+
+  const handleProductClick = (productId: number | string) => {
+    onOpenChange(false);
+    navigate(`/products/${productId}`);
+  };
 
   const contextPreview = useMemo(() => {
     const trimmed = buyerContext?.trim() ?? '';
@@ -67,6 +75,15 @@ export function BuyerAiAssistantDrawer({
       setDraft(initialPrompt);
     }
   }, [initialPrompt, open, requestId]);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -193,6 +210,99 @@ export function BuyerAiAssistantDrawer({
                           <>
                             <MarkdownMessage content={message.content} />
                             <AiChatSources sources={message.sources} />
+                            {message.metadata?.type === 'marketplace_product' && message.metadata.product && (
+                              <div
+                                onClick={() => message.metadata?.product?.id && handleProductClick(message.metadata.product.id)}
+                                className={cn(
+                                  "mt-3 block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:shadow-md hover:border-primary/30 cursor-pointer",
+                                  !message.metadata.product.id && "pointer-events-none"
+                                )}
+                              >
+                                <div className="flex flex-col sm:flex-row">
+                                  {/* Product Image */}
+                                  <div className="relative h-20 w-full shrink-0 sm:w-20 bg-muted flex items-center justify-center">
+                                    {message.metadata.product.imageUrl ? (
+                                      <img
+                                        src={message.metadata.product.imageUrl}
+                                        alt={message.metadata.product.name}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          const parent = e.currentTarget.parentElement;
+                                          if (parent) {
+                                            const fallback = parent.querySelector('.fallback-icon');
+                                            if (fallback) fallback.classList.remove('hidden');
+                                          }
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={cn(
+                                      "fallback-icon flex h-full w-full items-center justify-center text-muted-foreground",
+                                      message.metadata.product.imageUrl ? "hidden" : ""
+                                    )}>
+                                      <Package className="h-6 w-6 stroke-1" />
+                                    </div>
+                                  </div>
+
+                                  {/* Product Info */}
+                                  <div className="flex flex-1 flex-col justify-between p-2.5 min-w-0">
+                                    <div className="min-w-0">
+                                      <h4 className="truncate text-sm font-bold text-foreground">
+                                        {message.metadata.product.name}
+                                      </h4>
+                                      {message.metadata.product.farmName && (
+                                        <p className="truncate text-xs text-muted-foreground">
+                                          {message.metadata.product.farmName}
+                                        </p>
+                                      )}
+
+                                      {/* Rating and Sold */}
+                                      {((message.metadata.product.rating !== undefined && message.metadata.product.rating > 0) ||
+                                        (message.metadata.product.soldQuantity !== undefined && message.metadata.product.soldQuantity > 0)) && (
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                          {message.metadata.product.rating !== undefined && message.metadata.product.rating > 0 && (
+                                            <span className="flex items-center gap-0.5 text-amber-500 font-medium">
+                                              <Star className="h-3.5 w-3.5 fill-current" />
+                                              {message.metadata.product.rating.toFixed(1).replace('.', ',')}
+                                            </span>
+                                          )}
+                                          {message.metadata.product.rating !== undefined && message.metadata.product.rating > 0 &&
+                                            message.metadata.product.soldQuantity !== undefined && message.metadata.product.soldQuantity > 0 && (
+                                              <span>·</span>
+                                            )}
+                                          {message.metadata.product.soldQuantity !== undefined && message.metadata.product.soldQuantity > 0 && (
+                                            <span>Đã bán {message.metadata.product.soldQuantity}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Price & Action */}
+                                    <div className="mt-2 flex items-center justify-between gap-4">
+                                      <div className="font-bold text-emerald-600 dark:text-emerald-500 text-sm">
+                                        {message.metadata.product.price !== undefined ? (
+                                          <>
+                                            {formatVnd(message.metadata.product.price)}
+                                            {message.metadata.product.unit ? `/${message.metadata.product.unit}` : ''}
+                                          </>
+                                        ) : (
+                                          'Liên hệ'
+                                        )}
+                                      </div>
+
+                                      {message.metadata.product.id ? (
+                                        <div
+                                          className="inline-flex h-7 items-center justify-center rounded-lg bg-emerald-700 px-2.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-800"
+                                        >
+                                          Xem sản phẩm
+                                          <ArrowRight className="ml-1 h-3 w-3" />
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>

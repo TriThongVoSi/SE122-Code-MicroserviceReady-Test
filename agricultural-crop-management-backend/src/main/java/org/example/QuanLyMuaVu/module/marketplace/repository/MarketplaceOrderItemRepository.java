@@ -21,7 +21,9 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
     Optional<MarketplaceOrderItem> findByIdAndOrder_Id(Long id, Long orderId);
 
     @Query("""
-            SELECT p.name AS productName,
+            SELECT p.id AS productId,
+                   p.imageUrl AS imageUrl,
+                   p.name AS productName,
                    p.price AS price,
                    p.unit AS unit,
                    f.name AS farmName,
@@ -47,7 +49,7 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
                    OR LOWER(COALESCE(p.category, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%'))
                    OR LOWER(COALESCE(c.cropName, '')) LIKE LOWER(CONCAT('%', :keywordAscii, '%')))
-            GROUP BY p.id, p.name, p.price, p.unit, f.name, p.averageRating
+            GROUP BY p.id, p.name, p.price, p.unit, f.name, p.averageRating, p.imageUrl
             ORDER BY SUM(oi.quantity) DESC, p.id ASC
             """)
     List<AnalyticsProductSalesProjection> findBestSellingAnalyticsProduct(
@@ -93,6 +95,8 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
             Pageable pageable);
 
     interface AnalyticsProductSalesProjection {
+        Long getProductId();
+
         String getProductName();
 
         BigDecimal getPrice();
@@ -106,6 +110,8 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
         Double getRating();
 
         Long getFiveStarReviews();
+
+        String getImageUrl();
     }
 
     interface AnalyticsFarmProjection {

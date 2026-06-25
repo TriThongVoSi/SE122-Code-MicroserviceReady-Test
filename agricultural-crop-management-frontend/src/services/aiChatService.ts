@@ -13,6 +13,19 @@ export type AiChatRequest = {
 export type AiChatResponse = {
   answer: string;
   sources: AiChatSource[];
+  metadata?: {
+    type?: 'marketplace_product' | 'marketplace_farm';
+    product?: {
+      id: number | string;
+      name: string;
+      price?: number;
+      unit?: string;
+      farmName?: string;
+      rating?: number;
+      soldQuantity?: number;
+      imageUrl?: string;
+    };
+  };
 };
 
 export const OFFLINE_AI_SERVICE_MESSAGE =
@@ -74,6 +87,43 @@ function normalizeSource(value: unknown): AiChatSource | null {
   return source;
 }
 
+function normalizeMetadata(value: unknown): AiChatResponse['metadata'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const type = typeof value.type === 'string' ? value.type : undefined;
+  if (type !== 'marketplace_product' && type !== 'marketplace_farm') {
+    return undefined;
+  }
+  const productVal = value.product;
+  if (!isRecord(productVal)) {
+    return { type };
+  }
+  const idVal = productVal.id;
+  const id = typeof idVal === 'number' || typeof idVal === 'string' ? idVal : undefined;
+  const name = typeof productVal.name === 'string' ? productVal.name : '';
+  const price = typeof productVal.price === 'number' ? productVal.price : undefined;
+  const unit = typeof productVal.unit === 'string' ? productVal.unit : undefined;
+  const farmName = typeof productVal.farmName === 'string' ? productVal.farmName : undefined;
+  const rating = typeof productVal.rating === 'number' ? productVal.rating : undefined;
+  const soldQuantity = typeof productVal.soldQuantity === 'number' ? productVal.soldQuantity : undefined;
+  const imageUrl = typeof productVal.imageUrl === 'string' ? productVal.imageUrl : undefined;
+
+  return {
+    type,
+    product: {
+      id: id ?? '',
+      name,
+      price,
+      unit,
+      farmName,
+      rating,
+      soldQuantity,
+      imageUrl,
+    },
+  };
+}
+
 function normalizeResponse(payload: unknown): AiChatResponse {
   if (!isRecord(payload)) {
     return {
@@ -84,12 +134,14 @@ function normalizeResponse(payload: unknown): AiChatResponse {
 
   const answer = normalizeString(payload.answer) || EMPTY_AI_RESPONSE_MESSAGE;
   const rawSources = Array.isArray(payload.sources) ? payload.sources : [];
+  const metadata = normalizeMetadata(payload.metadata);
 
   return {
     answer,
     sources: rawSources
       .map(normalizeSource)
       .filter((source): source is AiChatSource => source !== null),
+    ...(metadata ? { metadata } : {}),
   };
 }
 

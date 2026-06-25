@@ -196,6 +196,11 @@ class MarketplaceAnalyticsServiceTest {
             Long fiveStarReviews) {
         return new MarketplaceProductRepository.AnalyticsProductProjection() {
             @Override
+            public Long getProductId() {
+                return 12L;
+            }
+
+            @Override
             public String getProductName() {
                 return productName;
             }
@@ -228,6 +233,11 @@ class MarketplaceAnalyticsServiceTest {
             @Override
             public Long getFiveStarReviews() {
                 return fiveStarReviews;
+            }
+
+            @Override
+            public String getImageUrl() {
+                return "/demo-evidence/products/rice.jpg";
             }
         };
     }
@@ -242,6 +252,11 @@ class MarketplaceAnalyticsServiceTest {
             Long fiveStarReviews) {
         return new MarketplaceOrderItemRepository.AnalyticsProductSalesProjection() {
             @Override
+            public Long getProductId() {
+                return 12L;
+            }
+
+            @Override
             public String getProductName() {
                 return productName;
             }
@@ -274,6 +289,11 @@ class MarketplaceAnalyticsServiceTest {
             @Override
             public Long getFiveStarReviews() {
                 return fiveStarReviews;
+            }
+
+            @Override
+            public String getImageUrl() {
+                return "/demo-evidence/products/rice.jpg";
             }
         };
     }

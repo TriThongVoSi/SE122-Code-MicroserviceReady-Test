@@ -59,13 +59,15 @@ class MarketplaceAnalyticsControllerTest {
     @Test
     void query_ValidIntent_ReturnsUnwrappedSnakeCasePayload() throws Exception {
         MarketplaceAnalyticsResultDto result = new MarketplaceAnalyticsResultDto(
+                12L,
                 "Gao ST25",
                 new BigDecimal("85000"),
                 "kg",
                 "Nong trai An Nhien",
                 new BigDecimal("120"),
                 4.9,
-                32L);
+                32L,
+                "/demo-evidence/products/rice.jpg");
         MarketplaceAnalyticsQueryResponse response = new MarketplaceAnalyticsQueryResponse(
                 "most_expensive_product",
                 "gao",

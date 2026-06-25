@@ -287,7 +287,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             Pageable pageable);
 
     @Query("""
-            SELECT p.name AS productName,
+            SELECT p.id AS productId,
+                   p.imageUrl AS imageUrl,
+                   p.name AS productName,
                    p.price AS price,
                    p.unit AS unit,
                    f.name AS farmName,
@@ -324,7 +326,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             Pageable pageable);
 
     @Query("""
-            SELECT p.name AS productName,
+            SELECT p.id AS productId,
+                   p.imageUrl AS imageUrl,
+                   p.name AS productName,
                    p.price AS price,
                    p.unit AS unit,
                    f.name AS farmName,
@@ -361,7 +365,9 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
             Pageable pageable);
 
     @Query("""
-            SELECT p.name AS productName,
+            SELECT p.id AS productId,
+                   p.imageUrl AS imageUrl,
+                   p.name AS productName,
                    p.price AS price,
                    p.unit AS unit,
                    f.name AS farmName,
@@ -405,6 +411,8 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     }
 
     interface AnalyticsProductProjection {
+        Long getProductId();
+
         String getProductName();
 
         BigDecimal getPrice();
@@ -418,5 +426,7 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
         Double getRating();
 
         Long getFiveStarReviews();
+
+        String getImageUrl();
     }
 }

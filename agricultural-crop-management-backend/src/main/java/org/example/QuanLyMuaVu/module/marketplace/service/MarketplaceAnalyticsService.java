@@ -139,25 +139,29 @@ public class MarketplaceAnalyticsService {
     private MarketplaceAnalyticsResultDto toResult(
             MarketplaceProductRepository.AnalyticsProductProjection projection) {
         return new MarketplaceAnalyticsResultDto(
+                projection.getProductId(),
                 projection.getProductName(),
                 projection.getPrice(),
                 projection.getUnit(),
                 projection.getFarmName(),
                 defaultBigDecimal(projection.getTotalSold()),
                 projection.getRating(),
-                defaultLong(projection.getFiveStarReviews()));
+                defaultLong(projection.getFiveStarReviews()),
+                projection.getImageUrl());
     }
 
     private MarketplaceAnalyticsResultDto toResult(
             MarketplaceOrderItemRepository.AnalyticsProductSalesProjection projection) {
         return new MarketplaceAnalyticsResultDto(
+                projection.getProductId(),
                 projection.getProductName(),
                 projection.getPrice(),
                 projection.getUnit(),
                 projection.getFarmName(),
                 defaultBigDecimal(projection.getTotalSold()),
                 projection.getRating(),
-                defaultLong(projection.getFiveStarReviews()));
+                defaultLong(projection.getFiveStarReviews()),
+                projection.getImageUrl());
     }
 
     private MarketplaceAnalyticsResultDto toFarmOrderResult(
@@ -166,9 +170,11 @@ public class MarketplaceAnalyticsService {
                 null,
                 null,
                 null,
+                null,
                 projection.getFarmName(),
                 BigDecimal.valueOf(defaultLong(projection.getAggregateCount())),
                 projection.getRating(),
+                null,
                 null);
     }
 
@@ -178,10 +184,12 @@ public class MarketplaceAnalyticsService {
                 null,
                 null,
                 null,
+                null,
                 projection.getFarmName(),
                 null,
                 projection.getRating(),
-                defaultLong(projection.getAggregateCount()));
+                defaultLong(projection.getAggregateCount()),
+                null);
     }
 
     private String trimToNull(String value) {

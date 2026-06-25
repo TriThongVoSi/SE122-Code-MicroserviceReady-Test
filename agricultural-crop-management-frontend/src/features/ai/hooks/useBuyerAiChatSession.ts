@@ -17,12 +17,14 @@ const createMessage = (
     role: AiChatRole,
     content: string,
     sources?: AiChatSource[],
+    metadata?: AiChatMessage['metadata'],
 ): AiChatMessage => ({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     role,
     content,
     createdAt: new Date().toISOString(),
     ...(sources?.length ? { sources } : {}),
+    ...(metadata ? { metadata } : {}),
 });
 
 function buildContextualMessage(userMessage: string, buyerContext?: string | null) {
@@ -41,17 +43,28 @@ function buildContextualMessage(userMessage: string, buyerContext?: string | nul
     ].join('\n');
 }
 
+let cachedMessages: AiChatMessage[] | null = null;
+
+export function clearBuyerAiChatSessionCache() {
+    cachedMessages = null;
+}
+
 export function useBuyerAiChatSession(options: BuyerAiChatSessionOptions = {}) {
     const welcomeMessage = options.welcomeMessage ?? DEFAULT_WELCOME_MESSAGE;
     const fallbackMessage = options.fallbackMessage ?? DEFAULT_FALLBACK_MESSAGE;
 
-    const [messages, setMessages] = useState<AiChatMessage[]>(() => [
-        createMessage('assistant', welcomeMessage),
-    ]);
+    const [messages, setMessages] = useState<AiChatMessage[]>(() => {
+        if (cachedMessages !== null) {
+            return cachedMessages;
+        }
+        return [createMessage('assistant', welcomeMessage)];
+    });
     const [isSending, setIsSending] = useState(false);
 
     const reset = useCallback(() => {
-        setMessages([createMessage('assistant', welcomeMessage)]);
+        const initial = [createMessage('assistant', welcomeMessage)];
+        cachedMessages = initial;
+        setMessages(initial);
     }, [welcomeMessage]);
 
     const sendMessage = useCallback(async (userMessage: string, buyerContext?: string | null) => {
@@ -60,18 +73,31 @@ export function useBuyerAiChatSession(options: BuyerAiChatSessionOptions = {}) {
             return null;
         }
 
-        setMessages((prev) => [...prev, createMessage('user', trimmedMessage)]);
+        const userMsg = createMessage('user', trimmedMessage);
+        setMessages((prev) => {
+            const next = [...prev, userMsg];
+            cachedMessages = next;
+            return next;
+        });
         setIsSending(true);
 
         try {
             const response = await sendAiChatMessage(buildContextualMessage(trimmedMessage, buyerContext));
             const assistantText = response.answer?.trim() || fallbackMessage;
-            const assistantMessage = createMessage('assistant', assistantText, response.sources);
-            setMessages((prev) => [...prev, assistantMessage]);
+            const assistantMessage = createMessage('assistant', assistantText, response.sources, response.metadata);
+            setMessages((prev) => {
+                const next = [...prev, assistantMessage];
+                cachedMessages = next;
+                return next;
+            });
             return assistantMessage;
         } catch {
             const assistantMessage = createMessage('assistant', fallbackMessage);
-            setMessages((prev) => [...prev, assistantMessage]);
+            setMessages((prev) => {
+                const next = [...prev, assistantMessage];
+                cachedMessages = next;
+                return next;
+            });
             return assistantMessage;
         } finally {
             setIsSending(false);
