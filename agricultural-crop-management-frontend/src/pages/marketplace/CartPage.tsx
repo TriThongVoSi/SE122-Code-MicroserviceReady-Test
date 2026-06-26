@@ -7,8 +7,66 @@ import {
   useMarketplaceUpdateCartItemMutation,
 } from "@/features/marketplace/hooks";
 import { formatVnd } from "@/features/marketplace/lib/format";
+import type { MarketplaceCart, MarketplaceCartItem } from "@/shared/api";
 
 const SHIPPING_FEE = 20_000;
+
+type CartFarmGroup = {
+  key: string;
+  farmerUserId: number;
+  farmerName: string | null;
+  farmId: number | null;
+  farmName: string | null;
+  region: string | null;
+  items: MarketplaceCartItem[];
+};
+
+function cartGroupKey(value: { farmId?: number | null; farmerUserId: number }): string {
+  return value.farmId ? `farm:${value.farmId}` : `seller:${value.farmerUserId}`;
+}
+
+function farmLabel(farmName: string | null, region: string | null): string | null {
+  if (!farmName) {
+    return null;
+  }
+  return region ? `${farmName} · ${region}` : farmName;
+}
+
+function buildCartFarmGroups(cart: MarketplaceCart): CartFarmGroup[] {
+  const apiGroups = cart.sellerGroups ?? [];
+  const apiGroupByKey = new Map(apiGroups.map((group) => [cartGroupKey(group), group]));
+  const apiGroupByProductId = new Map<number, (typeof apiGroups)[number]>();
+
+  apiGroups.forEach((group) => {
+    group.items.forEach((item) => {
+      apiGroupByProductId.set(item.productId, group);
+    });
+  });
+
+  return cart.items.reduce<CartFarmGroup[]>((groups, item) => {
+    const itemMeta = apiGroupByProductId.get(item.productId);
+    const farmId = item.farmId ?? itemMeta?.farmId ?? null;
+    const key = cartGroupKey({ farmId, farmerUserId: item.farmerUserId });
+    const existing = groups.find((group) => group.key === key);
+
+    if (existing) {
+      existing.items.push(item);
+      return groups;
+    }
+
+    const groupMeta = apiGroupByKey.get(key) ?? itemMeta;
+    groups.push({
+      key,
+      farmerUserId: item.farmerUserId,
+      farmerName: groupMeta?.farmerName ?? null,
+      farmId,
+      farmName: item.farmName ?? groupMeta?.farmName ?? null,
+      region: item.region ?? groupMeta?.region ?? null,
+      items: [item],
+    });
+    return groups;
+  }, []);
+}
 
 /* ------------------------------------------------------------------ */
 /*  Sub-components                                                     */
@@ -219,33 +277,19 @@ export function CartPage() {
   const isMutating = updateItemMutation.isPending || removeItemMutation.isPending;
   const total = (cart.subtotal ?? 0) + SHIPPING_FEE;
 
-  /* Use seller groups from API (contains farmerName, farmName).
-     Fall back to manual grouping for backward compatibility with
-     older API responses that may not include sellerGroups. */
-  const sellerGroups =
-    cart.sellerGroups && cart.sellerGroups.length > 0
-      ? cart.sellerGroups
-      : cart.items.reduce<
-          Array<{
-            farmerUserId: number;
-            farmerName: string | null;
-            farmId: number | null;
-            farmName: string | null;
-            items: typeof cart.items;
-          }>
-        >((groups, item) => {
-          const existing = groups.find((group) => group.farmerUserId === item.farmerUserId);
-          if (existing) existing.items.push(item);
-          else
-            groups.push({
-              farmerUserId: item.farmerUserId,
-              farmerName: null,
-              farmId: null,
-              farmName: null,
-              items: [item],
-            });
-          return groups;
-        }, []);
+  const sellerGroups = buildCartFarmGroups(cart);
+  const firstGroupKeyByFarmer = new Map<number, string>();
+  const groupCountByFarmer = new Map<number, number>();
+
+  sellerGroups.forEach((group) => {
+    if (!firstGroupKeyByFarmer.has(group.farmerUserId)) {
+      firstGroupKeyByFarmer.set(group.farmerUserId, group.key);
+    }
+    groupCountByFarmer.set(
+      group.farmerUserId,
+      (groupCountByFarmer.get(group.farmerUserId) ?? 0) + 1,
+    );
+  });
 
   const handleUpdate = async (productId: number, quantity: number) => {
     await updateItemMutation.mutateAsync({ productId, request: { quantity } });
@@ -274,54 +318,65 @@ export function CartPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         {/* Left: items */}
         <div className="flex-1 space-y-6">
-          {sellerGroups.map((group) => (
-            <div key={group.farmerUserId} className="space-y-3">
-              {/* Seller header */}
-              <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-4 py-2.5">
-                <Store size={16} className="text-muted-foreground" />
-                {group.farmId ? (
-                  <Link
-                    to={`/marketplace/farms/${group.farmId}`}
-                    className="group/link flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary transition-colors duration-200"
-                  >
-                    <span>{group.farmerName ?? `Người bán #${group.farmerUserId}`}</span>
-                    {group.farmName && (
-                      <span className="text-xs font-normal text-muted-foreground transition-colors group-hover/link:text-primary/80">
-                        — {group.farmName}
-                      </span>
-                    )}
-                  </Link>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <h2 className="text-sm font-semibold text-foreground">
-                      {group.farmerName ?? `Người bán #${group.farmerUserId}`}
-                    </h2>
-                    {group.farmName && (
-                      <span className="text-xs text-muted-foreground">
-                        — {group.farmName}
-                      </span>
-                    )}
-                  </div>
-                )}
-                <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
-                  {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}
-                </span>
-              </div>
+          {sellerGroups.map((group) => {
+            const currentFarmLabel = farmLabel(group.farmName, group.region);
+            const showFarmerName = Boolean(group.farmerName)
+              && (!currentFarmLabel
+                || (groupCountByFarmer.get(group.farmerUserId) ?? 0) <= 1
+                || firstGroupKeyByFarmer.get(group.farmerUserId) === group.key);
+            const primaryLabel = showFarmerName
+              ? group.farmerName ?? `Người bán #${group.farmerUserId}`
+              : currentFarmLabel ?? group.farmerName ?? `Người bán #${group.farmerUserId}`;
 
-              {/* Items */}
-              <div className="space-y-3">
-                {group.items.map((item) => (
-                  <CartItemRow
-                    key={item.productId}
-                    item={item}
-                    isMutating={isMutating}
-                    onUpdate={handleUpdate}
-                    onRemove={handleRemove}
-                  />
-                ))}
+            return (
+              <div key={group.key} className="space-y-3">
+                {/* Seller header */}
+                <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-4 py-2.5">
+                  <Store size={16} className="text-muted-foreground" />
+                  {group.farmId ? (
+                    <Link
+                      to={`/marketplace/farms/${group.farmId}`}
+                      className="group/link flex items-center gap-1 text-sm font-semibold text-foreground hover:text-primary transition-colors duration-200"
+                    >
+                      <span>{primaryLabel}</span>
+                      {showFarmerName && currentFarmLabel && (
+                        <span className="text-xs font-normal text-muted-foreground transition-colors group-hover/link:text-primary/80">
+                          — {currentFarmLabel}
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <h2 className="text-sm font-semibold text-foreground">
+                        {primaryLabel}
+                      </h2>
+                      {showFarmerName && currentFarmLabel && (
+                        <span className="text-xs text-muted-foreground">
+                          — {currentFarmLabel}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <span className="ml-auto text-xs font-medium tabular-nums text-muted-foreground">
+                    {formatVnd(group.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}
+                  </span>
+                </div>
+
+                {/* Items */}
+                <div className="space-y-3">
+                  {group.items.map((item) => (
+                    <CartItemRow
+                      key={item.productId}
+                      item={item}
+                      isMutating={isMutating}
+                      onUpdate={handleUpdate}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Right: order summary */}

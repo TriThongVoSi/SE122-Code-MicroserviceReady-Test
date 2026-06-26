@@ -121,6 +121,9 @@ export function CheckoutPage() {
     unitPrice: number;
     farmerUserId: number;
     farmerName: string | null;
+    farmId?: number | null;
+    farmName?: string | null;
+    region?: string | null;
     imageUrl: string;
     slug: string;
     traceable: boolean;
@@ -160,6 +163,9 @@ export function CheckoutPage() {
         quantity: buyNowItem.quantity,
         maxQuantity: buyNowItem.quantity,
         farmerUserId: buyNowItem.farmerUserId,
+        farmId: buyNowItem.farmId ?? null,
+        farmName: buyNowItem.farmName ?? buyNowItem.farmerName,
+        region: buyNowItem.region ?? null,
         traceable: buyNowItem.traceable,
       },
     ];
@@ -170,8 +176,9 @@ export function CheckoutPage() {
         {
           farmerUserId: buyNowItem.farmerUserId,
           farmerName: buyNowItem.farmerName,
-          farmId: null,
-          farmName: buyNowItem.farmerName,
+          farmId: buyNowItem.farmId ?? null,
+          farmName: buyNowItem.farmName ?? buyNowItem.farmerName,
+          region: buyNowItem.region ?? null,
           items,
           subtotal: buyNowItem.unitPrice * buyNowItem.quantity,
         },

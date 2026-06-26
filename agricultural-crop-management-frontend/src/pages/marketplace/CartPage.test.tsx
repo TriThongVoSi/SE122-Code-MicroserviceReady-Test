@@ -194,4 +194,76 @@ describe("CartPage", () => {
     expect(screen.getByText("Farmer Alpha")).toBeInTheDocument();
     expect(screen.getByText("— Nong trai Alpha")).toBeInTheDocument();
   });
+  it("groups products from the same farmer into separate farm sections", () => {
+    mockedUseMarketplaceCart.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: {
+        userId: 1,
+        itemCount: 2,
+        subtotal: 166000,
+        currency: "VND",
+        items: [
+          {
+            productId: 10,
+            slug: "gao-thom-st25-an-phu",
+            name: "Gạo thơm ST25",
+            imageUrl: "/gao-thom-st25.jpg",
+            unitPrice: 138000,
+            quantity: 1,
+            maxQuantity: 10,
+            farmerUserId: 17,
+            farmId: 4,
+            farmName: "Trang trại Lúa Hữu Cơ An Phú",
+            region: "Đồng Tháp",
+            traceable: true,
+          },
+          {
+            productId: 11,
+            slug: "dua-leo-baby-binh-minh",
+            name: "Dưa leo baby",
+            imageUrl: "/dua-leo-baby.jpg",
+            unitPrice: 28000,
+            quantity: 1,
+            maxQuantity: 10,
+            farmerUserId: 17,
+            farmId: 5,
+            farmName: "Trang trại Rau Quả Bình Minh",
+            region: "Cần Thơ",
+            traceable: true,
+          },
+        ],
+        sellerGroups: [
+          {
+            farmerUserId: 17,
+            farmerName: "Nguyen Van Farmer",
+            farmId: 4,
+            farmName: "Trang trại Lúa Hữu Cơ An Phú",
+            region: "Đồng Tháp",
+            items: [],
+            subtotal: 138000,
+          },
+          {
+            farmerUserId: 17,
+            farmerName: "Nguyen Van Farmer",
+            farmId: 5,
+            farmName: "Trang trại Rau Quả Bình Minh",
+            region: "Cần Thơ",
+            items: [],
+            subtotal: 28000,
+          },
+        ],
+      },
+    } as any);
+
+    renderCartPage();
+
+    expect(screen.getByText("Nguyen Van Farmer")).toBeInTheDocument();
+    expect(screen.getByText("— Trang trại Lúa Hữu Cơ An Phú · Đồng Tháp")).toBeInTheDocument();
+    expect(screen.getByText("Trang trại Rau Quả Bình Minh · Cần Thơ")).toBeInTheDocument();
+    expect(screen.getByText("Gạo thơm ST25")).toBeInTheDocument();
+    expect(screen.getByText("Dưa leo baby")).toBeInTheDocument();
+    expect(screen.getAllByText(/166\.000/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/186\.000/)).toBeInTheDocument();
+  });
 });

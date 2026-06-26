@@ -11,5 +11,8 @@ public record MarketplaceCartItemResponse(
         BigDecimal quantity,
         BigDecimal maxQuantity,
         Long farmerUserId,
+        Integer farmId,
+        String farmName,
+        String region,
         Boolean traceable) {
 }

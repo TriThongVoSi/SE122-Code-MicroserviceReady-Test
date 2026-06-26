@@ -92,8 +92,31 @@ type CartMutationContext = {
 };
 
 function recalculateCart(cart: MarketplaceCart): MarketplaceCart {
+  // Build a lookup of productId -> current quantity from the updated items list
+  const quantityById = new Map<number, number>(
+    cart.items.map((item) => [item.productId, item.quantity]),
+  );
+
+  // Rebuild sellerGroups: update quantities in existing groups and remove
+  // items that are no longer in the cart. Drop groups that become empty.
+  const updatedSellerGroups = cart.sellerGroups
+    .map((group) => ({
+      ...group,
+      items: group.items
+        .filter((item) => quantityById.has(item.productId))
+        .map((item) => ({ ...item, quantity: quantityById.get(item.productId) ?? item.quantity })),
+      subtotal: group.items
+        .filter((item) => quantityById.has(item.productId))
+        .reduce(
+          (sum, item) => sum + item.unitPrice * (quantityById.get(item.productId) ?? item.quantity),
+          0,
+        ),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return {
     ...cart,
+    sellerGroups: updatedSellerGroups,
     itemCount: cart.items.reduce((total, item) => total + item.quantity, 0),
     subtotal: cart.items.reduce(
       (total, item) => total + item.unitPrice * item.quantity,

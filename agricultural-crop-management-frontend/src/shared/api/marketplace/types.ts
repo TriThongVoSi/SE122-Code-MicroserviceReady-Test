@@ -147,6 +147,9 @@ export type MarketplaceCartItem = {
   quantity: number;
   maxQuantity: number;
   farmerUserId: number;
+  farmId: number | null;
+  farmName: string | null;
+  region: string | null;
   traceable: boolean;
 };
 
@@ -155,6 +158,7 @@ export type MarketplaceCartSellerGroup = {
   farmerName: string | null;
   farmId: number | null;
   farmName: string | null;
+  region: string | null;
   items: MarketplaceCartItem[];
   subtotal: number;
 };

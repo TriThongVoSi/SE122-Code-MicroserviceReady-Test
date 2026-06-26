@@ -2049,17 +2049,16 @@ public class MarketplaceService {
         BigDecimal itemCount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        // Group items by seller (farmerUserId) and build item responses once
-        Map<Long, List<MarketplaceCartItem>> itemsBySeller = new LinkedHashMap<>();
+        Map<String, List<MarketplaceCartItem>> itemsByGroup = new LinkedHashMap<>();
         Map<Long, MarketplaceCartItemResponse> itemResponseMap = new LinkedHashMap<>();
 
         for (MarketplaceCartItem item : items) {
             MarketplaceProduct product = item.getProduct();
+            Farm farm = product.getFarm();
             itemCount = itemCount.add(item.getQuantity());
             BigDecimal unitPrice = product.getPrice();
             subtotal = subtotal.add(unitPrice.multiply(item.getQuantity()));
 
-            // Build item response once and cache it
             MarketplaceCartItemResponse itemResponse = new MarketplaceCartItemResponse(
                     product.getId(),
                     product.getSlug(),
@@ -2069,14 +2068,17 @@ public class MarketplaceService {
                     item.getQuantity(),
                     currentAvailableQuantity(product),
                     product.getFarmerUser() == null ? null : product.getFarmerUser().getId(),
+                    farm == null ? null : farm.getId(),
+                    farm == null ? null : farm.getName(),
+                    resolveFarmRegion(farm),
                     Boolean.TRUE.equals(product.getTraceable()));
 
             itemResponseMap.put(product.getId(), itemResponse);
 
-            // Group by seller
             Long sellerId = product.getFarmerUser() == null ? null : product.getFarmerUser().getId();
-            if (sellerId != null) {
-                itemsBySeller.computeIfAbsent(sellerId, k -> new ArrayList<>()).add(item);
+            String groupKey = cartGroupKey(farm, sellerId);
+            if (groupKey != null) {
+                itemsByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(item);
             }
         }
 
@@ -2085,33 +2087,24 @@ public class MarketplaceService {
 
         // Build seller groups
         List<MarketplaceCartSellerGroupResponse> sellerGroups = new ArrayList<>();
-        for (Map.Entry<Long, List<MarketplaceCartItem>> entry : itemsBySeller.entrySet()) {
-            Long sellerId = entry.getKey();
-            List<MarketplaceCartItem> sellerItems = entry.getValue();
-
-            // Get farmer and farm info from first item (all items from same seller)
-            MarketplaceCartItem firstItem = sellerItems.get(0);
-            MarketplaceProduct firstProduct = firstItem.getProduct();
+        for (List<MarketplaceCartItem> groupItems : itemsByGroup.values()) {
+            MarketplaceProduct firstProduct = groupItems.get(0).getProduct();
             User farmer = firstProduct.getFarmerUser();
 
-            // Null safety: farmer should never be null here due to sellerId filter above,
-            // but add defensive check to prevent NPE
             if (farmer == null) {
-                continue; // Skip this group if farmer is unexpectedly null
+                continue;
             }
 
             Farm farm = firstProduct.getFarm();
 
-            // Reuse pre-built item responses for this seller
             List<MarketplaceCartItemResponse> sellerItemResponses = new ArrayList<>();
             BigDecimal sellerSubtotal = BigDecimal.ZERO;
 
-            for (MarketplaceCartItem item : sellerItems) {
+            for (MarketplaceCartItem item : groupItems) {
                 MarketplaceProduct product = item.getProduct();
                 BigDecimal unitPrice = product.getPrice();
                 sellerSubtotal = sellerSubtotal.add(unitPrice.multiply(item.getQuantity()));
 
-                // Reuse the cached item response
                 MarketplaceCartItemResponse cachedResponse = itemResponseMap.get(product.getId());
                 sellerItemResponses.add(cachedResponse);
             }
@@ -2121,6 +2114,7 @@ public class MarketplaceService {
                     farmer.getFullName(),
                     farm == null ? null : farm.getId(),
                     farm == null ? null : farm.getName(),
+                    resolveFarmRegion(farm),
                     sellerItemResponses,
                     sellerSubtotal));
         }
@@ -2132,6 +2126,13 @@ public class MarketplaceService {
                 itemCount,
                 subtotal,
                 CURRENCY_VND);
+    }
+
+    private String cartGroupKey(Farm farm, Long sellerId) {
+        if (farm != null && farm.getId() != null) {
+            return "farm:" + farm.getId();
+        }
+        return sellerId == null ? null : "seller:" + sellerId;
     }
 
     private MarketplaceCartResponse emptyCart(Long userId) {

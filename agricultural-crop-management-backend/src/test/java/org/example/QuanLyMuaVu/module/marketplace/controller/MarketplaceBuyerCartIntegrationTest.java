@@ -410,6 +410,58 @@ class MarketplaceBuyerCartIntegrationTest {
     }
 
     @Test
+    void getCart_WithSameFarmerProductsFromDifferentFarms_ShouldGroupByFarm() throws Exception {
+        User buyer = createUser("buyer-farm-group");
+        User farmer = createUser("farmer-farm-group");
+
+        MarketplaceProduct rice = createPublishedProduct(
+                farmer,
+                "Gạo thơm ST25",
+                "gao-thom-st25-an-phu",
+                "Trang trại Lúa Hữu Cơ An Phú",
+                "Đồng Tháp",
+                87000,
+                87001,
+                new BigDecimal("138000.00"));
+        MarketplaceProduct cucumber = createPublishedProduct(
+                farmer,
+                "Dưa leo baby",
+                "dua-leo-baby-binh-minh",
+                "Trang trại Rau Quả Bình Minh",
+                "Cần Thơ",
+                92000,
+                92001,
+                new BigDecimal("28000.00"));
+
+        addCartItem(buyer.getId(), rice.getId(), "1.0");
+        addCartItem(buyer.getId(), cucumber.getId(), "1.0");
+
+        MvcResult cartResult = mockMvc.perform(get("/api/v1/marketplace/cart")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", buyer.getId()).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value("SUCCESS"))
+            .andExpect(jsonPath("$.result.subtotal").value(166000))
+            .andExpect(jsonPath("$.result.sellerGroups.length()").value(2))
+            .andReturn();
+
+        JsonNode sellerGroups = objectMapper.readTree(cartResult.getResponse().getContentAsString())
+                .path("result")
+                .path("sellerGroups");
+
+        JsonNode riceGroup = findGroupByFarmName(sellerGroups, "Trang trại Lúa Hữu Cơ An Phú");
+        assertEquals("Đồng Tháp", riceGroup.path("region").asText());
+        assertEquals(0, riceGroup.path("subtotal").decimalValue().compareTo(new BigDecimal("138000")));
+        assertEquals(1, riceGroup.path("items").size());
+        assertEquals("Gạo thơm ST25", riceGroup.path("items").get(0).path("name").asText());
+
+        JsonNode cucumberGroup = findGroupByFarmName(sellerGroups, "Trang trại Rau Quả Bình Minh");
+        assertEquals("Cần Thơ", cucumberGroup.path("region").asText());
+        assertEquals(0, cucumberGroup.path("subtotal").decimalValue().compareTo(new BigDecimal("28000")));
+        assertEquals(1, cucumberGroup.path("items").size());
+        assertEquals("Dưa leo baby", cucumberGroup.path("items").get(0).path("name").asText());
+    }
+
+    @Test
     void addCartItem_MissingProduct_ShouldFail() throws Exception {
         String requestBody = """
             {
@@ -681,6 +733,110 @@ class MarketplaceBuyerCartIntegrationTest {
                 .status(MarketplaceProductStatus.PUBLISHED)
                 .publishedAt(LocalDateTime.now())
                 .build());
+    }
+
+    private MarketplaceProduct createPublishedProduct(
+            User farmer,
+            String productName,
+            String slugPrefix,
+            String farmName,
+            String provinceName,
+            int provinceId,
+            int wardId,
+            BigDecimal price) {
+        String suffix = UUID.randomUUID().toString();
+        Province province = provinceRepository.findById(provinceId)
+                .orElseGet(() -> provinceRepository.save(Province.builder()
+                        .id(provinceId)
+                        .name(provinceName)
+                        .slug("province-" + provinceId)
+                        .type("tinh")
+                        .nameWithType(provinceName)
+                        .build()));
+        Ward ward = wardRepository.findById(wardId)
+                .orElseGet(() -> wardRepository.save(Ward.builder()
+                        .id(wardId)
+                        .name("Ward " + wardId)
+                        .slug("ward-" + wardId)
+                        .type("phuong")
+                        .nameWithType("Ward " + wardId + ", " + provinceName)
+                        .province(province)
+                        .build()));
+        Farm farm = farmRepository.saveAndFlush(Farm.builder()
+                .user(farmer)
+                .name(farmName)
+                .province(province)
+                .ward(ward)
+                .area(new BigDecimal("1.00"))
+                .build());
+        Plot plot = plotRepository.saveAndFlush(Plot.builder()
+                .user(farmer)
+                .farm(farm)
+                .plotName(productName + " Plot " + suffix)
+                .area(new BigDecimal("1.00"))
+                .soilType("FERRALSOLS")
+                .build());
+        Warehouse warehouse = warehouseRepository.saveAndFlush(Warehouse.builder()
+                .farm(farm)
+                .name(productName + " Warehouse " + suffix)
+                .type("OUTPUT")
+                .province(province)
+                .ward(ward)
+                .build());
+        ProductWarehouseLot lot = productWarehouseLotRepository.saveAndFlush(ProductWarehouseLot.builder()
+                .lotCode("CART-FARM-LOT-" + suffix)
+                .productName(productName)
+                .farm(farm)
+                .plot(plot)
+                .warehouse(warehouse)
+                .harvestedAt(LocalDate.now())
+                .receivedAt(LocalDateTime.now())
+                .unit("kg")
+                .initialQuantity(new BigDecimal("100.000"))
+                .onHandQuantity(new BigDecimal("100.000"))
+                .status(ProductWarehouseLotStatus.IN_STOCK)
+                .createdBy(farmer)
+                .build());
+
+        return marketplaceProductRepository.saveAndFlush(MarketplaceProduct.builder()
+                .slug(slugPrefix + "-" + suffix)
+                .name(productName)
+                .category("rice")
+                .price(price)
+                .unit("kg")
+                .stockQuantity(new BigDecimal("100.000"))
+                .farmerUser(farmer)
+                .farm(farm)
+                .lot(lot)
+                .traceable(true)
+                .status(MarketplaceProductStatus.PUBLISHED)
+                .publishedAt(LocalDateTime.now())
+                .build());
+    }
+
+    private void addCartItem(Long buyerUserId, Long productId, String quantity) throws Exception {
+        String requestBody = String.format("""
+            {
+                "productId": %d,
+                "quantity": %s
+            }
+            """, productId, quantity);
+
+        mockMvc.perform(post("/api/v1/marketplace/cart/items")
+                .with(jwt().jwt(jwt -> jwt.claim("user_id", buyerUserId).claim("role", "BUYER")).authorities(() -> "ROLE_BUYER"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+            .andExpect(status().isOk());
+    }
+
+    private JsonNode findGroupByFarmName(JsonNode sellerGroups, String farmName) {
+        for (JsonNode group : sellerGroups) {
+            if (farmName.equals(group.path("farmName").asText())) {
+                return group;
+            }
+        }
+        fail("Missing cart seller group for farm " + farmName);
+        return objectMapper.nullNode();
     }
 
     private User createUser(String prefix) {
