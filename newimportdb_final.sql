@@ -437,6 +437,10 @@ VALUES (@season_leafy_2026_id, '2026-06-23', 620.00, 18000.00, 'B+', 'Thu tỉa 
 SET @harvest_leafy_2026_id = LAST_INSERT_ID();
 
 INSERT INTO harvests (season_id, harvest_date, quantity, unit, grade, note, created_at)
+VALUES (@season_leafy_2026_id, '2026-06-26', 640.00, 18000.00, 'A', 'Thu hoạch lứa 2 đạt chất lượng loại A, nâng tổng sản lượng lên 70% kế hoạch mùa vụ.', '2026-06-26 06:30:00');
+SET @harvest_leafy_2026_batch2_id = LAST_INSERT_ID();
+
+INSERT INTO harvests (season_id, harvest_date, quantity, unit, grade, note, created_at)
 VALUES (@season_corn_2026_id, '2026-06-24', 960.00, 30000.00, 'B', 'Thu sớm một phần ngô LVN10 để hoàn tất hợp đồng sỉ trước ngày demo.', '2026-06-24 15:30:00');
 SET @harvest_corn_2026_id = LAST_INSERT_ID();
 
@@ -789,7 +793,7 @@ INSERT INTO product_warehouse_lots
 VALUES
     ('PW-BINHMINH-LEAFY-2026-001', NULL, 'Rau cải xanh', 'Thùng 5 kg', @season_leafy_2026_id, @farm_binhminh_id,
      @plot_binhminh_leafy_id, @harvest_leafy_2026_id, @warehouse_binhminh_output_id, @loc_binhminh_output_p02_id,
-     '2026-06-23', '2026-06-23 09:00:00', 'kg', 620.000, 410.000, 'B+', 'HOLD',
+     '2026-06-23', '2026-06-23 09:00:00', 'kg', 1260.000, 1050.000, 'B+', 'HOLD',
      '{"farm":"Trang trại Rau Quả Bình Minh","plot":"Nhà Lưới Rau Ăn Lá 01","season":"Mùa vụ Rau Xanh Mưa Sớm 2026","harvest_date":"2026-06-23","image_hint":"rau cai xanh"}',
      'Lô rau đang chờ admin duyệt sản phẩm marketplace.', 'HOLD', @farmer_user_id, '2026-06-23 09:00:00', '2026-06-25 10:00:00');
 SET @pwlot_leafy_id = LAST_INSERT_ID();
@@ -877,6 +881,7 @@ VALUES
     (@pwlot_soy_ags398_id, 'STOCK_OUT', 1920.000, 'kg', 320.000, 'CONTRACT', 'CT-BM-2026-018', 'Xuất phần lớn cho hợp đồng chuỗi thực phẩm.', @farmer_user_id, '2026-05-10 09:00:00'),
     (@pwlot_leafy_id, 'RECEIPT_FROM_HARVEST', 620.000, 'kg', 620.000, 'HARVEST', @harvest_leafy_2026_id, 'Nhập lứa rau thu tỉa sớm.', @farmer_user_id, '2026-06-23 09:05:00'),
     (@pwlot_leafy_id, 'ADJUSTMENT', 210.000, 'kg', 410.000, 'QUALITY_CHECK', 'QC-BM-2026-0625', 'Loại ra phần rau dập sau kiểm tra.', @farmer_user_id, '2026-06-25 10:00:00'),
+    (@pwlot_leafy_id, 'RECEIPT_FROM_HARVEST', 640.000, 'kg', 1050.000, 'HARVEST', @harvest_leafy_2026_batch2_id, 'Nhập lứa rau thu hoạch lần 2, tổng đạt 70% sản lượng mùa vụ.', @farmer_user_id, '2026-06-26 09:05:00'),
     (@pwlot_tomato_id, 'RECEIPT_FROM_HARVEST', 480.000, 'kg', 480.000, 'HARVEST', @harvest_tomato_2026_id, 'Nhập kho cà chua beef sau phân loại.', @farmer_user_id, '2026-06-20 10:05:00'),
     (@pwlot_tomato_id, 'STOCK_OUT', 120.000, 'kg', 360.000, 'WHOLESALE_ORDER', 'WS-BM-2026-061', 'Xuất một phần cho cửa hàng rau sạch.', @farmer_user_id, '2026-06-21 09:00:00'),
     (@pwlot_cucumber_id, 'RECEIPT_FROM_HARVEST', 540.000, 'kg', 540.000, 'HARVEST', @harvest_cucumber_2026_id, 'Nhập kho dưa leo baby sau làm mát.', @farmer_user_id, '2026-06-18 10:05:00'),
@@ -950,7 +955,7 @@ VALUES
     (0, 'rau-cai-xanh-binh-minh', 'Rau cải xanh', 'VEGETABLE',
      'Rau cải xanh nhà lưới đang chờ admin duyệt.',
      'Dùng để demo farmer đăng sản phẩm và admin kiểm tra trước khi mở bán.',
-     26000.00, 'kg', 410.000, '/demo-evidence/products/rau-cai-xanh.jpg',
+     26000.00, 'kg', 1050.000, '/demo-evidence/products/rau-cai-xanh.jpg',
      '["/demo-evidence/products/rau-cai-xanh.jpg","/demo-evidence/products/rau-cai-xanh-field.jpg"]',
      @farmer_user_id, @farm_binhminh_id, @season_leafy_2026_id, @pwlot_leafy_id,
      TRUE, 0.0, 0, 'PENDING_REVIEW', NULL, '2026-06-25 11:00:00', @farmer_user_id,

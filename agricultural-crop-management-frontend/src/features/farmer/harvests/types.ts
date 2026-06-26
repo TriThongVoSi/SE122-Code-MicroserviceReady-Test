@@ -1,4 +1,4 @@
-export type HarvestStatus = "stored" | "sold" | "processing";
+export type HarvestStatus = "harvested" | "stored" | "sold" | "processing";
 export type HarvestGrade = "A" | "B" | "C" | "Premium";
 export type CropResidueHandling =
     | "RETURNED_TO_SOIL"

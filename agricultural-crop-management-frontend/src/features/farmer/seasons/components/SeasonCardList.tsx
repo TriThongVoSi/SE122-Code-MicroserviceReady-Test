@@ -74,7 +74,7 @@ export function SeasonCardList({
         </div>
       ) : (
         seasons.map((season) => {
-          const progress = calculateProgress(season.startDate, season.endDate || season.startDate);
+          const progress = calculateProgress(season.startDate, season.endDate || season.plannedHarvestDate || season.startDate);
           const isSelected = selectedSeasons.includes(season.id);
           const yieldValueKg = season.actualYieldKg ?? season.expectedYieldKg ?? season.yieldPerHa ?? 0;
           const yieldLabel = formatWeight(yieldValueKg, preferences.weightUnit, preferences.locale);
