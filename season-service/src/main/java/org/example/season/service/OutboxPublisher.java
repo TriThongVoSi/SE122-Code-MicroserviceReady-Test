@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.season.config.RabbitMQConfig;
 import org.example.season.entity.OutboxEvent;
 import org.example.season.repository.OutboxEventRepository;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,12 +38,16 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                String routingKey = "season.event." + event.getEventType().toLowerCase().replace("_", ".");
+                String routingKey = event.getEventType();
 
-                // Send the raw JSON payload as is
-                Object eventPayload = objectMapper.readTree(event.getPayload());
+                Message message = MessageBuilder
+                        .withBody(event.getPayload().getBytes())
+                        .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                        .setMessageId(event.getId())
+                        .setHeader("eventType", event.getEventType())
+                        .build();
 
-                rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, routingKey, eventPayload);
+                rabbitTemplate.send(RabbitMQConfig.EXCHANGE_NAME, routingKey, message);
 
                 event.setProcessed(true);
                 outboxEventRepository.save(event);

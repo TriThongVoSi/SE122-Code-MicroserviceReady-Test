@@ -412,17 +412,18 @@ public class ProductWarehouseBridgeService {
     }
 
     private void publishLotReceived(ProductWarehouseLot lot) {
-        domainEventPublisher.publish(ProductWarehouseLotReceivedEvent.builder()
-                .aggregateType("ProductWarehouseLot")
-                .aggregateId(String.valueOf(lot.getId()))
-                .lotId(lot.getId())
-                .harvestId(lot.getHarvestId())
-                .seasonId(lot.getSeasonId())
-                .farmId(lot.getFarmId())
-                .warehouseId(lot.getWarehouseId())
-                .quantity(lot.getInitialQuantity())
-                .unit(lot.getUnit())
-                .build());
+        domainEventPublisher.publish(new ProductWarehouseLotReceivedEvent(
+                "ProductWarehouseLot",
+                String.valueOf(lot.getId()),
+                "inventory-service",
+                lot.getId(),
+                lot.getHarvestId(),
+                lot.getSeasonId(),
+                lot.getFarmId(),
+                lot.getWarehouseId(),
+                lot.getInitialQuantity(),
+                lot.getUnit()
+        ));
     }
 
     private ProductWarehouseLotDto toLotDto(ProductWarehouseLot lot) {

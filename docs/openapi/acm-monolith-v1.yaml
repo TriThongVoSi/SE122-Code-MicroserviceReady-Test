@@ -18640,14 +18640,14 @@ components:
           $ref: "#/components/schemas/MetricValue"
         estimatedYieldMetric:
           $ref: "#/components/schemas/MetricValue"
+        noutput:
+          type: number
+        nsurplusMetric:
+          $ref: "#/components/schemas/MetricValue"
         nsurplus:
           type: number
         noutputMetric:
           $ref: "#/components/schemas/MetricValue"
-        nsurplusMetric:
-          $ref: "#/components/schemas/MetricValue"
-        noutput:
-          type: number
         nOutput:
           type: number
         nSurplus:
@@ -19629,8 +19629,6 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -19638,6 +19636,8 @@ components:
         numberOfElements:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -19648,14 +19648,14 @@ components:
           format: int64
         sort:
           $ref: "#/components/schemas/SortObject"
-        paged:
-          type: boolean
         unpaged:
           type: boolean
-        pageNumber:
+        paged:
+          type: boolean
+        pageSize:
           type: integer
           format: int32
-        pageSize:
+        pageNumber:
           type: integer
           format: int32
     SortObject:

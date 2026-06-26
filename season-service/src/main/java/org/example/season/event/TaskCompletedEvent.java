@@ -14,16 +14,11 @@ public class TaskCompletedEvent extends DomainEvent {
     private final TaskStatus previousStatus;
 
     public TaskCompletedEvent(Task task, TaskStatus previousStatus) {
-        super("Task", task.getId() != null ? task.getId().toString() : "unknown");
+        super("Task", task.getId() != null ? task.getId().toString() : "unknown", "season-service", "season.event.task.completed");
         this.taskId = task.getId();
         this.taskTitle = task.getTitle();
         this.seasonId = task.getSeason() != null ? task.getSeason().getId() : null;
         this.assigneeUserId = task.getUserId();
         this.previousStatus = previousStatus;
-    }
-
-    @Override
-    public String getEventType() {
-        return "TASK_COMPLETED";
     }
 }

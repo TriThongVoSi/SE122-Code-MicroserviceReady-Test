@@ -271,6 +271,109 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  finance-service:
+    build:
+      context: ./finance-service
+      dockerfile: Dockerfile
+    container_name: finance_service_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8087
+      DB_URL: jdbc:mysql://mysql:3306/finance_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
+      JWT_JWKS_URI: http://identity-service:8081/api/v1/auth/.well-known/jwks.json
+      APP_SEASON_SERVICE_URL: http://season-service:8085
+      APP_BACKEND_URL: http://backend:8080
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbituser}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      season-service:
+        condition: service_started
+
+  incident-service:
+    build:
+      context: ./incident-service
+      dockerfile: Dockerfile
+    container_name: incident_service_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8088
+      DB_URL: jdbc:mysql://mysql:3306/incident_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
+      JWT_JWKS_URI: http://identity-service:8081/api/v1/auth/.well-known/jwks.json
+      APP_SEASON_SERVICE_URL: http://season-service:8085
+      APP_IDENTITY_SERVICE_URL: http://identity-service:8081
+      APP_BACKEND_URL: http://backend:8080
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbituser}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      season-service:
+        condition: service_started
+      identity-service:
+        condition: service_started
+
+  sustainability-service:
+    build:
+      context: ./sustainability-service
+      dockerfile: Dockerfile
+    container_name: sustainability_service_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8089
+      DB_URL: jdbc:mysql://mysql:3306/sustainability_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
+      JWT_JWKS_URI: http://identity-service:8081/api/v1/auth/.well-known/jwks.json
+      APP_SEASON_SERVICE_URL: http://season-service:8085
+      APP_FARM_SERVICE_URL: http://farm-service:8084
+      APP_FINANCE_SERVICE_URL: http://finance-service:8087
+      APP_INCIDENT_SERVICE_URL: http://incident-service:8088
+      APP_CROP_CATALOG_SERVICE_URL: http://crop-catalog-service:8082
+      APP_BACKEND_URL: http://backend:8080
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbituser}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      season-service:
+        condition: service_started
+      farm-service:
+        condition: service_started
+      finance-service:
+        condition: service_started
+      incident-service:
+        condition: service_started
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -288,6 +391,9 @@ services:
       FARM_SERVICE_URI: http://farm-service:8084
       SEASON_SERVICE_URI: http://season-service:8085
       INVENTORY_SERVICE_URI: http://inventory-service:8086
+      FINANCE_SERVICE_URI: http://finance-service:8087
+      INCIDENT_SERVICE_URI: http://incident-service:8088
+      SUSTAINABILITY_SERVICE_URI: http://sustainability-service:8089
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
     depends_on:
       - backend
@@ -297,6 +403,9 @@ services:
       - farm-service
       - season-service
       - inventory-service
+      - finance-service
+      - incident-service
+      - sustainability-service
 
   frontend:
     build:

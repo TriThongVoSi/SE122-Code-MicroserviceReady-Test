@@ -178,6 +178,9 @@ jobs:
           - farm-service
           - season-service
           - inventory-service
+          - finance-service
+          - incident-service
+          - sustainability-service
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -220,6 +223,12 @@ jobs:
             database: season_service_ci
           - service: inventory-service
             database: inventory_service_ci
+          - service: finance-service
+            database: finance_service_ci
+          - service: incident-service
+            database: incident_service_ci
+          - service: sustainability-service
+            database: sustainability_service_ci
     defaults:
       run:
         working-directory: ${{ matrix.service }}

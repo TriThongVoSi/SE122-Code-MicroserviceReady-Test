@@ -9,16 +9,23 @@ import lombok.Getter;
 public abstract class DomainEvent implements Serializable {
 
     private final String eventId;
-    private final LocalDateTime occurredOn;
+    private final String eventType;
+    private final LocalDateTime occurredAt;
     private final String aggregateType;
     private final String aggregateId;
+    private final String producer;
 
-    protected DomainEvent(String aggregateType, String aggregateId) {
+    protected DomainEvent(String aggregateType, String aggregateId, String producer, String eventType) {
         this.eventId = UUID.randomUUID().toString();
-        this.occurredOn = LocalDateTime.now();
+        this.eventType = eventType;
+        this.occurredAt = LocalDateTime.now();
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
+        this.producer = producer;
     }
 
-    public abstract String getEventType();
+    // Keep getEventType() abstract for compatibility, but just return the stored eventType
+    public String getEventType() {
+        return this.eventType;
+    }
 }

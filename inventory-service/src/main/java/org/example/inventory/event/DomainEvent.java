@@ -1,20 +1,31 @@
 package org.example.inventory.event;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
-@NoArgsConstructor
-public abstract class DomainEvent {
-    private String aggregateType;
-    private String aggregateId;
+public abstract class DomainEvent implements Serializable {
 
-    public DomainEvent(String aggregateType, String aggregateId) {
+    private final String eventId;
+    private final String eventType;
+    private final LocalDateTime occurredAt;
+    private final String aggregateType;
+    private final String aggregateId;
+    private final String producer;
+
+    protected DomainEvent(String aggregateType, String aggregateId, String producer, String eventType) {
+        this.eventId = UUID.randomUUID().toString();
+        this.eventType = eventType;
+        this.occurredAt = LocalDateTime.now();
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
+        this.producer = producer;
     }
 
-    public abstract String getEventType();
+    // Keep getEventType() abstract for compatibility, but just return the stored eventType
+    public String getEventType() {
+        return this.eventType;
+    }
 }

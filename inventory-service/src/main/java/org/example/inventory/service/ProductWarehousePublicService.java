@@ -551,19 +551,20 @@ public class ProductWarehousePublicService {
         BigDecimal previousQuantity = lot.getOnHandQuantity().subtract(delta);
         BigDecimal newQuantity = lot.getOnHandQuantity();
         Long actorUserId = resolveCurrentUserId();
-        domainEventPublisher.publish(StockAdjustedEvent.builder()
-                .aggregateType("ProductWarehouseLot")
-                .aggregateId(String.valueOf(lot.getId()))
-                .productWarehouseLotId(lot.getId())
-                .lotCode(lot.getLotCode())
-                .farmId(lot.getFarmId())
-                .previousQuantity(previousQuantity)
-                .newQuantity(newQuantity)
-                .quantityChange(delta)
-                .unit(lot.getUnit())
-                .reason(reason)
-                .actorUserId(actorUserId)
-                .build());
+        domainEventPublisher.publish(new StockAdjustedEvent(
+                "ProductWarehouseLot",
+                String.valueOf(lot.getId()),
+                "inventory-service",
+                lot.getId(),
+                lot.getLotCode(),
+                lot.getFarmId(),
+                previousQuantity,
+                newQuantity,
+                delta,
+                lot.getUnit(),
+                reason,
+                actorUserId
+        ));
     }
 
     private Long resolveCurrentUserId() {

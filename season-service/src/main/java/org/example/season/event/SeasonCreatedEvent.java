@@ -12,15 +12,10 @@ public class SeasonCreatedEvent extends DomainEvent {
     private final Integer cropId;
 
     public SeasonCreatedEvent(Season season) {
-        super("Season", season.getId() != null ? season.getId().toString() : "unknown");
+        super("Season", season.getId() != null ? season.getId().toString() : "unknown", "season-service", "season.event.season.created");
         this.seasonId = season.getId();
         this.seasonName = season.getSeasonName();
         this.plotId = season.getPlotId();
         this.cropId = season.getCropId();
-    }
-
-    @Override
-    public String getEventType() {
-        return "SEASON_CREATED";
     }
 }

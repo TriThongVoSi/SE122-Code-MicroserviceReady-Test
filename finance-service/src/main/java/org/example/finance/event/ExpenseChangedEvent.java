@@ -22,7 +22,10 @@ public class ExpenseChangedEvent extends DomainEvent {
     private final BigDecimal amount;
 
     public ExpenseChangedEvent(Expense expense, Action action, Long ownerUserId) {
-        super("Expense", expense != null && expense.getId() != null ? expense.getId().toString() : "unknown");
+        super("Expense",
+              expense != null && expense.getId() != null ? expense.getId().toString() : "unknown",
+              "finance-service",
+              "finance.event.expense." + action.name().toLowerCase());
         this.action = action;
         this.expenseId = expense != null ? expense.getId() : null;
         this.seasonId = expense != null ? expense.getSeasonId() : null;
@@ -30,10 +33,5 @@ public class ExpenseChangedEvent extends DomainEvent {
         this.ownerUserId = ownerUserId;
         this.category = expense != null ? expense.getCategory() : null;
         this.amount = expense != null ? expense.getEffectiveAmount() : null;
-    }
-
-    @Override
-    public String getEventType() {
-        return "EXPENSE_" + action.name();
     }
 }

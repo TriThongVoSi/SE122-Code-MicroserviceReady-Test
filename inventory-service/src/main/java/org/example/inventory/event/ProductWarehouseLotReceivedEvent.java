@@ -2,27 +2,28 @@ package org.example.inventory.event;
 
 import java.math.BigDecimal;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
-@NoArgsConstructor
 public class ProductWarehouseLotReceivedEvent extends DomainEvent {
-    private Integer lotId;
-    private Integer harvestId;
-    private Integer seasonId;
-    private Integer farmId;
-    private Integer warehouseId;
-    private BigDecimal quantity;
-    private String unit;
+    private final Integer lotId;
+    private final Integer harvestId;
+    private final Integer seasonId;
+    private final Integer farmId;
+    private final Integer warehouseId;
+    private final BigDecimal quantity;
+    private final String unit;
 
-    public ProductWarehouseLotReceivedEvent(String aggregateType, String aggregateId) {
-        super(aggregateType, aggregateId);
-    }
-
-    @Override
-    public String getEventType() {
-        return "PRODUCT_WAREHOUSE_LOT_RECEIVED";
+    public ProductWarehouseLotReceivedEvent(String aggregateType, String aggregateId, String producer,
+                                             Integer lotId, Integer harvestId, Integer seasonId,
+                                             Integer farmId, Integer warehouseId,
+                                             BigDecimal quantity, String unit) {
+        super(aggregateType, aggregateId, producer, "inventory.event.product_warehouse_lot_received");
+        this.lotId = lotId;
+        this.harvestId = harvestId;
+        this.seasonId = seasonId;
+        this.farmId = farmId;
+        this.warehouseId = warehouseId;
+        this.quantity = quantity;
+        this.unit = unit;
     }
 }

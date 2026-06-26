@@ -5,9 +5,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.farm.config.RabbitMQConfig;
-import org.example.farm.dto.event.FarmUpdatedEvent;
 import org.example.farm.entity.OutboxEvent;
 import org.example.farm.repository.OutboxEventRepository;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
@@ -38,16 +40,20 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                String routingKey = "farm.event." + event.getEventType().toLowerCase().replace("_", ".");
-                
-                // Deserialize payload to FarmUpdatedEvent to send it as native JSON object
-                FarmUpdatedEvent eventPayload = objectMapper.readValue(event.getPayload(), FarmUpdatedEvent.class);
-                
-                rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, routingKey, eventPayload);
-                
+                String routingKey = event.getEventType();
+
+                Message message = MessageBuilder
+                        .withBody(event.getPayload().getBytes())
+                        .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                        .setMessageId(event.getId())
+                        .setHeader("eventType", event.getEventType())
+                        .build();
+
+                rabbitTemplate.send(RabbitMQConfig.EXCHANGE_NAME, routingKey, message);
+
                 event.setProcessed(true);
                 outboxEventRepository.save(event);
-                
+
                 log.info("Successfully published outbox event ID: {} with routingKey: {}", event.getId(), routingKey);
             } catch (Exception e) {
                 log.error("Failed to publish outbox event ID: {}", event.getId(), e);

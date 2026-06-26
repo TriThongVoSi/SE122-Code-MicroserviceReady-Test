@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.farm.config.CurrentUserService;
 import org.example.farm.dto.common.PageResponse;
-import org.example.farm.dto.event.FarmUpdatedEvent;
 import org.example.farm.dto.request.FarmCreateRequest;
 import org.example.farm.dto.request.FarmUpdateRequest;
 import org.example.farm.dto.response.FarmResponse;
@@ -15,6 +14,8 @@ import org.example.farm.entity.Farm;
 import org.example.farm.entity.OutboxEvent;
 import org.example.farm.entity.Province;
 import org.example.farm.entity.Ward;
+import org.example.farm.event.FarmChangedEvent;
+import org.example.farm.event.FarmChangedEvent.Action;
 import org.example.farm.exception.AppException;
 import org.example.farm.exception.ErrorCode;
 import org.example.farm.repository.FarmRepository;
@@ -25,8 +26,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -111,7 +110,7 @@ public class FarmService {
                 .build();
 
         Farm savedFarm = farmRepository.save(farm);
-        writeOutboxEvent(savedFarm, "FARM_CREATED");
+        writeOutboxEvent(savedFarm, Action.CREATED);
         return toResponse(savedFarm);
     }
 
@@ -172,7 +171,7 @@ public class FarmService {
         }
 
         Farm savedFarm = farmRepository.save(farm);
-        writeOutboxEvent(savedFarm, "FARM_UPDATED");
+        writeOutboxEvent(savedFarm, Action.UPDATED);
         return toResponse(savedFarm);
     }
 
@@ -192,33 +191,25 @@ public class FarmService {
 
         farm.setActive(false);
         Farm savedFarm = farmRepository.save(farm);
-        writeOutboxEvent(savedFarm, "FARM_DELETED");
+        writeOutboxEvent(savedFarm, Action.DELETED);
     }
 
-    private void writeOutboxEvent(Farm farm, String eventType) {
+    private void writeOutboxEvent(Farm farm, Action action) {
         try {
-            FarmUpdatedEvent eventDto = FarmUpdatedEvent.builder()
-                    .farmId(farm.getId())
-                    .farmName(farm.getName())
-                    .userId(farm.getUserId())
-                    .provinceName(farm.getProvince() != null ? farm.getProvince().getName() : null)
-                    .wardName(farm.getWard() != null ? farm.getWard().getName() : null)
-                    .eventType(eventType)
-                    .timestamp(LocalDateTime.now())
-                    .build();
+            FarmChangedEvent eventDto = new FarmChangedEvent(farm, action);
 
             String jsonPayload = objectMapper.writeValueAsString(eventDto);
 
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateType("FARM")
+                    .aggregateType("Farm")
                     .aggregateId(String.valueOf(farm.getId()))
-                    .eventType(eventType)
+                    .eventType(eventDto.getEventType())
                     .payload(jsonPayload)
                     .processed(false)
                     .build();
 
             outboxEventRepository.save(outboxEvent);
-            log.info("Saved outbox event for farm: {} (type: {})", farm.getId(), eventType);
+            log.info("Saved outbox event for farm: {} (type: {})", farm.getId(), eventDto.getEventType());
         } catch (Exception e) {
             log.error("Failed to write outbox event for farm: {}", farm.getId(), e);
             throw new RuntimeException("Outbox write failed", e);

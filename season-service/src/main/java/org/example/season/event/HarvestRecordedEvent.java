@@ -3,7 +3,6 @@ package org.example.season.event;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 import org.example.season.entity.Harvest;
 
 @Getter
@@ -24,7 +23,7 @@ public class HarvestRecordedEvent extends DomainEvent {
     private final Long actorUserId;
 
     public HarvestRecordedEvent(Harvest harvest, Long actorUserId, Integer farmId, String cropName, String varietyName) {
-        super("Harvest", harvest.getId() != null ? harvest.getId().toString() : "unknown");
+        super("Harvest", harvest.getId() != null ? harvest.getId().toString() : "unknown", "season-service", "season.event.harvest.recorded");
         this.harvestId = harvest.getId();
         this.seasonId = harvest.getSeason() != null ? harvest.getSeason().getId() : null;
         this.seasonName = harvest.getSeason() != null ? harvest.getSeason().getSeasonName() : null;
@@ -38,10 +37,5 @@ public class HarvestRecordedEvent extends DomainEvent {
         this.grade = harvest.getGrade();
         this.note = harvest.getNote();
         this.actorUserId = actorUserId;
-    }
-
-    @Override
-    public String getEventType() {
-        return "HARVEST_RECORDED";
     }
 }
