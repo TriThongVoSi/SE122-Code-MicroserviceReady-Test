@@ -73,85 +73,21 @@ export function useWeatherWidget(
     }, []);
 
     const fetchWeatherData = useCallback(async () => {
-        setIsLoading(true);
+        setIsLoading(false);
         setError(null);
         setUiState("loading");
         setStatusMessage(null);
-
-        try {
-            const response = await getDashboardWeather({
-                farmId,
-                seasonId: seasonId ?? undefined,
-            });
-
-            const resolvedLocation =
-                response.location?.displayName ||
-                response.farmName ||
-                API_CONFIG.DEFAULT_LOCATION;
-            setLocation(resolvedLocation);
-            setTempLocation(resolvedLocation);
-
-            if (response.status === "LOCATION_REQUIRED") {
-                clearWeatherData();
-                setUiState("location_required");
-                setStatusMessage(
-                    response.message || "Please set farm coordinates before using weather dashboard."
-                );
-                return;
-            }
-
-            if (response.status === "WEATHER_UNAVAILABLE") {
-                clearWeatherData();
-                setUiState("weather_unavailable");
-                setStatusMessage(
-                    response.message || "Weather service is temporarily unavailable."
-                );
-                return;
-            }
-
-            if (!response.weather) {
-                clearWeatherData();
-                setUiState("weather_unavailable");
-                setStatusMessage("Weather service returned no data.");
-                return;
-            }
-
-            const mappedWeatherData = mapForecastToWeatherData(response.weather);
-            setWeatherData(mappedWeatherData);
-
-            const mappedForecast = mapForecastDays(response.weather.forecast.forecastday, true);
-            setForecast(mappedForecast);
-
-            const alerts = generateAgriAlerts(mappedWeatherData);
-            setAgriAlerts(alerts);
-
-            setUiState("success");
-            setStatusMessage(null);
-        } catch (err) {
-            console.error("Error fetching weather data:", err);
-            clearWeatherData();
-            const message =
-                err instanceof Error ? err.message : "Failed to fetch weather data";
-            setUiState("error");
-            setStatusMessage(message);
-            setError(message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [clearWeatherData, farmId, seasonId]);
+    }, []);
 
     useEffect(() => {
         void fetchWeatherData();
     }, [fetchWeatherData]);
 
-    /**
-     * Location editing is intentionally disabled.
-     * Weather location must come from backend farm coordinates.
-     */
     const handleSaveLocation = useCallback(async () => {
         setIsEditingLocation(false);
-        setError("Location is managed by farm settings. Please update farm coordinates.");
-    }, []);
+        setLocation(tempLocation);
+        setError(null);
+    }, [tempLocation]);
 
     const handleCancelLocation = useCallback(() => {
         setTempLocation(location || "");
@@ -265,10 +201,10 @@ export function useWeatherWidget(
     }, []);
 
     const handleSetIsEditingLocation = useCallback((value: boolean) => {
+        setIsEditingLocation(value);
         if (value) {
-            setError("Location is managed by farm settings. Please update farm coordinates.");
+            setError(null);
         }
-        setIsEditingLocation(false);
     }, []);
 
     return {
