@@ -56,6 +56,25 @@ public class MarketplaceSecurityTest {
     }
 
     @Test
+    @DisplayName("Public can read AI-facing marketplace search - GET /api/marketplace/products/search is not auth-gated")
+    void publicCanReadAiMarketplaceSearch() throws Exception {
+        mockMvc.perform(get("/api/marketplace/products/search")
+                        .param("keyword", "gao")
+                        .param("status", "ACTIVE")
+                        .param("limit", "5"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Public cannot write to AI-facing marketplace namespace - POST /api/marketplace/products returns 401")
+    void publicCannotWriteAiMarketplaceNamespace() throws Exception {
+        mockMvc.perform(post("/api/marketplace/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("Public can request product images - GET /api/v1/marketplace/product-images/{fileName} is not auth-gated")
     void publicCanRequestMarketplaceProductImages() throws Exception {
         mockMvc.perform(get("/api/v1/marketplace/product-images/missing.jpg"))

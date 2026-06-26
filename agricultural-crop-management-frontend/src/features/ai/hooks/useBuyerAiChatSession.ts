@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { sendAiChatMessage, type AiChatSource } from '@/services/aiChatService';
+import { sendAiChatMessage, type AiChatItem, type AiChatSource } from '@/services/aiChatService';
 import type { AiChatMessage, AiChatRole } from './useAiChatSession';
 
 type BuyerAiChatSessionOptions = {
@@ -18,12 +18,16 @@ const createMessage = (
     content: string,
     sources?: AiChatSource[],
     metadata?: AiChatMessage['metadata'],
+    items?: AiChatItem[],
+    intent?: string,
 ): AiChatMessage => ({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     role,
     content,
     createdAt: new Date().toISOString(),
     ...(sources?.length ? { sources } : {}),
+    ...(items?.length ? { items } : {}),
+    ...(intent ? { intent } : {}),
     ...(metadata ? { metadata } : {}),
 });
 
@@ -84,7 +88,14 @@ export function useBuyerAiChatSession(options: BuyerAiChatSessionOptions = {}) {
         try {
             const response = await sendAiChatMessage(buildContextualMessage(trimmedMessage, buyerContext));
             const assistantText = response.answer?.trim() || fallbackMessage;
-            const assistantMessage = createMessage('assistant', assistantText, response.sources, response.metadata);
+            const assistantMessage = createMessage(
+                'assistant',
+                assistantText,
+                response.sources,
+                response.metadata,
+                response.items,
+                response.intent,
+            );
             setMessages((prev) => {
                 const next = [...prev, assistantMessage];
                 cachedMessages = next;

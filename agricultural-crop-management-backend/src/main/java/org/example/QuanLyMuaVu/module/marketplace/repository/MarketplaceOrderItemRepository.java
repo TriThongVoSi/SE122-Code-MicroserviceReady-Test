@@ -21,6 +21,32 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
     Optional<MarketplaceOrderItem> findByIdAndOrder_Id(Long id, Long orderId);
 
     @Query("""
+            SELECT oi.product.id AS productId,
+                   COALESCE(SUM(oi.quantity), 0) AS soldCount
+            FROM MarketplaceOrderItem oi
+            JOIN oi.order o
+            WHERE oi.product.id IN :productIds
+              AND o.status IN :orderStatuses
+            GROUP BY oi.product.id
+            """)
+    List<ProductSoldQuantityProjection> sumSoldQuantityByProductIds(
+            @Param("productIds") Collection<Long> productIds,
+            @Param("orderStatuses") Collection<MarketplaceOrderStatus> orderStatuses);
+
+    @Query("""
+            SELECT COALESCE(oi.farm.id, oi.product.farm.id) AS farmId,
+                   COALESCE(SUM(oi.quantity), 0) AS soldCount
+            FROM MarketplaceOrderItem oi
+            JOIN oi.order o
+            WHERE COALESCE(oi.farm.id, oi.product.farm.id) IN :farmIds
+              AND o.status IN :orderStatuses
+            GROUP BY COALESCE(oi.farm.id, oi.product.farm.id)
+            """)
+    List<FarmSoldQuantityProjection> sumSoldQuantityByFarmIds(
+            @Param("farmIds") Collection<Integer> farmIds,
+            @Param("orderStatuses") Collection<MarketplaceOrderStatus> orderStatuses);
+
+    @Query("""
             SELECT p.id AS productId,
                    p.imageUrl AS imageUrl,
                    p.name AS productName,
@@ -112,6 +138,18 @@ public interface MarketplaceOrderItemRepository extends JpaRepository<Marketplac
         Long getFiveStarReviews();
 
         String getImageUrl();
+    }
+
+    interface ProductSoldQuantityProjection {
+        Long getProductId();
+
+        BigDecimal getSoldCount();
+    }
+
+    interface FarmSoldQuantityProjection {
+        Integer getFarmId();
+
+        BigDecimal getSoldCount();
     }
 
     interface AnalyticsFarmProjection {

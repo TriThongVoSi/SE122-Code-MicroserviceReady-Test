@@ -5,6 +5,22 @@ export type AiChatSource = {
   snippet?: string;
 };
 
+export type AiChatItem = {
+  type?: string;
+  id?: number | string;
+  name?: string;
+  category?: string;
+  price?: number;
+  unit?: string;
+  status?: string;
+  imageUrl?: string;
+  farmId?: number | string;
+  farmName?: string;
+  soldCount?: number;
+  rating?: number;
+  url?: string;
+};
+
 export type AiChatRequest = {
   message: string;
   top_k: number;
@@ -13,6 +29,8 @@ export type AiChatRequest = {
 export type AiChatResponse = {
   answer: string;
   sources: AiChatSource[];
+  items: AiChatItem[];
+  intent?: string;
   metadata?: {
     type?: 'marketplace_product' | 'marketplace_farm';
     product?: {
@@ -24,6 +42,7 @@ export type AiChatResponse = {
       rating?: number;
       soldQuantity?: number;
       imageUrl?: string;
+      url?: string;
     };
   };
 };
@@ -61,6 +80,19 @@ function normalizePage(value: unknown): number | undefined {
   return undefined;
 }
 
+function normalizeNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
 function normalizeSource(value: unknown): AiChatSource | null {
   if (!isRecord(value)) {
     return null;
@@ -87,6 +119,47 @@ function normalizeSource(value: unknown): AiChatSource | null {
   return source;
 }
 
+function normalizeItem(value: unknown): AiChatItem | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = typeof value.id === 'number' || typeof value.id === 'string' ? value.id : undefined;
+  const name = normalizeString(value.name);
+  const item: AiChatItem = {};
+  const type = normalizeString(value.type);
+  const category = normalizeString(value.category);
+  const unit = normalizeString(value.unit);
+  const status = normalizeString(value.status);
+  const imageUrl = normalizeString(value.imageUrl);
+  const farmName = normalizeString(value.farmName);
+  const url = normalizeString(value.url);
+  const farmId = typeof value.farmId === 'number' || typeof value.farmId === 'string' ? value.farmId : undefined;
+  const price = normalizeNumber(value.price);
+  const soldCount = normalizeNumber(value.soldCount);
+  const rating = normalizeNumber(value.rating);
+
+  if (type) item.type = type;
+  if (id !== undefined) item.id = id;
+  if (name) item.name = name;
+  if (category) item.category = category;
+  if (price !== undefined) item.price = price;
+  if (unit) item.unit = unit;
+  if (status) item.status = status;
+  if (imageUrl) item.imageUrl = imageUrl;
+  if (farmId !== undefined) item.farmId = farmId;
+  if (farmName) item.farmName = farmName;
+  if (soldCount !== undefined) item.soldCount = soldCount;
+  if (rating !== undefined) item.rating = rating;
+  if (url) item.url = url;
+
+  if (!item.id && !item.name && !item.url) {
+    return null;
+  }
+
+  return item;
+}
+
 function normalizeMetadata(value: unknown): AiChatResponse['metadata'] | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -106,8 +179,9 @@ function normalizeMetadata(value: unknown): AiChatResponse['metadata'] | undefin
   const unit = typeof productVal.unit === 'string' ? productVal.unit : undefined;
   const farmName = typeof productVal.farmName === 'string' ? productVal.farmName : undefined;
   const rating = typeof productVal.rating === 'number' ? productVal.rating : undefined;
-  const soldQuantity = typeof productVal.soldQuantity === 'number' ? productVal.soldQuantity : undefined;
+  const soldQuantity = normalizeNumber(productVal.soldQuantity);
   const imageUrl = typeof productVal.imageUrl === 'string' ? productVal.imageUrl : undefined;
+  const url = typeof productVal.url === 'string' ? productVal.url : undefined;
 
   return {
     type,
@@ -120,6 +194,7 @@ function normalizeMetadata(value: unknown): AiChatResponse['metadata'] | undefin
       rating,
       soldQuantity,
       imageUrl,
+      url,
     },
   };
 }
@@ -129,18 +204,25 @@ function normalizeResponse(payload: unknown): AiChatResponse {
     return {
       answer: EMPTY_AI_RESPONSE_MESSAGE,
       sources: [],
+      items: [],
     };
   }
 
   const answer = normalizeString(payload.answer) || EMPTY_AI_RESPONSE_MESSAGE;
   const rawSources = Array.isArray(payload.sources) ? payload.sources : [];
+  const rawItems = Array.isArray(payload.items) ? payload.items : [];
   const metadata = normalizeMetadata(payload.metadata);
+  const intent = normalizeString(payload.intent);
 
   return {
     answer,
     sources: rawSources
       .map(normalizeSource)
       .filter((source): source is AiChatSource => source !== null),
+    items: rawItems
+      .map(normalizeItem)
+      .filter((item): item is AiChatItem => item !== null),
+    ...(intent ? { intent } : {}),
     ...(metadata ? { metadata } : {}),
   };
 }
@@ -155,6 +237,7 @@ export async function sendAiChatMessage(
     return {
       answer: EMPTY_AI_RESPONSE_MESSAGE,
       sources: [],
+      items: [],
     };
   }
 

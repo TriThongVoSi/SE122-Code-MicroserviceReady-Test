@@ -18,6 +18,7 @@ describe('useAiChatSession', () => {
         sendAiChatMessageMock.mockResolvedValue({
             answer: 'Use clean irrigation water.',
             sources: [{ file_name: 'vietgap.md', heading: 'Water', snippet: 'Check water.' }],
+            items: [],
         });
 
         const { result } = renderHook(() =>

@@ -53,6 +53,7 @@ describe('sendAiChatMessage', () => {
     );
     expect(response).toEqual({
       answer: 'Nguon nuoc tuoi can duoc kiem soat.',
+      items: [],
       sources: [
         {
           file_name: 'vietgap.md',
@@ -107,6 +108,50 @@ describe('sendAiChatMessage', () => {
     await expect(sendAiChatMessage('Hoi lai')).resolves.toEqual({
       answer: EMPTY_AI_RESPONSE_MESSAGE,
       sources: [],
+      items: [],
+    });
+  });
+
+  it('normalizes product items and tolerates missing response fields', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          answer: 'Co san pham phu hop.',
+          intent: 'product_search',
+          items: [
+            {
+              id: 1,
+              name: 'Gao thom ST25',
+              price: '35000',
+              unit: 'kg',
+              status: 'ACTIVE',
+              farmName: 'Nong trai A',
+              soldCount: 10,
+              url: '/products/1',
+            },
+            { unknown: true },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(sendAiChatMessage('Co ban ST25 khong?')).resolves.toEqual({
+      answer: 'Co san pham phu hop.',
+      sources: [],
+      items: [
+        {
+          id: 1,
+          name: 'Gao thom ST25',
+          price: 35000,
+          unit: 'kg',
+          status: 'ACTIVE',
+          farmName: 'Nong trai A',
+          soldCount: 10,
+          url: '/products/1',
+        },
+      ],
+      intent: 'product_search',
     });
   });
 

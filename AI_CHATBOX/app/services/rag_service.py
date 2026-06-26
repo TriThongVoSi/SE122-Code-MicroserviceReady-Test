@@ -572,12 +572,16 @@ class RagService:
 
         router = getattr(self, "router", QuestionRouter())
         route = router.route(question)
+        router_intent = {
+            "marketplace_product": "product_search",
+            "marketplace_farm": "farm_query",
+            "marketplace_analytics": "marketplace_analytics",
+        }.get(route.mode, route.mode)
         logger.info(
-            "[ROUTER] mode=%s category=%s confidence=%s reason=%s",
-            route.mode,
-            route.category,
+            '[ROUTER] intent=%s confidence=%s question="%s"',
+            router_intent,
             route.confidence,
-            route.reason,
+            question.replace('"', '\\"'),
         )
 
         if route.mode == "identity":
@@ -586,7 +590,7 @@ class RagService:
                 "sources": [],
             }
 
-        if route.mode == "marketplace_query":
+        if route.mode in ("marketplace_product", "marketplace_farm", "marketplace_analytics"):
             marketplace_service = getattr(self, "marketplace_query_service", None)
             if marketplace_service is None:
                 marketplace_service = MarketplaceQueryService()

@@ -89,9 +89,52 @@ class QuestionRouterTests(unittest.TestCase):
             with self.subTest(question=question):
                 route = self.router.route(question)
 
-                self.assertEqual(route.mode, "marketplace_query")
+                self.assertIn(route.mode, {"marketplace_product", "marketplace_analytics"})
                 self.assertEqual(route.category, "marketplace")
                 self.assertEqual(route.confidence, "high")
+
+    def test_routes_marketplace_product_questions_to_product_mode(self):
+        cases = [
+            "Hiện có những sản phẩm nào?",
+            "Có bán gạo không?",
+            "Sản phẩm nào đang bán?",
+            "Có sản phẩm nào hết hàng?",
+            "Có sản phẩm đang chờ duyệt không?",
+            "Tôi muốn mua rau",
+        ]
+
+        for question in cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "marketplace_product")
+                self.assertEqual(route.category, "marketplace")
+
+    def test_routes_marketplace_farm_and_analytics_questions(self):
+        farm_cases = [
+            "Hiện có bao nhiêu trang trại?",
+            "Có những trang trại nào?",
+            "Cho tôi xem sản phẩm của một trang trại.",
+        ]
+        analytics_cases = [
+            "Trang trại nào có nhiều sản phẩm nhất?",
+            "Trang trại nào bán nhiều nhất?",
+            "Trang trại nào uy tín nhất?",
+        ]
+
+        for question in farm_cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "marketplace_farm")
+                self.assertEqual(route.category, "marketplace")
+
+        for question in analytics_cases:
+            with self.subTest(question=question):
+                route = self.router.route(question)
+
+                self.assertEqual(route.mode, "marketplace_analytics")
+                self.assertEqual(route.category, "marketplace")
 
     def test_routes_undocumented_crop_questions_to_general_llm(self):
         cases = [

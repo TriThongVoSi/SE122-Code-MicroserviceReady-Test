@@ -19,6 +19,7 @@ describe('useBuyerAiChatSession', () => {
         sendAiChatMessageMock.mockResolvedValue({
             answer: 'Check traceability first.',
             sources: [{ file_name: 'buyer.md', heading: 'Traceability', page: 2 }],
+            items: [],
         });
 
         const { result } = renderHook(() =>
@@ -49,6 +50,7 @@ describe('useBuyerAiChatSession', () => {
         sendAiChatMessageMock.mockResolvedValue({
             answer: 'Sản phẩm mắc nhất hiện tại là Gạo thơm ST25 An Phú.',
             sources: [],
+            items: [],
             metadata: {
                 type: 'marketplace_product',
                 product: {
@@ -90,6 +92,53 @@ describe('useBuyerAiChatSession', () => {
                 imageUrl: '/demo-evidence/products/rice.jpg',
             },
         });
+    });
+
+    it('stores product items when API response contains marketplace cards', async () => {
+        sendAiChatMessageMock.mockResolvedValue({
+            answer: 'Tôi tìm thấy sản phẩm phù hợp.',
+            sources: [],
+            items: [
+                {
+                    id: 1,
+                    name: 'Gạo thơm ST25',
+                    price: 35000,
+                    unit: 'kg',
+                    status: 'ACTIVE',
+                    farmName: 'Nông trại A',
+                    soldCount: 10,
+                    url: '/products/1',
+                },
+            ],
+            intent: 'product_search',
+        });
+
+        const { result } = renderHook(() =>
+            useBuyerAiChatSession({ welcomeMessage: 'Welcome buyer' }),
+        );
+
+        await act(async () => {
+            await result.current.sendMessage('Có bán ST25 không?');
+        });
+
+        await waitFor(() => {
+            expect(result.current.messages).toHaveLength(3);
+        });
+
+        const assistantMessage = result.current.messages[2];
+        expect(assistantMessage.items).toEqual([
+            {
+                id: 1,
+                name: 'Gạo thơm ST25',
+                price: 35000,
+                unit: 'kg',
+                status: 'ACTIVE',
+                farmName: 'Nông trại A',
+                soldCount: 10,
+                url: '/products/1',
+            },
+        ]);
+        expect(assistantMessage.intent).toBe('product_search');
     });
 
     it('adds the configured fallback message when buyer chat fails', async () => {

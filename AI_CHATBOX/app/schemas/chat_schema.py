@@ -33,6 +33,22 @@ class ProductMetadata(BaseModel):
     imageUrl: Optional[str] = None
 
 
+class ChatItem(BaseModel):
+    type: Optional[str] = None
+    id: Optional[int] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[float] = None
+    unit: Optional[str] = None
+    status: Optional[str] = None
+    imageUrl: Optional[str] = None
+    farmId: Optional[int] = None
+    farmName: Optional[str] = None
+    soldCount: Optional[int] = None
+    rating: Optional[float] = None
+    url: Optional[str] = None
+
+
 class ChatMetadata(BaseModel):
     type: Optional[str] = None
     product: Optional[ProductMetadata] = None
@@ -41,6 +57,8 @@ class ChatMetadata(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceDocument] = Field(default_factory=list)
+    items: List[ChatItem] = Field(default_factory=list)
+    intent: Optional[str] = None
     metadata: Optional[ChatMetadata] = None
 
 

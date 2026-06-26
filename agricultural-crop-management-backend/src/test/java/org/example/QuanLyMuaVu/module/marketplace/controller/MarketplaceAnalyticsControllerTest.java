@@ -8,9 +8,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
+import org.example.QuanLyMuaVu.module.marketplace.dto.response.AiMarketplaceAnalyticsResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAnalyticsQueryResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceAnalyticsResultDto;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceAnalyticsIntent;
+import org.example.QuanLyMuaVu.module.marketplace.service.AiMarketplaceService;
 import org.example.QuanLyMuaVu.module.marketplace.service.MarketplaceAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,9 @@ class MarketplaceAnalyticsControllerTest {
 
     @MockitoBean
     private MarketplaceAnalyticsService marketplaceAnalyticsService;
+
+    @MockitoBean
+    private AiMarketplaceService aiMarketplaceService;
 
     @MockitoBean(name = "customJwtDecoder")
     private org.example.QuanLyMuaVu.module.identity.config.CustomJwtDecoder customJwtDecoder;
@@ -88,6 +94,25 @@ class MarketplaceAnalyticsControllerTest {
                 .andExpect(jsonPath("$.data.total_orders").value(120))
                 .andExpect(jsonPath("$.data.rating").value(4.9))
                 .andExpect(jsonPath("$.data.five_star_reviews").value(32))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(jsonPath("$.result").doesNotExist());
+    }
+
+    @Test
+    void query_NewAiIntent_ReturnsAnswerAndItemsPayload() throws Exception {
+        when(aiMarketplaceService.queryAnalytics("farm_count", null, 3))
+                .thenReturn(new AiMarketplaceAnalyticsResponse(
+                        "farm_count",
+                        "Hiện có 2 trang trại.",
+                        List.of()));
+
+        mockMvc.perform(get("/api/marketplace/analytics/query")
+                        .param("intent", "farm_count")
+                        .param("limit", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.intent").value("farm_count"))
+                .andExpect(jsonPath("$.answer").value("Hiện có 2 trang trại."))
+                .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.code").doesNotExist())
                 .andExpect(jsonPath("$.result").doesNotExist());
     }

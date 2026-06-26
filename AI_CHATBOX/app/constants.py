@@ -1,9 +1,5 @@
 INSUFFICIENT_DATA_MESSAGE = "Tôi chưa có đủ dữ liệu trong tài liệu hiện tại."
-OFF_TOPIC_MESSAGE = (
-    "Tôi là trợ lý nông nghiệp ACM nên chỉ hỗ trợ các câu hỏi về nông nghiệp, "
-    "mùa vụ, VietGAP, truy xuất nguồn gốc và hệ thống ACM. Bạn có thể hỏi tôi "
-    "về cây trồng, sâu bệnh, nhật ký mùa vụ hoặc QR nông sản."
-)
+OFF_TOPIC_MESSAGE = "Xin lỗi, tôi chưa thể trả lời câu hỏi này."
 IDENTITY_MESSAGE = (
     "Tôi là trợ lý nông nghiệp ACM, hỗ trợ người dùng trong quản lý mùa vụ, "
     "VietGAP và truy xuất nguồn gốc nông sản.\n\n"

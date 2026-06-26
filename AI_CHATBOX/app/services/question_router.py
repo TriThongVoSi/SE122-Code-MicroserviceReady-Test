@@ -13,7 +13,9 @@ RouteMode = Literal[
     "restricted_agriculture",
     "rag_first",
     "general_agriculture_llm",
-    "marketplace_query",
+    "marketplace_product",
+    "marketplace_farm",
+    "marketplace_analytics",
     "off_topic",
 ]
 RouteConfidence = Literal["high", "medium", "low"]
@@ -35,6 +37,11 @@ def normalize_question(text: str) -> str:
     without_marks = without_marks.replace("đ", "d")
     without_marks = without_marks.replace("đ", "d")
     return re.sub(r"\s+", " ", without_marks).strip()
+
+
+def _contains_normalized_term(text: str, term: str) -> bool:
+    pattern = rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])"
+    return re.search(pattern, text) is not None
 
 
 IDENTITY_TERMS = (
@@ -299,6 +306,7 @@ MARKETPLACE_SUBJECT_TERMS = (
     "san pham",
     "nong trai",
     "trang trai",
+    "farm",
     "gao",
     "lua",
     "rau",
@@ -306,9 +314,33 @@ MARKETPLACE_SUBJECT_TERMS = (
     "chuoi",
     "xoai",
     "khoai tay",
+    "khoai",
+    "khoai lang",
     "ngo",
     "bap",
     "dua leo",
+    "dua chuot",
+    "dau nanh",
+    "thanh long",
+)
+
+MARKETPLACE_PRODUCT_TERMS = (
+    "san pham",
+    "mua",
+    "ban",
+    "gia",
+    "dang ban",
+    "het hang",
+    "cho duyet",
+    "cho toi xem",
+    "tim giup",
+    "lam qua",
+)
+
+MARKETPLACE_FARM_TERMS = (
+    "nong trai",
+    "trang trai",
+    "farm",
 )
 
 MARKETPLACE_COMPARATIVE_TERMS = (
@@ -342,12 +374,13 @@ class QuestionRouter:
                 reason="identity or capability question",
             )
 
-        if self._is_marketplace_query(normalized):
+        marketplace_mode = self._marketplace_mode(normalized)
+        if marketplace_mode:
             return QuestionRoute(
-                mode="marketplace_query",
+                mode=marketplace_mode,
                 category="marketplace",
                 confidence="high",
-                reason="marketplace analytics question",
+                reason=f"{marketplace_mode} question",
             )
 
         strict_category = self._strict_category(normalized)
@@ -419,6 +452,33 @@ class QuestionRouter:
         return any(term in normalized for term in MARKETPLACE_SUBJECT_TERMS) and any(
             term in normalized for term in MARKETPLACE_COMPARATIVE_TERMS
         )
+
+    @staticmethod
+    def _marketplace_mode(normalized: str) -> RouteMode | None:
+        has_product_signal = any(_contains_normalized_term(normalized, term) for term in MARKETPLACE_PRODUCT_TERMS)
+        has_farm_signal = any(_contains_normalized_term(normalized, term) for term in MARKETPLACE_FARM_TERMS)
+        has_subject_signal = any(_contains_normalized_term(normalized, term) for term in MARKETPLACE_SUBJECT_TERMS)
+        has_comparative_signal = any(_contains_normalized_term(normalized, term) for term in MARKETPLACE_COMPARATIVE_TERMS)
+
+        if has_farm_signal and (
+            has_comparative_signal
+            or "nhieu san pham" in normalized
+            or "ban nhieu" in normalized
+            or "ban chay" in normalized
+            or "nhieu luot mua" in normalized
+            or "uy tin" in normalized
+            or "moi tham gia" in normalized
+        ):
+            return "marketplace_analytics"
+        if has_farm_signal:
+            return "marketplace_farm"
+        if has_product_signal and has_subject_signal:
+            if has_comparative_signal:
+                return "marketplace_analytics"
+            return "marketplace_product"
+        if has_subject_signal and has_comparative_signal:
+            return "marketplace_analytics"
+        return None
 
     def _is_general_agriculture(self, normalized: str) -> bool:
         return self._is_agriculture(normalized) and any(
