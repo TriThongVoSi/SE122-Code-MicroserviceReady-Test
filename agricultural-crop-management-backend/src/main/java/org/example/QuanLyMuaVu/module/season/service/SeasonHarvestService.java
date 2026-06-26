@@ -442,11 +442,14 @@ public class SeasonHarvestService {
     }
 
     private String resolveHarvestStatus(ProductWarehouseLot lot) {
-        if (lot == null || lot.getStatus() == ProductWarehouseLotStatus.ARCHIVED) {
+        if (lot == null) {
+            return "harvested";
+        }
+        if (lot.getStatus() == ProductWarehouseLotStatus.ARCHIVED) {
             return null;
         }
         if (lot.getStatus() == ProductWarehouseLotStatus.HOLD) {
-            return "processing";
+            return "harvested";
         }
         BigDecimal onHand = safeQuantity(lot.getOnHandQuantity());
         if (lot.getStatus() == ProductWarehouseLotStatus.DEPLETED || onHand.compareTo(BigDecimal.ZERO) <= 0) {
@@ -455,7 +458,7 @@ public class SeasonHarvestService {
         if (lot.getStatus() == ProductWarehouseLotStatus.IN_STOCK) {
             return "stored";
         }
-        return null;
+        return "harvested";
     }
 
     private void validateLinkedLotQuantityUpdate(ProductWarehouseLot lot, BigDecimal nextQuantity) {

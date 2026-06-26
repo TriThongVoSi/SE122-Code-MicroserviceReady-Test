@@ -268,12 +268,14 @@ export function useSeasonManagement() {
   const handleViewDetails = useCallback((season: Season) => {
     setSelectedSeason(season);
     setViewMode('detail');
+    document.querySelector('.acm-main-content')?.scrollTo(0, 0);
   }, []);
 
   const handleBackToList = useCallback(() => {
     setViewMode('list');
     setSelectedSeason(null);
     setActiveTab('overview');
+    document.querySelector('.acm-main-content')?.scrollTo(0, 0);
   }, []);
 
   const handleDeleteSeason = useCallback((seasonId: string) => {

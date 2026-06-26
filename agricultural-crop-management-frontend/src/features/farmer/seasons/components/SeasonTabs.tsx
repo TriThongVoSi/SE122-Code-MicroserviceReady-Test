@@ -15,7 +15,7 @@ export function SeasonTabs({ season, activeTab, setActiveTab, activities }: Seas
   const { t } = useI18n();
   const effectiveEndDate = season.endDate || season.plannedHarvestDate || season.startDate;
   const endDateLabel = effectiveEndDate
-    ? new Date(effectiveEndDate).toLocaleDateString()
+    ? new Date(effectiveEndDate).toLocaleDateString('vi-VN')
     : '-';
 
   return (
@@ -41,7 +41,7 @@ export function SeasonTabs({ season, activeTab, setActiveTab, activities }: Seas
                 <div>
                   <Label className="text-sm text-muted-foreground">{t("seasonTabs.startDate", "Start Date")}</Label>
                   <div className="mt-1 text-foreground">
-                    {new Date(season.startDate).toLocaleDateString()}
+                    {new Date(season.startDate).toLocaleDateString('vi-VN')}
                   </div>
                 </div>
                 <div>

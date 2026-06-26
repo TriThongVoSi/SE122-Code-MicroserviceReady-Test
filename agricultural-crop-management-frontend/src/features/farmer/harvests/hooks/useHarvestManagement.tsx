@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, CheckCircle2, Clock, Package } from "lucide-react";
+import { Award, CheckCircle2, Clock, Leaf, Package } from "lucide-react";
 import { Badge } from "@/shared/ui/badge";
 import { toast } from "sonner";
 import {
@@ -68,7 +68,7 @@ const parseHarvestGrade = (value?: string | null): HarvestGrade | undefined => {
 };
 
 const parseHarvestStatus = (value?: string | null): HarvestStatus | undefined => {
-  if (value === "stored" || value === "sold" || value === "processing") {
+  if (value === "harvested" || value === "stored" || value === "sold" || value === "processing") {
     return value;
   }
   return undefined;
@@ -425,6 +425,12 @@ export function useHarvestManagement() {
   const getStatusBadge = useCallback((status?: HarvestStatus | null) => {
     if (!status) return null;
     const badges: Record<HarvestStatus, JSX.Element> = {
+      harvested: (
+        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+          <Leaf className="w-3 h-3 mr-1" />
+          {t("harvests.status.harvested", "Đã thu hoạch")}
+        </Badge>
+      ),
       stored: (
         <Badge className="bg-secondary/10 text-secondary border-secondary/20">
           <Package className="w-3 h-3 mr-1" />

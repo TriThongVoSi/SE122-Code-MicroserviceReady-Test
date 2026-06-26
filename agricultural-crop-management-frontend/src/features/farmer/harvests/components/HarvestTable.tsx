@@ -165,7 +165,7 @@ export function HarvestTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                batches.map((batch) => (
+                batches.map((batch, index) => (
                   <TableRow
                     key={batch.id}
                     className="hover:bg-muted/50 cursor-pointer"
@@ -180,18 +180,18 @@ export function HarvestTable({
                         onCheckedChange={(checked) =>
                           onToggleBatchSelection(batch.id, checked === true)
                         }
-                        aria-label={t("harvests.table.selectBatch", { batchId: batch.batchId })}
+                        aria-label={t("harvests.table.selectBatch", { batchId: batches.length - index })}
                       />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(batch.date).toLocaleDateString(preferences.locale, {
-                        month: "short",
-                        day: "numeric",
+                        day: "2-digit",
+                        month: "2-digit",
                         year: "numeric",
                       })}
                     </TableCell>
                     <TableCell className="numeric text-foreground">
-                      {batch.batchId}
+                      {batches.length - index}
                     </TableCell>
                     <TableCell className="text-right numeric text-foreground">
                       {formatWeight(batch.quantity, preferences.weightUnit, preferences.locale)}
@@ -204,7 +204,14 @@ export function HarvestTable({
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {batch.createdAt
-                        ? new Date(batch.createdAt).toLocaleString(preferences.locale)
+                        ? new Date(batch.createdAt).toLocaleString(preferences.locale, {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })
                         : "-"}
                     </TableCell>
                     <TableCell onClick={(event) => event.stopPropagation()}>

@@ -29,7 +29,7 @@ export const HarvestSchema = z.object({
     grade: z.string().nullable().optional(),
     revenue: z.number().nullable().optional(),
     note: z.string().nullable().optional(),
-    status: z.enum(['stored', 'sold', 'processing']).nullable().optional(),
+    status: z.enum(['harvested', 'stored', 'sold', 'processing']).nullable().optional(),
     createdAt: z.string().nullable().optional(),
 });
 
