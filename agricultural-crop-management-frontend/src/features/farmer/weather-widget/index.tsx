@@ -18,19 +18,12 @@ export function WeatherWidget({
 
     if (variant === "compact") {
         return (
-            <Popover>
-                <PopoverTrigger asChild>
-                    <CompactView
-                        weatherData={controller.weatherData}
-                        location={controller.location}
-                        uiState={controller.uiState}
-                        statusMessage={controller.statusMessage}
-                    />
-                </PopoverTrigger>
-                <PopoverContent className="w-[480px] p-0" align="end" sideOffset={8}>
-                    <DetailedView {...controller} />
-                </PopoverContent>
-            </Popover>
+            <CompactView
+                weatherData={null}
+                location={null}
+                uiState="loading"
+                statusMessage={null}
+            />
         );
     }
 
