@@ -1,0 +1,1969 @@
+openapi: 3.1.0
+info:
+  title: ACM Sustainability Service API
+  description: Standard API documentation for ACM Domain Services
+  license:
+    name: Apache 2.0
+    url: https://springdoc.org
+  version: 1.0.0
+servers:
+- url: http://localhost
+  description: Generated server url
+security:
+- bearerAuth: []
+paths:
+  /api/v1/seasons/{seasonId}/soil-tests:
+    get:
+      tags:
+      - soil-test-controller
+      operationId: list
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListSoilTestResponse"
+    post:
+      tags:
+      - soil-test-controller
+      operationId: create
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSoilTestRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseSoilTestResponse"
+  /api/v1/seasons/{seasonId}/nutrient-inputs:
+    get:
+      tags:
+      - nutrient-input-controller
+      operationId: listNutrientInputs
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: source
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - MINERAL_FERTILIZER
+          - ORGANIC_FERTILIZER
+          - BIOLOGICAL_FIXATION
+          - IRRIGATION_WATER
+          - ATMOSPHERIC_DEPOSITION
+          - SEED_IMPORT
+          - SOIL_LEGACY
+          - CONTROL_SUPPLY
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListNutrientInputResponse"
+    post:
+      tags:
+      - nutrient-input-controller
+      operationId: createNutrientInput
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNutrientInputRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNutrientInputResponse"
+  /api/v1/seasons/{seasonId}/irrigation-water-analyses:
+    get:
+      tags:
+      - irrigation-water-analysis-controller
+      operationId: list_1
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListIrrigationWaterAnalysisResponse"
+    post:
+      tags:
+      - irrigation-water-analysis-controller
+      operationId: create_1
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIrrigationWaterAnalysisRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIrrigationWaterAnalysisResponse"
+  /api/v1/fields/{fieldId}/sustainability-metrics:
+    get:
+      tags:
+      - sustainability-controller
+      operationId: getFieldMetrics
+      parameters:
+      - name: fieldId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseSustainabilityOverviewResponse"
+  /api/v1/fields/{fieldId}/recommendations:
+    get:
+      tags:
+      - sustainability-controller
+      operationId: getFieldRecommendations
+      parameters:
+      - name: fieldId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFieldRecommendationsResponse"
+  /api/v1/fields/{fieldId}/fdn-history:
+    get:
+      tags:
+      - sustainability-controller
+      operationId: getFieldHistory
+      parameters:
+      - name: fieldId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListHistoryPoint"
+  /api/v1/fields/map:
+    get:
+      tags:
+      - sustainability-controller
+      operationId: getFieldMap
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: crop
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: alertLevel
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFieldMapResponse"
+  /api/v1/farmer/reports/yield:
+    get:
+      tags:
+      - farmer-report-controller
+      operationId: getYieldReport
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: dateFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: cropId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListYieldReport"
+  /api/v1/farmer/reports/revenue:
+    get:
+      tags:
+      - farmer-report-controller
+      operationId: getRevenueReport
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: dateFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: cropId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListRevenueReport"
+  /api/v1/farmer/reports/profit:
+    get:
+      tags:
+      - farmer-report-controller
+      operationId: getProfitReport
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: dateFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: cropId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListProfitReport"
+  /api/v1/farmer/reports/cost:
+    get:
+      tags:
+      - farmer-report-controller
+      operationId: getCostReport
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: dateFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: dateTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: cropId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListCostReport"
+  /api/v1/dashboard/sustainability/overview:
+    get:
+      tags:
+      - sustainability-controller
+      operationId: getOverview
+      parameters:
+      - name: scope
+        in: query
+        required: false
+        schema:
+          type: string
+          default: field
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: fieldId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: farmId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseSustainabilityOverviewResponse"
+  /api/v1/dashboard/plot-status:
+    get:
+      tags:
+      - dashboard-controller
+      operationId: getPlotStatus
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListPlotStatusResponse"
+  /api/v1/dashboard/overview:
+    get:
+      tags:
+      - dashboard-controller
+      operationId: getOverview_1
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseDashboardOverviewResponse"
+  /api/v1/dashboard/incident-alerts:
+    get:
+      tags:
+      - dashboard-controller
+      operationId: getIncidentAlerts
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListDashboardIncidentAlertResponse"
+  /api/v1/dashboard/data-completeness-warnings:
+    get:
+      tags:
+      - dashboard-controller
+      operationId: getDataCompletenessWarnings
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListDashboardDataCompletenessWarningResponse"
+components:
+  schemas:
+    CreateSoilTestRequest:
+      type: object
+      properties:
+        plotId:
+          type: integer
+          format: int32
+        sampleDate:
+          type: string
+          format: date
+        soilOrganicMatterPct:
+          type: number
+          maximum: 100.0
+          minimum: 0.0
+        mineralNKgPerHa:
+          type: number
+          minimum: 0.0
+        nitrateMgPerKg:
+          type: number
+          minimum: 0.0
+        ammoniumMgPerKg:
+          type: number
+          minimum: 0.0
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        labReference:
+          type: string
+        note:
+          type: string
+      required:
+      - mineralNKgPerHa
+      - plotId
+      - sampleDate
+      - sourceType
+    ApiResponseSoilTestResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/SoilTestResponse"
+        data:
+          $ref: "#/components/schemas/SoilTestResponse"
+        generatedAt:
+          type: string
+    SoilTestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        plotId:
+          type: integer
+          format: int32
+        plotName:
+          type: string
+        sampleDate:
+          type: string
+          format: date
+        soilOrganicMatterPct:
+          type: number
+        mineralNKgPerHa:
+          type: number
+        nitrateMgPerKg:
+          type: number
+        ammoniumMgPerKg:
+          type: number
+        mineralNUnit:
+          type: string
+        concentrationUnit:
+          type: string
+        estimatedNContributionKg:
+          type: number
+        contributionUnit:
+          type: string
+        measured:
+          type: boolean
+        status:
+          type: string
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        labReference:
+          type: string
+        note:
+          type: string
+        legacyDerived:
+          type: boolean
+        migratedFromLegacyEventId:
+          type: integer
+          format: int32
+        createdByUserId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    CreateNutrientInputRequest:
+      type: object
+      properties:
+        plotId:
+          type: integer
+          format: int32
+        inputSource:
+          type: string
+          enum:
+          - MINERAL_FERTILIZER
+          - ORGANIC_FERTILIZER
+          - BIOLOGICAL_FIXATION
+          - IRRIGATION_WATER
+          - ATMOSPHERIC_DEPOSITION
+          - SEED_IMPORT
+          - SOIL_LEGACY
+          - CONTROL_SUPPLY
+        value:
+          type: number
+          minimum: 0.0
+        unit:
+          type: string
+        recordedAt:
+          type: string
+          format: date
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        note:
+          type: string
+      required:
+      - inputSource
+      - plotId
+      - recordedAt
+      - sourceType
+      - unit
+      - value
+    ApiResponseNutrientInputResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/NutrientInputResponse"
+        data:
+          $ref: "#/components/schemas/NutrientInputResponse"
+        generatedAt:
+          type: string
+    NutrientInputResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        plotId:
+          type: integer
+          format: int32
+        plotName:
+          type: string
+        inputSource:
+          type: string
+          enum:
+          - MINERAL_FERTILIZER
+          - ORGANIC_FERTILIZER
+          - BIOLOGICAL_FIXATION
+          - IRRIGATION_WATER
+          - ATMOSPHERIC_DEPOSITION
+          - SEED_IMPORT
+          - SOIL_LEGACY
+          - CONTROL_SUPPLY
+        value:
+          type: number
+        unit:
+          type: string
+        normalizedNKg:
+          type: number
+        recordedAt:
+          type: string
+          format: date
+        measured:
+          type: boolean
+        status:
+          type: string
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        note:
+          type: string
+        createdByUserId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    CreateIrrigationWaterAnalysisRequest:
+      type: object
+      properties:
+        plotId:
+          type: integer
+          format: int32
+        sampleDate:
+          type: string
+          format: date
+        nitrateMgPerL:
+          type: number
+          minimum: 0.0
+        ammoniumMgPerL:
+          type: number
+          minimum: 0.0
+        totalNmgPerL:
+          type: number
+          minimum: 0.0
+        irrigationVolumeM3:
+          type: number
+          minimum: 0.0
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        labReference:
+          type: string
+        note:
+          type: string
+      required:
+      - irrigationVolumeM3
+      - plotId
+      - sampleDate
+      - sourceType
+    ApiResponseIrrigationWaterAnalysisResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/IrrigationWaterAnalysisResponse"
+        data:
+          $ref: "#/components/schemas/IrrigationWaterAnalysisResponse"
+        generatedAt:
+          type: string
+    IrrigationWaterAnalysisResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        plotId:
+          type: integer
+          format: int32
+        plotName:
+          type: string
+        sampleDate:
+          type: string
+          format: date
+        nitrateMgPerL:
+          type: number
+        ammoniumMgPerL:
+          type: number
+        totalNmgPerL:
+          type: number
+        effectiveNmgPerL:
+          type: number
+        concentrationUnit:
+          type: string
+        irrigationVolumeM3:
+          type: number
+        volumeUnit:
+          type: string
+        estimatedNContributionKg:
+          type: number
+        contributionUnit:
+          type: string
+        measured:
+          type: boolean
+        status:
+          type: string
+        sourceType:
+          type: string
+          enum:
+          - user_entered
+          - lab_measured
+          - system_estimated
+          - external_reference
+          - default_reference
+        sourceDocument:
+          type: string
+        labReference:
+          type: string
+        note:
+          type: string
+        legacyDerived:
+          type: boolean
+        migratedFromLegacyEventId:
+          type: integer
+          format: int32
+        createdByUserId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    ApiResponseListSoilTestResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/SoilTestResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SoilTestResponse"
+        generatedAt:
+          type: string
+    ApiResponseListNutrientInputResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/NutrientInputResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/NutrientInputResponse"
+        generatedAt:
+          type: string
+    ApiResponseListIrrigationWaterAnalysisResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/IrrigationWaterAnalysisResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IrrigationWaterAnalysisResponse"
+        generatedAt:
+          type: string
+    ApiResponseSustainabilityOverviewResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/SustainabilityOverviewResponse"
+        data:
+          $ref: "#/components/schemas/SustainabilityOverviewResponse"
+        generatedAt:
+          type: string
+    CurrentSeason:
+      type: object
+      properties:
+        seasonName:
+          type: string
+        cropName:
+          type: string
+        dayCount:
+          type: integer
+          format: int32
+        stage:
+          type: string
+    DataInputQuality:
+      type: object
+      properties:
+        source:
+          type: string
+        method:
+          type: string
+        confidence:
+          type: number
+    DataQualitySummary:
+      type: object
+      properties:
+        overallConfidence:
+          type: number
+        measuredInputCount:
+          type: integer
+          format: int32
+        estimatedInputCount:
+          type: integer
+          format: int32
+        missingInputCount:
+          type: integer
+          format: int32
+        unavailableInputCount:
+          type: integer
+          format: int32
+        summary:
+          type: string
+    FdnMetrics:
+      type: object
+      properties:
+        total:
+          type: number
+        mineral:
+          type: number
+        organic:
+          type: number
+        level:
+          type: string
+        status:
+          type: string
+        thresholdSource:
+          type: string
+        lowMaxExclusive:
+          type: number
+        mediumMaxExclusive:
+          type: number
+        mineralHighMin:
+          type: number
+        explanation:
+          type: string
+    HistoryPoint:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        startDate:
+          type: string
+          format: date
+        fdnTotal:
+          type: number
+        fdnMineral:
+          type: number
+        fdnOrganic:
+          type: number
+        nue:
+          type: number
+        yield:
+          type: number
+        noutput:
+          type: number
+        nOutput:
+          type: number
+    InputsBreakdown:
+      type: object
+      properties:
+        mineralFertilizerN:
+          type: number
+        organicFertilizerN:
+          type: number
+        biologicalFixationN:
+          type: number
+        irrigationWaterN:
+          type: number
+        atmosphericDepositionN:
+          type: number
+        seedImportN:
+          type: number
+        soilLegacyN:
+          type: number
+        controlSupplyN:
+          type: number
+    MetricValue:
+      type: object
+      properties:
+        value:
+          type: number
+        unit:
+          type: string
+        status:
+          type: string
+        confidence:
+          type: number
+        calculationMode:
+          type: string
+        assumptions:
+          type: array
+          items:
+            type: string
+        missingInputs:
+          type: array
+          items:
+            type: string
+    SustainabilityOverviewResponse:
+      type: object
+      properties:
+        scope:
+          type: string
+        entityId:
+          type: string
+        seasonId:
+          type: integer
+          format: int32
+        calculationMode:
+          type: string
+        confidence:
+          type: number
+        sustainableScore:
+          $ref: "#/components/schemas/SustainabilityScore"
+        fdn:
+          $ref: "#/components/schemas/FdnMetrics"
+        nue:
+          type: number
+        currentSeason:
+          $ref: "#/components/schemas/CurrentSeason"
+        yield:
+          $ref: "#/components/schemas/YieldSummary"
+        inputsBreakdown:
+          $ref: "#/components/schemas/InputsBreakdown"
+        unit:
+          type: string
+        dataQuality:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataInputQuality"
+        dataQualitySummary:
+          $ref: "#/components/schemas/DataQualitySummary"
+        missingInputs:
+          type: array
+          items:
+            type: string
+        unavailableReasons:
+          type: array
+          items:
+            type: string
+        notes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        recommendationSource:
+          type: string
+        historicalTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryPoint"
+        sustainableScoreMetric:
+          $ref: "#/components/schemas/MetricValue"
+        fdnTotalMetric:
+          $ref: "#/components/schemas/MetricValue"
+        fdnMineralMetric:
+          $ref: "#/components/schemas/MetricValue"
+        fdnOrganicMetric:
+          $ref: "#/components/schemas/MetricValue"
+        nueMetric:
+          $ref: "#/components/schemas/MetricValue"
+        estimatedYieldMetric:
+          $ref: "#/components/schemas/MetricValue"
+        noutput:
+          type: number
+        nsurplus:
+          type: number
+        noutputMetric:
+          $ref: "#/components/schemas/MetricValue"
+        nsurplusMetric:
+          $ref: "#/components/schemas/MetricValue"
+        nOutput:
+          type: number
+        nSurplus:
+          type: number
+        nOutputMetric:
+          $ref: "#/components/schemas/MetricValue"
+        nSurplusMetric:
+          $ref: "#/components/schemas/MetricValue"
+    SustainabilityScore:
+      type: object
+      properties:
+        value:
+          type: number
+        label:
+          type: string
+        components:
+          type: object
+          additionalProperties:
+            type: number
+        weights:
+          type: object
+          additionalProperties:
+            type: number
+    YieldSummary:
+      type: object
+      properties:
+        estimated:
+          type: number
+        unit:
+          type: string
+    ApiResponseFieldRecommendationsResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/FieldRecommendationsResponse"
+        data:
+          $ref: "#/components/schemas/FieldRecommendationsResponse"
+        generatedAt:
+          type: string
+    FieldRecommendationsResponse:
+      type: object
+      properties:
+        fieldId:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        fdnTotal:
+          type: number
+        fdnMineral:
+          type: number
+        nue:
+          type: number
+        confidence:
+          type: number
+        fdnLevel:
+          type: string
+        thresholdSource:
+          type: string
+        recommendationSource:
+          type: string
+        calculationMode:
+          type: string
+        missingInputs:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+    ApiResponseListHistoryPoint:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryPoint"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryPoint"
+        generatedAt:
+          type: string
+    ApiResponseFieldMapResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/FieldMapResponse"
+        data:
+          $ref: "#/components/schemas/FieldMapResponse"
+        generatedAt:
+          type: string
+    FieldMapItem:
+      type: object
+      properties:
+        fieldId:
+          type: integer
+          format: int32
+        fieldName:
+          type: string
+        farmId:
+          type: integer
+          format: int32
+        farmName:
+          type: string
+        boundaryGeoJson:
+          $ref: "#/components/schemas/JsonNode"
+        center:
+          $ref: "#/components/schemas/LatLng"
+        boundaryIssue:
+          type: string
+        cropName:
+          type: string
+        seasonName:
+          type: string
+        fdnLevel:
+          type: string
+        fdnTotal:
+          type: number
+        fdnMineral:
+          type: number
+        fdnOrganic:
+          type: number
+        nue:
+          type: number
+        confidence:
+          type: number
+        calculationMode:
+          type: string
+        thresholdSource:
+          type: string
+        recommendationSource:
+          type: string
+        missingInputs:
+          type: array
+          items:
+            type: string
+        inputsBreakdown:
+          $ref: "#/components/schemas/InputsBreakdown"
+        recommendations:
+          type: array
+          items:
+            type: string
+    FieldMapResponse:
+      type: object
+      properties:
+        fieldsWithBoundary:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldMapItem"
+        fieldsMissingBoundary:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldMapItem"
+        defaultViewport:
+          $ref: "#/components/schemas/MapViewport"
+        unavailableReason:
+          type: string
+    JsonNode:
+      type: object
+    LatLng:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+    MapViewport:
+      type: object
+      properties:
+        center:
+          $ref: "#/components/schemas/LatLng"
+        zoom:
+          type: integer
+          format: int32
+        source:
+          type: string
+    ApiResponseListYieldReport:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/YieldReport"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/YieldReport"
+        generatedAt:
+          type: string
+    YieldReport:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        cropName:
+          type: string
+        plotName:
+          type: string
+        farmName:
+          type: string
+        expectedYieldKg:
+          type: number
+        actualYieldKg:
+          type: number
+        variancePercent:
+          type: number
+    ApiResponseListRevenueReport:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueReport"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RevenueReport"
+        generatedAt:
+          type: string
+    RevenueReport:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        cropName:
+          type: string
+        totalQuantity:
+          type: number
+        totalRevenue:
+          type: number
+        marketplaceRevenue:
+          type: number
+        marketplaceRevenueStatus:
+          type: string
+        avgPricePerUnit:
+          type: number
+    ApiResponseListProfitReport:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfitReport"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfitReport"
+        generatedAt:
+          type: string
+    ProfitReport:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        cropName:
+          type: string
+        farmName:
+          type: string
+        totalRevenue:
+          type: number
+        marketplaceRevenue:
+          type: number
+        marketplaceRevenueStatus:
+          type: string
+        totalExpense:
+          type: number
+        grossProfit:
+          type: number
+        profitMargin:
+          type: number
+        returnOnCost:
+          type: number
+    ApiResponseListCostReport:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/CostReport"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CostReport"
+        generatedAt:
+          type: string
+    CostReport:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        cropName:
+          type: string
+        totalExpense:
+          type: number
+        totalYieldKg:
+          type: number
+        costPerKg:
+          type: number
+    ApiResponseListPlotStatusResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlotStatusResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlotStatusResponse"
+        generatedAt:
+          type: string
+    PlotStatusResponse:
+      type: object
+      properties:
+        plotId:
+          type: integer
+          format: int32
+        plotName:
+          type: string
+        areaHa:
+          type: number
+        cropName:
+          type: string
+        stage:
+          type: string
+        health:
+          type: string
+    Alerts:
+      type: object
+      properties:
+        openIncidents:
+          type: integer
+          format: int32
+        expiringLots:
+          type: integer
+          format: int32
+        lowStockItems:
+          type: integer
+          format: int32
+    ApiResponseDashboardOverviewResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/DashboardOverviewResponse"
+        data:
+          $ref: "#/components/schemas/DashboardOverviewResponse"
+        generatedAt:
+          type: string
+    Counts:
+      type: object
+      properties:
+        activeFarms:
+          type: integer
+          format: int32
+        activePlots:
+          type: integer
+          format: int32
+        seasonsByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+    DashboardOverviewResponse:
+      type: object
+      properties:
+        seasonContext:
+          $ref: "#/components/schemas/SeasonContext"
+        counts:
+          $ref: "#/components/schemas/Counts"
+        kpis:
+          $ref: "#/components/schemas/Kpis"
+        expenses:
+          $ref: "#/components/schemas/Expenses"
+        harvest:
+          $ref: "#/components/schemas/Harvest"
+        alerts:
+          $ref: "#/components/schemas/Alerts"
+        taskStatus:
+          $ref: "#/components/schemas/TaskStatusSummary"
+        inventoryRisk:
+          $ref: "#/components/schemas/InventoryRisk"
+        lotStatus:
+          $ref: "#/components/schemas/LotStatus"
+        sustainabilityAlerts:
+          $ref: "#/components/schemas/SustainabilityAlerts"
+        unavailableReasons:
+          type: array
+          items:
+            type: string
+        missingInputs:
+          type: array
+          items:
+            type: string
+    Expenses:
+      type: object
+      properties:
+        totalExpense:
+          type: number
+    Harvest:
+      type: object
+      properties:
+        totalQuantityKg:
+          type: number
+        totalRevenue:
+          type: number
+        expectedYieldKg:
+          type: number
+        yieldVsPlanPercent:
+          type: number
+    InventoryRisk:
+      type: object
+      properties:
+        atRiskLots:
+          type: integer
+          format: int32
+        lowStockLots:
+          type: integer
+          format: int32
+        criticalLowStockLots:
+          type: integer
+          format: int32
+        expiringSoonLots:
+          type: integer
+          format: int32
+        expiredLots:
+          type: integer
+          format: int32
+    Kpis:
+      type: object
+      properties:
+        avgYieldTonsPerHa:
+          type: number
+        costPerHectare:
+          type: number
+        onTimePercent:
+          type: number
+    LotStatus:
+      type: object
+      properties:
+        totalLotsWithStock:
+          type: integer
+          format: int32
+        activeLots:
+          type: integer
+          format: int32
+        expiringSoonLots:
+          type: integer
+          format: int32
+        expiredLots:
+          type: integer
+          format: int32
+        unknownExpiryLots:
+          type: integer
+          format: int32
+        byStatus:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+    SeasonContext:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        plannedHarvestDate:
+          type: string
+          format: date
+    SustainabilityAlerts:
+      type: object
+      properties:
+        totalFields:
+          type: integer
+          format: int32
+        highRiskFields:
+          type: integer
+          format: int32
+        mediumRiskFields:
+          type: integer
+          format: int32
+        lowRiskFields:
+          type: integer
+          format: int32
+        fieldsMissingInputs:
+          type: integer
+          format: int32
+    TaskStatusSummary:
+      type: object
+      properties:
+        totalTasks:
+          type: integer
+          format: int32
+        pendingTasks:
+          type: integer
+          format: int32
+        inProgressTasks:
+          type: integer
+          format: int32
+        completedTasks:
+          type: integer
+          format: int32
+        overdueTasks:
+          type: integer
+          format: int32
+        cancelledTasks:
+          type: integer
+          format: int32
+        byStatus:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+    ApiResponseListDashboardIncidentAlertResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardIncidentAlertResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardIncidentAlertResponse"
+        generatedAt:
+          type: string
+    DashboardIncidentAlertResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        severity:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        seasonId:
+          type: integer
+          format: int32
+        plotId:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date
+        actionUrl:
+          type: string
+        actionTarget:
+          type: string
+    ApiResponseListDashboardDataCompletenessWarningResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardDataCompletenessWarningResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardDataCompletenessWarningResponse"
+        generatedAt:
+          type: string
+    DashboardDataCompletenessWarningResponse:
+      type: object
+      properties:
+        warningId:
+          type: string
+        title:
+          type: string
+        source:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        actionTarget:
+          type: string
+        seasonId:
+          type: integer
+          format: int32
+        inputCode:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT

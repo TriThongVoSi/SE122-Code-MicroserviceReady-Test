@@ -1,0 +1,828 @@
+openapi: 3.1.0
+info:
+  title: ACM Incident Service API
+  description: Standard API documentation for ACM Domain Services
+  license:
+    name: Apache 2.0
+    url: https://springdoc.org
+  version: 1.0.0
+servers:
+- url: http://localhost
+  description: Generated server url
+security:
+- bearerAuth: []
+paths:
+  /api/v1/incidents/{id}:
+    get:
+      tags:
+      - incident-controller
+      summary: Get incident by ID
+      description: Get a single incident by its ID
+      operationId: getIncident
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "404":
+          description: Not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+    put:
+      tags:
+      - incident-controller
+      summary: Update incident
+      description: "Update incident details (type, severity, description, deadline)"
+      operationId: updateIncident
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateIncidentRequest"
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "400":
+          description: Bad request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "404":
+          description: Not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+    delete:
+      tags:
+      - incident-controller
+      summary: Delete incident
+      description: Delete an incident. Cannot delete resolved incidents.
+      operationId: deleteIncident
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "400":
+          description: Bad request - cannot delete resolved incident
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "404":
+          description: Not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/public/lookup/notifications:
+    post:
+      tags:
+      - public-incident-lookup-controller
+      operationId: createNotification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+  /api/v1/incidents:
+    get:
+      tags:
+      - incident-controller
+      summary: List incidents
+      description: List incidents with pagination and filters. Requires seasonId.
+      operationId: listIncidents
+      parameters:
+      - name: seasonId
+        in: query
+        description: Season ID (required)
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: status
+        in: query
+        description: "Filter by status: OPEN, IN_PROGRESS, RESOLVED, CANCELLED"
+        required: false
+        schema:
+          type: string
+      - name: severity
+        in: query
+        description: "Filter by severity: LOW, MEDIUM, HIGH"
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: query
+        description: Filter by incident type
+        required: false
+        schema:
+          type: string
+      - name: q
+        in: query
+        description: "Search query (min 2 chars, searches description)"
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        description: "Date range start (yyyy-MM-dd), filters createdAt"
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: "Date range end (yyyy-MM-dd), filters createdAt"
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        description: Page index (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        description: Page size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: sort
+        in: query
+        description: "Sort field, prefix with - for desc (e.g. -createdAt)"
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseIncidentResponse"
+        "400":
+          description: Bad request - seasonId required
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseIncidentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseIncidentResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseIncidentResponse"
+    post:
+      tags:
+      - incident-controller
+      summary: Create incident
+      description: Create a new incident. seasonId is required in body.
+      operationId: createIncident
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIncidentRequest"
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "400":
+          description: Bad request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "404":
+          description: Season not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+  /api/v1/notifications/{id}/read:
+    patch:
+      tags:
+      - notification-controller
+      operationId: markRead
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationResponse"
+  /api/v1/notifications/read-all:
+    patch:
+      tags:
+      - notification-controller
+      operationId: markAllRead
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationMarkAllReadResponse"
+  /api/v1/incidents/{id}/status:
+    patch:
+      tags:
+      - incident-controller
+      summary: Update incident status
+      description: Change incident status. Requires resolutionNote for RESOLVED.
+      operationId: updateIncidentStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentStatusUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "400":
+          description: Bad request - invalid status transition or missing resolutionNote
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+        "404":
+          description: Not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentResponse"
+  /api/v1/farmer/notifications/{id}/read:
+    patch:
+      tags:
+      - farmer-notification-controller
+      operationId: markRead_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationResponse"
+  /api/v1/farmer/notifications/read-all:
+    patch:
+      tags:
+      - farmer-notification-controller
+      operationId: markAllRead_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationMarkAllReadResponse"
+  /api/v1/public/lookup/incidents/{incidentId}/validate-season/{seasonId}:
+    get:
+      tags:
+      - public-incident-lookup-controller
+      operationId: validateIncidentSeason
+      parameters:
+      - name: incidentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationResultDto"
+  /api/v1/notifications:
+    get:
+      tags:
+      - notification-controller
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListNotificationResponse"
+  /api/v1/notifications/unread-count:
+    get:
+      tags:
+      - notification-controller
+      operationId: unreadCount
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationUnreadCountResponse"
+  /api/v1/incidents/summary:
+    get:
+      tags:
+      - incident-controller
+      summary: Get incident summary
+      description: Get counts of incidents by status for a season
+      operationId: getIncidentSummary
+      parameters:
+      - name: seasonId
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentSummary"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentSummary"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseIncidentSummary"
+  /api/v1/farmer/notifications:
+    get:
+      tags:
+      - farmer-notification-controller
+      operationId: list_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListNotificationResponse"
+  /api/v1/farmer/notifications/unread-count:
+    get:
+      tags:
+      - farmer-notification-controller
+      operationId: unreadCount_1
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseNotificationUnreadCountResponse"
+components:
+  schemas:
+    UpdateIncidentRequest:
+      type: object
+      properties:
+        incidentType:
+          type: string
+        severity:
+          type: string
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date
+    ApiResponseIncidentResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/IncidentResponse"
+        data:
+          $ref: "#/components/schemas/IncidentResponse"
+        generatedAt:
+          type: string
+    IncidentResponse:
+      type: object
+      properties:
+        incidentId:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        reportedById:
+          type: integer
+          format: int64
+        reportedByUsername:
+          type: string
+        incidentType:
+          type: string
+        severity:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        deadline:
+          type: string
+          format: date
+        resolvedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    CreateNotificationRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        message:
+          type: string
+        link:
+          type: string
+    CreateIncidentRequest:
+      type: object
+      properties:
+        seasonId:
+          type: integer
+          format: int32
+        incidentType:
+          type: string
+        severity:
+          type: string
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date
+      required:
+      - description
+      - incidentType
+      - seasonId
+      - severity
+    ApiResponseNotificationResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/NotificationResponse"
+        data:
+          $ref: "#/components/schemas/NotificationResponse"
+        generatedAt:
+          type: string
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        title:
+          type: string
+        message:
+          type: string
+        link:
+          type: string
+        alertId:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+    ApiResponseNotificationMarkAllReadResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/NotificationMarkAllReadResponse"
+        data:
+          $ref: "#/components/schemas/NotificationMarkAllReadResponse"
+        generatedAt:
+          type: string
+    NotificationMarkAllReadResponse:
+      type: object
+      properties:
+        markedCount:
+          type: integer
+          format: int32
+        markedAt:
+          type: string
+          format: date-time
+    IncidentStatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+        resolutionNote:
+          type: string
+      required:
+      - status
+    ValidationResultDto:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
+    ApiResponseListNotificationResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationResponse"
+        generatedAt:
+          type: string
+    ApiResponseNotificationUnreadCountResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/NotificationUnreadCountResponse"
+        data:
+          $ref: "#/components/schemas/NotificationUnreadCountResponse"
+        generatedAt:
+          type: string
+    NotificationUnreadCountResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+          format: int64
+    ApiResponsePageResponseIncidentResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/PageResponseIncidentResponse"
+        data:
+          $ref: "#/components/schemas/PageResponseIncidentResponse"
+        generatedAt:
+          type: string
+    PageResponseIncidentResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    ApiResponseIncidentSummary:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/IncidentSummary"
+        data:
+          $ref: "#/components/schemas/IncidentSummary"
+        generatedAt:
+          type: string
+    IncidentSummary:
+      type: object
+      properties:
+        openCount:
+          type: integer
+          format: int64
+        inProgressCount:
+          type: integer
+          format: int64
+        resolvedCount:
+          type: integer
+          format: int64
+        cancelledCount:
+          type: integer
+          format: int64
+    ApiResponseVoid:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: object
+        data:
+          type: object
+        generatedAt:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT

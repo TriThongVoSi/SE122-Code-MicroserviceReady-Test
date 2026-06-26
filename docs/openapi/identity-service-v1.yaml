@@ -1,0 +1,953 @@
+openapi: 3.1.0
+info:
+  title: ACM Service Template API
+  description: Standard API documentation for ACM Domain Services
+  license:
+    name: Apache 2.0
+    url: https://springdoc.org
+  version: 1.0.0
+servers:
+- url: http://localhost
+  description: Generated server url
+security:
+- bearerAuth: []
+tags:
+- name: Authentication
+  description: Authentication and authorization endpoints
+- name: Admin Roles
+  description: Quản lý vai trò người dùng (chỉ ADMIN)
+paths:
+  /api/v1/user/profile:
+    put:
+      tags:
+      - user-controller
+      operationId: updateProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFarmerResponse"
+  /api/v1/user/change-password:
+    put:
+      tags:
+      - user-controller
+      operationId: changePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFarmerResponse"
+  /api/v1/preferences/me:
+    get:
+      tags:
+      - preferences-controller
+      operationId: getMyPreferences
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePreferencesResponse"
+    put:
+      tags:
+      - preferences-controller
+      operationId: updateMyPreferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreferencesUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePreferencesResponse"
+  /api/v1/auth/sign-up:
+    post:
+      tags:
+      - Authentication
+      summary: Register new user
+      description: Create new user account with BUYER or FARMER role
+      operationId: signUp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFarmerResponse"
+  /api/v1/auth/sign-out:
+    post:
+      tags:
+      - Authentication
+      summary: Sign out user
+      description: Invalidate current JWT token
+      operationId: logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+        required: true
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "401":
+          description: Token invalid
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/auth/sign-in:
+    post:
+      tags:
+      - Authentication
+      summary: Sign in user
+      description: "Authenticate user by username OR email + password. Returns JWT\
+        \ token, profile, and role-based redirect path."
+      operationId: authenticate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticationRequest"
+        required: true
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                Success Response:
+                  description: Success Response
+                  value:
+                    result:
+                      token: eyJhbGciOiJIUzUxMiJ9...
+                      tokenType: Bearer
+                      expiresIn: 3600
+                      role: FARMER
+                      profile:
+                        id: 2
+                        fullName: Nguyen Van T
+                        phone: "0900000001"
+                        provinceId: 24
+                        wardId: 25112
+                      redirectTo: /farmer
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              example:
+                code: INVALID_CREDENTIALS
+                message: Invalid username/email or password.
+        "403":
+          description: User locked or no role
+          content:
+            application/json:
+              example:
+                code: USER_LOCKED
+                message: User account is not active.
+  /api/v1/auth/reset-password:
+    post:
+      tags:
+      - password-reset-controller
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordTokenRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - Authentication
+      summary: Refresh JWT token
+      description: Generate new token when current token is about to expire
+      operationId: refreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+        required: true
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "401":
+          description: Token invalid or expired
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
+  /api/v1/auth/introspect:
+    post:
+      tags:
+      - Authentication
+      summary: Validate token
+      description: Check if JWT token is still valid
+      operationId: introspect
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntrospectRequest"
+        required: true
+      responses:
+        "200":
+          description: Token validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+  /api/v1/auth/google:
+    post:
+      tags:
+      - Authentication
+      summary: Sign in with Google
+      description: Authenticate with a Google ID token and return the internal JWT/session
+        response.
+      operationId: authenticateWithGoogle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
+  /api/v1/auth/forgot-password:
+    post:
+      tags:
+      - password-reset-controller
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/admin/roles:
+    get:
+      tags:
+      - Admin Roles
+      summary: Lấy danh sách tất cả vai trò
+      description: Lấy danh sách tất cả vai trò trong hệ thống (chỉ ADMIN)
+      operationId: getRoles
+      responses:
+        "200":
+          description: Lấy danh sách thành công
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListRoleResponse"
+        "403":
+          description: Không có quyền xem danh sách vai trò
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseListRoleResponse"
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Admin Roles
+      summary: Tạo vai trò mới
+      description: Tạo một vai trò mới trong hệ thống (chỉ ADMIN)
+      operationId: createRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleRequest"
+        required: true
+      responses:
+        "200":
+          description: Tạo vai trò thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "403":
+          description: Không có quyền tạo vai trò
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseRoleResponse"
+        "400":
+          description: Dữ liệu đầu vào không hợp lệ
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseRoleResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/user/me:
+    get:
+      tags:
+      - user-controller
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseFarmerResponse"
+  /api/v1/internal/users/{id}:
+    get:
+      tags:
+      - internal-user-controller
+      operationId: getUserInternal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserInternalDto"
+  /api/v1/internal/users/employees:
+    get:
+      tags:
+      - internal-user-controller
+      operationId: searchEmployees
+      parameters:
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageUserInternalDto"
+  /api/v1/internal/users/employees/{id}/validate:
+    get:
+      tags:
+      - internal-user-controller
+      operationId: validateEmployee
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/v1/auth/reset-password/validate:
+    get:
+      tags:
+      - password-reset-controller
+      operationId: validateResetToken
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/auth/me:
+    get:
+      tags:
+      - Authentication
+      summary: Get current user info
+      description: "Returns current user profile, role, and redirect path. Used for\
+        \ frontend app bootstrapping."
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: User info retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              examples:
+                Success Response:
+                  description: Success Response
+                  value:
+                    result:
+                      userId: 2
+                      email: farmer1@acm.local
+                      username: farmer0
+                      roles:
+                      - FARMER
+                      role: FARMER
+                      profile:
+                        id: 2
+                        fullName: Nguyen Van T
+                        phone: "0900000001"
+                        provinceId: 24
+                        wardId: 25112
+                      redirectTo: /farmer
+        "401":
+          description: Unauthorized - invalid or expired token
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
+  /api/v1/auth/.well-known/jwks.json:
+    get:
+      tags:
+      - jwks-controller
+      operationId: jwks
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/v1/admin/roles/{roleCode}:
+    delete:
+      tags:
+      - Admin Roles
+      summary: Xóa vai trò
+      description: Xóa một vai trò theo mã (chỉ ADMIN)
+      operationId: deleteRole
+      parameters:
+      - name: roleCode
+        in: path
+        description: Mã vai trò cần xóa
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Xóa vai trò thành công
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "403":
+          description: Không có quyền xóa vai trò
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "404":
+          description: Không tìm thấy vai trò
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        provinceId:
+          type: integer
+          format: int64
+        wardId:
+          type: integer
+          format: int64
+    ApiResponseFarmerResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/FarmerResponse"
+        data:
+          $ref: "#/components/schemas/FarmerResponse"
+        generatedAt:
+          type: string
+    FarmerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        provinceId:
+          type: integer
+          format: int64
+        provinceName:
+          type: string
+        wardId:
+          type: integer
+          format: int64
+        wardName:
+          type: string
+        joinedDate:
+          type: string
+          format: date-time
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+      required:
+      - currentPassword
+      - newPassword
+    PreferencesUpdateRequest:
+      type: object
+      properties:
+        currency:
+          type: string
+        weightUnit:
+          type: string
+        locale:
+          type: string
+    ApiResponsePreferencesResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/PreferencesResponse"
+        data:
+          $ref: "#/components/schemas/PreferencesResponse"
+        generatedAt:
+          type: string
+    PreferencesResponse:
+      type: object
+      properties:
+        currency:
+          type: string
+        weightUnit:
+          type: string
+        locale:
+          type: string
+    SignUpRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+        role:
+          type: string
+        effectiveUsername:
+          type: string
+      required:
+      - password
+      - role
+      - username
+    LogoutRequest:
+      type: object
+      description: Token to invalidate
+      properties:
+        token:
+          type: string
+    ApiResponseVoid:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: object
+        data:
+          type: object
+        generatedAt:
+          type: string
+    AuthenticationRequest:
+      type: object
+      description: Login credentials
+      properties:
+        identifier:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+        effectiveIdentifier:
+          type: string
+      required:
+      - password
+    ApiResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: object
+        data:
+          type: object
+        generatedAt:
+          type: string
+    ResetPasswordTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+        confirmPassword:
+          type: string
+    RefreshRequest:
+      type: object
+      description: Token to refresh
+      properties:
+        token:
+          type: string
+    ApiResponseAuthenticationResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/AuthenticationResponse"
+        data:
+          $ref: "#/components/schemas/AuthenticationResponse"
+        generatedAt:
+          type: string
+    AuthenticationResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        email:
+          type: string
+        username:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        role:
+          type: string
+        profile:
+          $ref: "#/components/schemas/ProfileInfo"
+        redirectTo:
+          type: string
+    ProfileInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        joinedDate:
+          type: string
+        provinceId:
+          type: integer
+          format: int64
+        wardId:
+          type: integer
+          format: int64
+    IntrospectRequest:
+      type: object
+      description: Token to validate
+      properties:
+        token:
+          type: string
+    GoogleAuthRequest:
+      type: object
+      properties:
+        idToken:
+          type: string
+      required:
+      - idToken
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+    RoleRequest:
+      type: object
+      description: Thông tin vai trò cần tạo
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+    ApiResponseRoleResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/RoleResponse"
+        data:
+          $ref: "#/components/schemas/RoleResponse"
+        generatedAt:
+          type: string
+    RoleResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+    UserInternalDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+    PageUserInternalDto:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInternalDto"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        unpaged:
+          type: boolean
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        unsorted:
+          type: boolean
+        sorted:
+          type: boolean
+    ApiResponseListRoleResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleResponse"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleResponse"
+        generatedAt:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT

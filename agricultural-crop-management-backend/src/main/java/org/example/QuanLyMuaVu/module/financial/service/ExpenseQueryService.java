@@ -19,6 +19,14 @@ public class ExpenseQueryService implements ExpenseQueryPort {
     ExpenseRepository expenseRepository;
 
     @Override
+    public java.util.Optional<org.example.QuanLyMuaVu.module.financial.entity.Expense> findExpenseById(Integer id) {
+        if (id == null) {
+            return java.util.Optional.empty();
+        }
+        return expenseRepository.findById(id);
+    }
+
+    @Override
     public BigDecimal sumTotalCostBySeasonId(Integer seasonId) {
         if (seasonId == null) {
             return BigDecimal.ZERO;

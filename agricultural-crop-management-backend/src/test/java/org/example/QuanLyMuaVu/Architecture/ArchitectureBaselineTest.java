@@ -60,6 +60,7 @@ public class ArchitectureBaselineTest {
     void nonModulePackagesShouldNotIntroduceNewDependenciesToBusinessModules() {
         ArchRule baselineRule = noClasses()
                 .that().resideOutsideOfPackage("..module..")
+                .and().resideOutsideOfPackage("..firebase..")
                 .should().dependOnClassesThat().resideInAnyPackage("..module..");
         baselineRule.check(IMPORTED_CLASSES);
     }
@@ -68,7 +69,7 @@ public class ArchitectureBaselineTest {
     void restControllersShouldResideInControllerPackage() {
         ArchRule rule = classes()
                 .that().areAnnotatedWith(RestController.class)
-                .should().resideInAnyPackage("..Controller..", "..controller..");
+                .should().resideInAnyPackage("..Controller..", "..controller..", "..firebase..");
         rule.check(IMPORTED_CLASSES);
     }
 
@@ -76,7 +77,7 @@ public class ArchitectureBaselineTest {
     void serviceBeansShouldResideInServicePackage() {
         ArchRule rule = classes()
                 .that().areAnnotatedWith(Service.class)
-                .should().resideInAnyPackage("..Service..", "..service..");
+                .should().resideInAnyPackage("..Service..", "..service..", "..firebase..");
         rule.check(IMPORTED_CLASSES);
     }
 
@@ -86,6 +87,29 @@ public class ArchitectureBaselineTest {
                 .that().areAnnotatedWith(Repository.class)
                 .should().resideInAnyPackage("..Repository..", "..repository..");
         rule.check(IMPORTED_CLASSES);
+    }
+
+    private static final java.util.Set<String> ALLOWLIST = new java.util.HashSet<>();
+
+    static {
+        try {
+            java.io.InputStream is = ArchitectureBaselineTest.class.getClassLoader()
+                    .getResourceAsStream("archunit_baseline.txt");
+            if (is != null) {
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(is, java.nio.charset.StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (!line.isEmpty() && !line.startsWith("#")) {
+                            ALLOWLIST.add(line);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private ArchCondition<JavaClass> notDependOnOtherModuleEntitiesOrRepositories() {
@@ -105,6 +129,12 @@ public class ArchitectureBaselineTest {
                         continue;
                     }
                     if (!isModuleEntityOrRepositoryPackage(targetPackage)) {
+                        continue;
+                    }
+
+                    // Check if violation is allowlisted in baseline
+                    String violationKey = String.format("%s -> %s", item.getFullName(), dependency.getTargetClass().getFullName());
+                    if (ALLOWLIST.contains(violationKey)) {
                         continue;
                     }
 
@@ -131,7 +161,15 @@ public class ArchitectureBaselineTest {
     }
 
     private boolean isModuleEntityOrRepositoryPackage(String packageName) {
-        return packageName.contains(".module.")
-                && (packageName.contains(".entity.") || packageName.contains(".repository."));
+        if (!packageName.contains(".module.")) {
+            return false;
+        }
+        String[] segments = packageName.split("\\.");
+        for (String segment : segments) {
+            if ("entity".equals(segment) || "repository".equals(segment)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

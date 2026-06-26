@@ -1,0 +1,83 @@
+server:
+  port: ${GATEWAY_PORT:8000}
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - PATCH
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+                maxAge: 3600
+          routes:
+            - id: identity-route
+              uri: ${IDENTITY_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**, /api/v1/user/**, /api/v1/preferences/**, /api/v1/admin/roles/**
+            - id: crop-catalog-route
+              uri: ${CROP_CATALOG_SERVICE_URI:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/crops/**, /api/v1/varieties/**, /api/v1/admin/varieties/**, /api/v1/admin/crops/**, /api/v1/catalog/**
+            - id: ai-route
+              uri: ${AI_SERVICE_URI:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/ai/qa, /api/v1/ai/qa/**, /api/v1/farmer/ai/chat, /api/v1/farmer/ai/chat/**, /api/v1/buyer/ai/chat, /api/v1/buyer/ai/chat/**
+            - id: farm-route
+              uri: ${FARM_SERVICE_URI:-http://localhost:8084}
+              predicates:
+                - Path=/api/v1/farms, /api/v1/farms/**, /api/v1/plots, /api/v1/plots/**, /api/v1/address, /api/v1/address/**, /api/v1/locations, /api/v1/locations/**
+            - id: finance-route
+              uri: ${FINANCE_SERVICE_URI:-http://localhost:8087}
+              predicates:
+                - Path=/api/v1/expenses, /api/v1/expenses/**, /api/v1/public/lookup/expenses, /api/v1/public/lookup/expenses/**, /api/v1/seasons/*/expenses, /api/v1/seasons/*/expenses/**, /api/v1/seasons/**/expenses, /api/v1/seasons/**/expenses/**
+            - id: incident-route
+              uri: ${INCIDENT_SERVICE_URI:-http://localhost:8088}
+              predicates:
+                - Path=/api/v1/incidents, /api/v1/incidents/**, /api/v1/notifications, /api/v1/notifications/**, /api/v1/farmer/notifications, /api/v1/farmer/notifications/**, /api/v1/public/lookup/incidents, /api/v1/public/lookup/incidents/**
+            - id: sustainability-route
+              uri: ${SUSTAINABILITY_SERVICE_URI:-http://localhost:8089}
+              predicates:
+                - Path=/api/v1/dashboard, /api/v1/dashboard/**, /api/v1/soil-tests, /api/v1/soil-tests/**, /api/v1/nutrient-inputs, /api/v1/nutrient-inputs/**, /api/v1/irrigation-water-analyses, /api/v1/irrigation-water-analyses/**, /api/v1/fields, /api/v1/fields/**, /api/v1/farmer/reports, /api/v1/farmer/reports/**, /api/v1/seasons/*/soil-tests, /api/v1/seasons/*/soil-tests/**, /api/v1/seasons/*/nutrient-inputs, /api/v1/seasons/*/nutrient-inputs/**, /api/v1/seasons/*/irrigation-water-analyses, /api/v1/seasons/*/irrigation-water-analyses/**
+            - id: season-route
+              uri: ${SEASON_SERVICE_URI:-http://localhost:8085}
+              predicates:
+                - Path=/api/v1/seasons, /api/v1/seasons/**, /api/v1/tasks, /api/v1/tasks/**, /api/v1/workspace/tasks, /api/v1/workspace/tasks/**, /api/v1/harvests, /api/v1/harvests/**, /api/v1/field-logs, /api/v1/field-logs/**, /api/v1/disease-records, /api/v1/disease-records/**, /api/v1/disease-treatments, /api/v1/disease-treatments/**, /api/v1/farmer/labor, /api/v1/farmer/labor/**
+            - id: inventory-route
+              uri: ${INVENTORY_SERVICE_URI:-http://localhost:8086}
+              predicates:
+                - Path=/api/v1/inventory/**, /api/v1/supplies/**, /api/v1/warehouses/**, /api/v1/product-warehouse/**, /api/v1/product-warehouses/**
+            - id: monolith-route
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/api/v1/**, /v3/api-docs/**, /swagger-ui/**, /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
+    org.example.apigateway: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [CorrelationID: %X{correlationId}] - %msg%n"

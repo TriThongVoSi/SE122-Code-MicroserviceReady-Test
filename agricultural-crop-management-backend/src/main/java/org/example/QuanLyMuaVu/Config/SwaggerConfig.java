@@ -23,35 +23,29 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Test API Quản Lý Mùa Vụ")
+                        .title("ACM Monolith API")
                         .version("1.0.0")
                         .description("""
-                            ### Cách test API bằng Swagger:
-                            - Đi tới dòng POST /auth/login thực hiện đăng nhập
-                            - Đăng nhập trả về Bearer token
-                            - Copy token từ response login
-                            - Nhấn vào biểu tượng ổ khóa đang mở
-                            - Dán token đã copy vào textbox Value
-                            - Nhấn nút Authorize
-                            - Sử dụng nút "Try it out" trong Swagger UI
-                            - Test các endpoints được bảo vệ
-                            """))
+                                ### Swagger testing flow
+                                - Call POST /api/v1/auth/sign-in to log in.
+                                - Copy the returned Bearer token.
+                                - Click Authorize in Swagger UI.
+                                - Paste the token into the Value field.
+                                - Use Try it out to test protected endpoints.
+                                """))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:" + serverPort)
-                                .description("🖥️ Local Development Server"),
+                                .url("http://localhost:8000")
+                                .description("API Gateway Server (Public Entrypoint)"),
                         new Server()
-                                .url("https://api.quanlymuavu.com")
-                                .description("🌐 Production Server")
-                ))
-
+                                .url("http://localhost:" + serverPort)
+                                .description("Downstream Monolith Server (Direct)")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
                                 .name("bearerAuth")
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")
-                                ));
+                                .bearerFormat("JWT")));
     }
 }

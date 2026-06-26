@@ -1,0 +1,653 @@
+openapi: 3.1.0
+info:
+  title: ACM Finance Service API
+  description: Standard API documentation for ACM Domain Services
+  license:
+    name: Apache 2.0
+    url: https://springdoc.org
+  version: 1.0.0
+servers:
+- url: http://localhost
+  description: Generated server url
+security:
+- bearerAuth: []
+paths:
+  /api/v1/expenses/{id}:
+    get:
+      tags:
+      - season-expense-controller
+      summary: Get expense by ID
+      description: Queries expense by ID for display.
+      operationId: getExpense
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: Expense found and returned
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "404":
+          description: "MSG 10: Expense not found."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+    put:
+      tags:
+      - season-expense-controller
+      summary: Update expense
+      description: Updates expense information.
+      operationId: updateExpense
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateExpenseRequest"
+        required: true
+      responses:
+        "200":
+          description: "MSG 7: Save data successful."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "400":
+          description: "MSG 1/MSG 4/MSG 9: Validation error or constraint violation"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "404":
+          description: "MSG 10: Expense not found."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+    delete:
+      tags:
+      - season-expense-controller
+      summary: Delete expense after confirmation
+      operationId: deleteExpense
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: "MSG 7: Save data successful. (Expense deleted)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "400":
+          description: "MSG 9: Constraint violation"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "404":
+          description: "MSG 10: Expense not found."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+  /api/v1/seasons/{seasonId}/expenses:
+    get:
+      tags:
+      - season-expense-controller
+      summary: List expenses of a season
+      operationId: listExpenses
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: minAmount
+        in: query
+        required: false
+        schema:
+          type: number
+      - name: maxAmount
+        in: query
+        required: false
+        schema:
+          type: number
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseExpenseResponse"
+    post:
+      tags:
+      - season-expense-controller
+      summary: Create expense for season
+      description: Creates a new expense linked to a season.
+      operationId: createExpense
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExpenseRequest"
+        required: true
+      responses:
+        "200":
+          description: "MSG 7: Save data successful."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "400":
+          description: "MSG 1/MSG 4/MSG 9: Validation error or constraint violation"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+        "404":
+          description: Season not found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseExpenseResponse"
+  /api/v1/public/lookup/expenses/{expenseId}/validate-season/{seasonId}:
+    get:
+      tags:
+      - public-financial-lookup-controller
+      operationId: validateExpenseSeason
+      parameters:
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ValidationResultDto"
+  /api/v1/public/expenses/exists-by-season/{seasonId}:
+    get:
+      tags:
+      - public-expense-controller
+      operationId: existsExpenseBySeasonId
+      parameters:
+      - name: seasonId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /api/v1/expenses:
+    get:
+      tags:
+      - expense-controller
+      summary: List all farmer expenses
+      description: Get all expenses for the current farmer with optional filters
+      operationId: listAllExpenses
+      parameters:
+      - name: seasonId
+        in: query
+        description: Filter by season ID (optional)
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: q
+        in: query
+        description: Search in item name
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        description: From date (yyyy-MM-dd)
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        description: To date (yyyy-MM-dd)
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: page
+        in: query
+        description: Page index (0-based)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        description: Page size
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: Success
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseExpenseResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseExpenseResponse"
+        "403":
+          description: Forbidden
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseExpenseResponse"
+  /api/v1/expenses/{id}/delete-confirmation:
+    get:
+      tags:
+      - season-expense-controller
+      summary: Get delete confirmation message
+      operationId: getDeleteConfirmation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseString"
+  /api/v1/expenses/search:
+    get:
+      tags:
+      - season-expense-controller
+      summary: Search expenses by criteria
+      operationId: searchExpenses
+      parameters:
+      - name: seasonId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: plotId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: taskId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fromDate
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: toDate
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: minAmount
+        in: query
+        required: false
+        schema:
+          type: number
+      - name: maxAmount
+        in: query
+        required: false
+        schema:
+          type: number
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: Search results returned
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponsePageResponseExpenseResponse"
+components:
+  schemas:
+    UpdateExpenseRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 0.0
+        expenseDate:
+          type: string
+          format: date
+        category:
+          type: string
+          maxLength: 50
+          minLength: 0
+        seasonId:
+          type: integer
+          format: int32
+        plotId:
+          type: integer
+          format: int32
+        taskId:
+          type: integer
+          format: int32
+        note:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        itemName:
+          type: string
+          maxLength: 255
+          minLength: 0
+        unitPrice:
+          type: number
+        quantity:
+          type: integer
+          format: int32
+      required:
+      - amount
+      - category
+      - expenseDate
+      - plotId
+      - seasonId
+    ApiResponseExpenseResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/ExpenseResponse"
+        data:
+          $ref: "#/components/schemas/ExpenseResponse"
+        generatedAt:
+          type: string
+    ExpenseResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        seasonId:
+          type: integer
+          format: int32
+        seasonName:
+          type: string
+        plotId:
+          type: integer
+          format: int32
+        plotName:
+          type: string
+        taskId:
+          type: integer
+          format: int32
+        taskTitle:
+          type: string
+        userName:
+          type: string
+        category:
+          type: string
+        amount:
+          type: number
+        note:
+          type: string
+        expenseDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        itemName:
+          type: string
+        unitPrice:
+          type: number
+        quantity:
+          type: integer
+          format: int32
+        totalCost:
+          type: number
+    CreateExpenseRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 0.0
+        expenseDate:
+          type: string
+          format: date
+        category:
+          type: string
+          maxLength: 50
+          minLength: 0
+        plotId:
+          type: integer
+          format: int32
+        taskId:
+          type: integer
+          format: int32
+        note:
+          type: string
+          maxLength: 1000
+          minLength: 0
+        itemName:
+          type: string
+          maxLength: 255
+          minLength: 0
+        unitPrice:
+          type: number
+        quantity:
+          type: integer
+          format: int32
+      required:
+      - amount
+      - category
+      - expenseDate
+      - plotId
+    ApiResponsePageResponseExpenseResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          $ref: "#/components/schemas/PageResponseExpenseResponse"
+        data:
+          $ref: "#/components/schemas/PageResponseExpenseResponse"
+        generatedAt:
+          type: string
+    PageResponseExpenseResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    ValidationResultDto:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
+        resolvedItemId:
+          type: integer
+          format: int32
+    ApiResponseString:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: string
+        data:
+          type: string
+        generatedAt:
+          type: string
+    ApiResponseVoid:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        code:
+          type: string
+        message:
+          type: string
+        result:
+          type: object
+        data:
+          type: object
+        generatedAt:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT

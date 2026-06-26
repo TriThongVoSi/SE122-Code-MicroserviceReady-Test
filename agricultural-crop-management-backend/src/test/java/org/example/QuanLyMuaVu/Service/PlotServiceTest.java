@@ -168,7 +168,7 @@ public class PlotServiceTest {
                 // Arrange
                 when(currentUserService.getCurrentUser()).thenReturn(testUser);
                 when(farmRepository.findByIdAndUser(1, testUser)).thenReturn(Optional.of(testFarm));
-                when(plotRepository.findAllByFarm(testFarm)).thenReturn(List.of(testPlot));
+                when(plotRepository.findAllByFarmUserIdAndFarmId(testUser.getId(), testFarm.getId())).thenReturn(List.of(testPlot));
 
                 // Act
                 List<PlotResponse> result = plotService.listPlotsByFarm(1);
