@@ -23,6 +23,7 @@ public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/public/lookup/**",
+            "/api/v1/inventory/reservations/**",
             "/actuator/health",
             "/actuator/prometheus"
     };

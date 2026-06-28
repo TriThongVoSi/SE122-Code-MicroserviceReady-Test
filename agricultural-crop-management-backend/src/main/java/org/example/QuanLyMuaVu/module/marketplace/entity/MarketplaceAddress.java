@@ -34,9 +34,8 @@ public class MarketplaceAddress {
     @Column(name = "id")
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User user;
+    @Column(name = "user_id", nullable = false)
+    Long userId;
 
     @Column(name = "full_name", nullable = false)
     String fullName;

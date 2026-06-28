@@ -171,8 +171,8 @@ class MarketplaceOrderStatusLifecycleTest {
     private MarketplaceOrder buildOrder(MarketplaceOrderStatus status) {
         MarketplaceOrderGroup group = MarketplaceOrderGroup.builder().id(1L).groupCode("MOG-TEST").build();
         return MarketplaceOrder.builder()
-                .id(1L).orderGroup(group).orderCode("MO-TEST").status(status)
-                .buyerUser(buyer).farmerUser(farmer)
+                .id(1L).orderGroupId(1L).orderCode("MO-TEST").status(status)
+                .buyerUserId(buyer.getId()).farmerUserId(farmer.getId())
                 .paymentMethod(MarketplacePaymentMethod.BANK_TRANSFER)
                 .paymentVerificationStatus(MarketplacePaymentVerificationStatus.NOT_REQUIRED)
                 .shippingRecipientName("Buyer").shippingPhone("0909").shippingAddressLine("123 Rd")

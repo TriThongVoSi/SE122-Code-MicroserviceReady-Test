@@ -1,0 +1,14 @@
+package org.example.marketplace.dto.response;
+
+public record MarketplaceFarmSummaryResponse(
+        Integer id,
+        String name,
+        String region,
+        String address,
+        String coverImageUrl,
+        Long productCount,
+        Boolean active,
+        Double ratingAverage,
+        Integer ratingCount,
+        Boolean hasTraceableProducts) {
+}

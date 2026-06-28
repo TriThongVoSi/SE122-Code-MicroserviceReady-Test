@@ -105,11 +105,11 @@ class PaymentProofIntegrationTest {
 
         MarketplaceOrder order = MarketplaceOrder.builder()
                 .id(300L)
-                .orderGroup(orderGroup)
+                .orderGroupId(5L)
                 .orderCode("MO-PROOF-1")
                 .status(status)
-                .buyerUser(buyer)
-                .farmerUser(farmer)
+                .buyerUserId(buyer.getId())
+                .farmerUserId(farmer.getId())
                 .paymentMethod(MarketplacePaymentMethod.BANK_TRANSFER)
                 .paymentVerificationStatus(pvStatus)
                 .shippingRecipientName("Buyer")
@@ -121,7 +121,9 @@ class PaymentProofIntegrationTest {
                 .build();
 
         MarketplaceOrderItem item = MarketplaceOrderItem.builder()
-                .id(1L).order(order).product(product).lot(lot)
+                .id(1L).order(order)
+                .productId(product.getId())
+                .lotId(lot.getId())
                 .quantity(new BigDecimal("2")).unitPriceSnapshot(new BigDecimal("100000"))
                 .lineTotal(new BigDecimal("200000")).traceableSnapshot(false)
                 .productNameSnapshot("Rice").productSlugSnapshot("rice")
@@ -316,8 +318,15 @@ class PaymentProofIntegrationTest {
                 .id(id).slug(slug).name(name).price(price).unit("kg")
                 .stockQuantity(lot.getOnHandQuantity())
                 .status(MarketplaceProductStatus.PUBLISHED)
-                .traceable(false).lot(lot).farm(lot.getFarm()).season(lot.getSeason())
-                .farmerUser(User.builder().id(farmerId).username("farmer-" + farmerId).build())
+                .traceable(false)
+                .lotId(lot.getId())
+                .farmId(lot.getFarm() != null ? lot.getFarm().getId() : null)
+                .seasonId(lot.getSeason() != null ? lot.getSeason().getId() : null)
+                .farmerUserId(farmerId)
+                .farmerDisplayName("farmer-" + farmerId)
+                .farmName(lot.getFarm() != null ? lot.getFarm().getName() : null)
+                .seasonName(lot.getSeason() != null ? lot.getSeason().getSeasonName() : null)
+                .lotCode(lot.getLotCode())
                 .build();
     }
 }

@@ -36,9 +36,8 @@ public class MarketplaceOrderGroup {
     @Column(name = "group_code", nullable = false, length = 64, unique = true)
     String groupCode;
 
-    @ManyToOne
-    @JoinColumn(name = "buyer_user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User buyerUser;
+    @Column(name = "buyer_user_id", nullable = false)
+    Long buyerUserId;
 
     @Column(name = "idempotency_key", nullable = false, length = 128)
     String idempotencyKey;

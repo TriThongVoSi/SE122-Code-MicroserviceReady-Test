@@ -10,9 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface MarketplaceCartRepository extends JpaRepository<MarketplaceCart, Long> {
 
-    Optional<MarketplaceCart> findByUser_Id(Long userId);
+    Optional<MarketplaceCart> findByUserId(Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT c FROM MarketplaceCart c WHERE c.user.id = :userId")
+    @Query("SELECT c FROM MarketplaceCart c WHERE c.userId = :userId")
     Optional<MarketplaceCart> findByUserIdForUpdate(@Param("userId") Long userId);
 }

@@ -39,15 +39,29 @@ public class MarketplaceCartItem {
     @JoinColumn(name = "cart_id", nullable = false)
     MarketplaceCart cart;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    MarketplaceProduct product;
+    @Column(name = "product_id", nullable = false)
+    Long productId;
+
+    @Column(name = "farmer_user_id", nullable = false)
+    Long farmerUserId;
+
+    @Column(name = "product_name", length = 255)
+    String productName;
+
+    @Column(name = "product_slug", length = 191)
+    String productSlug;
+
+    @Column(name = "image_url", length = 1024)
+    String imageUrl;
 
     @Column(name = "quantity", nullable = false, precision = 19, scale = 3)
     BigDecimal quantity;
 
     @Column(name = "unit_price_snapshot", nullable = false, precision = 19, scale = 2)
     BigDecimal unitPriceSnapshot;
+
+    @Column(name = "traceable", nullable = false)
+    Boolean traceable;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;

@@ -45,20 +45,17 @@ public class MarketplaceOrder {
     @Column(name = "id")
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_group_id", nullable = false)
-    MarketplaceOrderGroup orderGroup;
+    @Column(name = "order_group_id", nullable = false)
+    Long orderGroupId;
 
     @Column(name = "order_code", nullable = false, length = 64, unique = true)
     String orderCode;
 
-    @ManyToOne
-    @JoinColumn(name = "buyer_user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User buyerUser;
+    @Column(name = "buyer_user_id", nullable = false)
+    Long buyerUserId;
 
-    @ManyToOne
-    @JoinColumn(name = "farmer_user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User farmerUser;
+    @Column(name = "farmer_user_id", nullable = false)
+    Long farmerUserId;
 
     @Convert(converter = org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatusConverter.class)
     @Column(name = "status", nullable = false, length = 30)

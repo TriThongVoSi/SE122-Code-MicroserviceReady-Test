@@ -7,8 +7,6 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -47,19 +45,12 @@ import org.example.QuanLyMuaVu.Exception.AppException;
 import org.example.QuanLyMuaVu.Exception.ErrorCode;
 import org.example.QuanLyMuaVu.module.admin.service.AuditLogService;
 import org.example.QuanLyMuaVu.module.ai.service.GeminiService;
-import org.example.QuanLyMuaVu.module.cropcatalog.entity.Crop;
-import org.example.QuanLyMuaVu.module.cropcatalog.entity.Variety;
-import org.example.QuanLyMuaVu.module.farm.entity.Farm;
-import org.example.QuanLyMuaVu.module.farm.entity.Province;
-import org.example.QuanLyMuaVu.module.identity.entity.User;
-import org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceImageSearchAnalysisResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceImageSearchResponse;
 import org.example.QuanLyMuaVu.module.marketplace.dto.response.MarketplaceProductSummaryResponse;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceProduct;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceProductStatus;
 import org.example.QuanLyMuaVu.module.marketplace.repository.MarketplaceProductReviewRepository;
-import org.example.QuanLyMuaVu.module.season.entity.Season;
 import org.example.QuanLyMuaVu.module.shared.security.CurrentUserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -414,13 +405,8 @@ public class MarketplaceImageSearchService {
     }
 
     private ProductSearchJoins buildJoins(Root<MarketplaceProduct> product) {
-        Join<MarketplaceProduct, ProductWarehouseLot> lot = product.join("lot");
-        Join<MarketplaceProduct, Farm> farm = product.join("farm", JoinType.LEFT);
-        Join<Farm, Province> province = farm.join("province", JoinType.LEFT);
-        Join<MarketplaceProduct, Season> season = product.join("season", JoinType.LEFT);
-        Join<Season, Crop> crop = season.join("crop", JoinType.LEFT);
-        Join<Season, Variety> variety = season.join("variety", JoinType.LEFT);
-        return new ProductSearchJoins(lot, farm, province, season, crop, variety);
+        // No joins needed - all searchable fields are denormalized directly on MarketplaceProduct
+        return new ProductSearchJoins(null, null, null, null, null, null);
     }
 
     private List<Predicate> buildProductPredicates(
@@ -436,15 +422,13 @@ public class MarketplaceImageSearchService {
         predicates.add(product.get("status").in(List.of(
                 MarketplaceProductStatus.ACTIVE,
                 MarketplaceProductStatus.PUBLISHED)));
-        predicates.add(cb.equal(joins.lot().get("status"), ProductWarehouseLotStatus.IN_STOCK));
         predicates.add(cb.greaterThan(product.get("stockQuantity"), ZERO_QUANTITY));
-        predicates.add(cb.greaterThan(joins.lot().get("onHandQuantity"), ZERO_QUANTITY));
 
         if (traceable != null) {
             predicates.add(cb.equal(product.get("traceable"), traceable));
         }
         if (region != null) {
-            predicates.add(likeText(cb, joins.province().get("name"), region));
+            predicates.add(likeText(cb, product.get("farmRegion"), region));
         }
         if (minPrice != null) {
             predicates.add(cb.greaterThanOrEqualTo(product.get("price"), minPrice));
@@ -459,12 +443,10 @@ public class MarketplaceImageSearchService {
             keywordPredicates.add(likeText(cb, product.get("category"), keyword));
             keywordPredicates.add(likeText(cb, product.get("shortDescription"), keyword));
             keywordPredicates.add(likeText(cb, product.get("description"), keyword));
-            keywordPredicates.add(likeText(cb, joins.farm().get("name"), keyword));
-            keywordPredicates.add(likeText(cb, joins.lot().get("productName"), keyword));
-            keywordPredicates.add(likeText(cb, joins.lot().get("productVariant"), keyword));
-            keywordPredicates.add(likeText(cb, joins.season().get("seasonName"), keyword));
-            keywordPredicates.add(likeText(cb, joins.crop().get("cropName"), keyword));
-            keywordPredicates.add(likeText(cb, joins.variety().get("name"), keyword));
+            keywordPredicates.add(likeText(cb, product.get("farmName"), keyword));
+            keywordPredicates.add(likeText(cb, product.get("lotCode"), keyword));
+            keywordPredicates.add(likeText(cb, product.get("seasonName"), keyword));
+            keywordPredicates.add(likeText(cb, product.get("catalogSnapshot"), keyword));
         }
         if (!keywordPredicates.isEmpty()) {
             predicates.add(cb.or(keywordPredicates.toArray(Predicate[]::new)));
@@ -512,11 +494,6 @@ public class MarketplaceImageSearchService {
     private MarketplaceProductSummaryResponse toProductSummary(
             MarketplaceProduct product,
             MarketplaceProductReviewRepository.ProductRatingProjection ratingProjection) {
-        User farmer = product.getFarmerUser();
-        Farm farm = product.getFarm();
-        Season season = product.getSeason();
-        ProductWarehouseLot lot = product.getLot();
-
         double averageRating = ratingProjection == null ? 0D : Optional.ofNullable(ratingProjection.getAverageRating()).orElse(0D);
         long ratingCount = ratingProjection == null ? 0L : Optional.ofNullable(ratingProjection.getRatingCount()).orElse(0L);
 
@@ -531,14 +508,14 @@ public class MarketplaceImageSearchService {
                 currentListingQuantity(product),
                 currentAvailableQuantity(product),
                 product.getImageUrl(),
-                farmer == null ? null : farmer.getId(),
-                farmer == null ? null : defaultDisplayName(farmer),
-                farm == null ? null : farm.getId(),
-                farm == null ? null : farm.getName(),
-                season == null ? null : season.getId(),
-                season == null ? null : season.getSeasonName(),
-                lot == null ? null : lot.getId(),
-                resolveFarmRegion(farm),
+                product.getFarmerUserId(),
+                product.getFarmerDisplayName(),
+                product.getFarmId(),
+                product.getFarmName(),
+                product.getSeasonId(),
+                product.getSeasonName(),
+                product.getLotId(),
+                product.getFarmRegion(),
                 Boolean.TRUE.equals(product.getTraceable()),
                 averageRating,
                 ratingCount,
@@ -908,30 +885,14 @@ public class MarketplaceImageSearchService {
         return Math.max(1, Math.min(size, MAX_PAGE_SIZE));
     }
 
-    private String defaultDisplayName(User user) {
-        String fullName = normalizeNullable(user.getFullName());
-        if (fullName != null) {
-            return fullName;
-        }
-        String username = normalizeNullable(user.getUsername());
-        if (username != null) {
-            return username;
-        }
-        return user.getEmail();
-    }
-
-    private String resolveFarmRegion(Farm farm) {
-        if (farm == null || farm.getProvince() == null) {
-            return null;
-        }
-        return farm.getProvince().getName();
-    }
-
     private BigDecimal currentAvailableQuantity(MarketplaceProduct product) {
-        if (product == null || product.getLot() == null || product.getLot().getOnHandQuantity() == null) {
+        // Use product's stockQuantity as the available quantity for marketplace
+        // Lot's on-hand quantity is not accessible via denormalized field,
+        // so we rely on the pre-synced stockQuantity on MarketplaceProduct
+        if (product == null || product.getStockQuantity() == null) {
             return ZERO_QUANTITY;
         }
-        return currentListingQuantity(product).min(product.getLot().getOnHandQuantity().max(ZERO_QUANTITY));
+        return product.getStockQuantity().max(ZERO_QUANTITY);
     }
 
     private BigDecimal currentListingQuantity(MarketplaceProduct product) {
@@ -942,9 +903,7 @@ public class MarketplaceImageSearchService {
     }
 
     private String resolveListingUnit(MarketplaceProduct product) {
-        if (product != null && product.getLot() != null && normalizeNullable(product.getLot().getUnit()) != null) {
-            return product.getLot().getUnit();
-        }
+        // Use product's unit field directly since lot.unit is not denormalized
         return product == null ? null : product.getUnit();
     }
 
@@ -976,11 +935,11 @@ public class MarketplaceImageSearchService {
     }
 
     private record ProductSearchJoins(
-            Join<MarketplaceProduct, ProductWarehouseLot> lot,
-            Join<MarketplaceProduct, Farm> farm,
-            Join<Farm, Province> province,
-            Join<MarketplaceProduct, Season> season,
-            Join<Season, Crop> crop,
-            Join<Season, Variety> variety) {
+            Object lot,
+            Object farm,
+            Object province,
+            Object season,
+            Object crop,
+            Object variety) {
     }
 }

@@ -66,7 +66,7 @@ class MarketplaceCheckoutSplitTest {
     @BeforeEach
     void setUp() {
         buyer = User.builder().id(10L).username("buyer").fullName("Buyer").build();
-        cart = MarketplaceCart.builder().id(100L).user(buyer).build();
+        cart = MarketplaceCart.builder().id(100L).userId(buyer.getId()).build();
         lenient().when(marketplaceProductReviewRepository.findByOrder_IdAndBuyerUser_Id(anyLong(), anyLong()))
                 .thenReturn(List.of());
         lenient().when(marketplaceProductRepository.saveAll(any())).thenAnswer(i -> i.getArgument(0));
@@ -88,14 +88,14 @@ class MarketplaceCheckoutSplitTest {
         MarketplaceCartItem i3 = buildCartItem(3L, pB1, "3");
 
         MarketplaceOrderGroup group = MarketplaceOrderGroup.builder()
-                .id(99L).groupCode("MOG-SPLIT").buyerUser(buyer)
+                .id(99L).groupCode("MOG-SPLIT").buyerUserId(buyer.getId())
                 .idempotencyKey("key").requestFingerprint("fp").build();
 
         when(currentUserService.getCurrentUser()).thenReturn(buyer);
         when(currentUserService.getCurrentUserId()).thenReturn(10L);
         when(marketplaceCartRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(cart));
         when(marketplaceCartItemRepository.findByCartIdWithProductForUpdate(100L)).thenReturn(List.of(i1, i2, i3));
-        when(marketplaceOrderGroupRepository.findByBuyerUser_IdAndIdempotencyKey(10L, "key")).thenReturn(Optional.empty());
+        when(marketplaceOrderGroupRepository.findByBuyerUserIdAndIdempotencyKey(10L, "key")).thenReturn(Optional.empty());
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(marketplaceProductRepository.findAllByIdInForUpdate(any())).thenReturn(List.of(pA1, pA2, pB1));
         when(productWarehouseLotRepository.findAllByIdInForUpdate(any())).thenReturn(List.of(lotA, lotB));
@@ -120,7 +120,7 @@ class MarketplaceCheckoutSplitTest {
         MarketplaceCartItem item = buildCartItem(1L, product, "2");
 
         MarketplaceOrderGroup group = MarketplaceOrderGroup.builder()
-                .id(99L).groupCode("MOG-COD").buyerUser(buyer)
+                .id(99L).groupCode("MOG-COD").buyerUserId(buyer.getId())
                 .idempotencyKey("cod-key").requestFingerprint("fp").build();
 
         when(currentUserService.getCurrentUser()).thenReturn(buyer);
@@ -181,13 +181,28 @@ class MarketplaceCheckoutSplitTest {
         return MarketplaceProduct.builder()
                 .id(id).slug("p-" + id).name("Product " + id).price(price).unit("kg")
                 .stockQuantity(lot.getOnHandQuantity()).status(MarketplaceProductStatus.PUBLISHED)
-                .traceable(false).lot(lot).farm(lot.getFarm()).season(lot.getSeason())
-                .farmerUser(User.builder().id(farmerId).username("f-" + farmerId).build()).build();
+                .traceable(false)
+                .lotId(lot.getId())
+                .farmId(lot.getFarm() != null ? lot.getFarm().getId() : null)
+                .seasonId(lot.getSeason() != null ? lot.getSeason().getId() : null)
+                .farmerUserId(farmerId)
+                .farmerDisplayName("f-" + farmerId)
+                .farmName(lot.getFarm() != null ? lot.getFarm().getName() : null)
+                .seasonName(lot.getSeason() != null ? lot.getSeason().getSeasonName() : null)
+                .lotCode(lot.getLotCode())
+                .build();
     }
 
     private MarketplaceCartItem buildCartItem(Long id, MarketplaceProduct product, String qty) {
         return MarketplaceCartItem.builder()
-                .id(id).cart(cart).product(product).quantity(new BigDecimal(qty))
+                .id(id).cart(cart)
+                .productId(product.getId())
+                .farmerUserId(product.getFarmerUserId())
+                .productName(product.getName())
+                .productSlug(product.getSlug())
+                .imageUrl(product.getImageUrl())
+                .traceable(product.getTraceable())
+                .quantity(new BigDecimal(qty))
                 .unitPriceSnapshot(product.getPrice()).build();
     }
 }

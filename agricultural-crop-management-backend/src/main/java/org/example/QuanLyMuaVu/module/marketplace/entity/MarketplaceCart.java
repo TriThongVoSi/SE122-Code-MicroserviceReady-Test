@@ -38,9 +38,8 @@ public class MarketplaceCart {
     @Column(name = "id")
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User user;
+    @Column(name = "user_id", nullable = false)
+    Long userId;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

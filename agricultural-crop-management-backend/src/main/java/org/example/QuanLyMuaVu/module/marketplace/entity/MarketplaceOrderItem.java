@@ -36,9 +36,8 @@ public class MarketplaceOrderItem {
     @JoinColumn(name = "order_id", nullable = false)
     MarketplaceOrder order;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    MarketplaceProduct product;
+    @Column(name = "product_id", nullable = false)
+    Long productId;
 
     @Column(name = "product_name_snapshot", nullable = false)
     String productNameSnapshot;
@@ -61,15 +60,24 @@ public class MarketplaceOrderItem {
     @Column(name = "traceable_snapshot", nullable = false)
     Boolean traceableSnapshot;
 
-    @ManyToOne
-    @JoinColumn(name = "farm_id")
-    org.example.QuanLyMuaVu.module.farm.entity.Farm farm;
+    @Column(name = "farm_id")
+    Integer farmId;
 
-    @ManyToOne
-    @JoinColumn(name = "season_id")
-    org.example.QuanLyMuaVu.module.season.entity.Season season;
+    @Column(name = "season_id")
+    Integer seasonId;
 
-    @ManyToOne
-    @JoinColumn(name = "lot_id")
-    org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot lot;
+    @Column(name = "lot_id")
+    Integer lotId;
+
+    @Column(name = "farm_name", length = 255)
+    String farmName;
+
+    @Column(name = "season_name", length = 255)
+    String seasonName;
+
+    @Column(name = "lot_code", length = 120)
+    String lotCode;
+
+    @Column(name = "crop_name", length = 255)
+    String cropName;
 }

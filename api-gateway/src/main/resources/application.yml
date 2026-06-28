@@ -60,6 +60,10 @@ spring:
               uri: ${INVENTORY_SERVICE_URI:-http://localhost:8086}
               predicates:
                 - Path=/api/v1/inventory/**, /api/v1/supplies/**, /api/v1/warehouses/**, /api/v1/product-warehouse/**, /api/v1/product-warehouses/**
+            - id: marketplace-route
+              uri: ${MARKETPLACE_SERVICE_URI:-http://localhost:8090}
+              predicates:
+                - Path=/api/v1/marketplace/**, /api/v1/marketplace/farmer/**, /api/v1/marketplace/admin/**, /api/v1/buyer/**, /api/v1/farmer/orders/**, /api/v1/buyer/addresses/**, /api/v1/buyer/marketplace/image-search/**, /api/v1/admin/marketplace/**
             - id: monolith-route
               uri: ${MONOLITH_URI:http://localhost:8080}
               predicates:

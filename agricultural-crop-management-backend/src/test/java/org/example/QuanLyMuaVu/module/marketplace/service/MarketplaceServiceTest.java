@@ -145,7 +145,7 @@ class MarketplaceServiceTest {
 
         cart = MarketplaceCart.builder()
                 .id(100L)
-                .user(buyer)
+                .userId(buyer.getId())
                 .build();
 
         lot = buildLot(1, "10");
@@ -350,7 +350,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem cartItem = MarketplaceCartItem.builder()
                     .id(1000L)
                     .cart(cart)
-                    .product(lowStockProduct)
+                    .productId(lowStockProduct.getId())
+                    .farmerUserId(20L)
+                    .productName(lowStockProduct.getName())
+                    .productSlug(lowStockProduct.getSlug())
+                    .imageUrl(lowStockProduct.getImageUrl())
+                    .traceable(lowStockProduct.getTraceable())
                     .quantity(new BigDecimal("2"))
                     .unitPriceSnapshot(lowStockProduct.getPrice())
                     .build();
@@ -388,7 +393,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem itemA = MarketplaceCartItem.builder()
                     .id(1L)
                     .cart(cart)
-                    .product(productA)
+                    .productId(productA.getId())
+                    .farmerUserId(20L)
+                    .productName(productA.getName())
+                    .productSlug(productA.getSlug())
+                    .imageUrl(productA.getImageUrl())
+                    .traceable(productA.getTraceable())
                     .quantity(new BigDecimal("2"))
                     .unitPriceSnapshot(productA.getPrice())
                     .build();
@@ -396,7 +406,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem itemB = MarketplaceCartItem.builder()
                     .id(2L)
                     .cart(cart)
-                    .product(productB)
+                    .productId(productB.getId())
+                    .farmerUserId(21L)
+                    .productName(productB.getName())
+                    .productSlug(productB.getSlug())
+                    .imageUrl(productB.getImageUrl())
+                    .traceable(productB.getTraceable())
                     .quantity(new BigDecimal("1"))
                     .unitPriceSnapshot(productB.getPrice())
                     .build();
@@ -404,7 +419,7 @@ class MarketplaceServiceTest {
             MarketplaceOrderGroup savedGroup = MarketplaceOrderGroup.builder()
                     .id(99L)
                     .groupCode("MOG-SPLIT")
-                    .buyerUser(buyer)
+                    .buyerUserId(buyer.getId())
                     .idempotencyKey("idem-split")
                     .requestFingerprint("fp")
                     .build();
@@ -458,7 +473,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem cartItem = MarketplaceCartItem.builder()
                     .id(1L)
                     .cart(cart)
-                    .product(limitedProduct)
+                    .productId(limitedProduct.getId())
+                    .farmerUserId(20L)
+                    .productName(limitedProduct.getName())
+                    .productSlug(limitedProduct.getSlug())
+                    .imageUrl(limitedProduct.getImageUrl())
+                    .traceable(limitedProduct.getTraceable())
                     .quantity(new BigDecimal("5"))
                     .unitPriceSnapshot(limitedProduct.getPrice())
                     .build();
@@ -466,7 +486,7 @@ class MarketplaceServiceTest {
             MarketplaceOrderGroup savedGroup = MarketplaceOrderGroup.builder()
                     .id(99L)
                     .groupCode("MOG-SOLDOUT")
-                    .buyerUser(buyer)
+                    .buyerUserId(buyer.getId())
                     .idempotencyKey("idem-soldout")
                     .requestFingerprint("fp")
                     .build();
@@ -498,7 +518,7 @@ class MarketplaceServiceTest {
             assertEquals(0, limitedProduct.getStockQuantity().compareTo(new BigDecimal("5")));
             assertEquals(0, limitedLot.getOnHandQuantity().compareTo(BigDecimal.ZERO));
             assertNotNull(limitedProduct.getStatusChangedAt());
-            assertEquals(buyer, limitedProduct.getStatusChangedByUser());
+            assertEquals(buyer.getId(), limitedProduct.getStatusChangedByUserId());
         }
     }
 
@@ -675,7 +695,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem existing = MarketplaceCartItem.builder()
                     .id(1001L)
                     .cart(cart)
-                    .product(product)
+                    .productId(product.getId())
+                    .farmerUserId(product.getFarmerUserId())
+                    .productName(product.getName())
+                    .productSlug(product.getSlug())
+                    .imageUrl(product.getImageUrl())
+                    .traceable(product.getTraceable())
                     .quantity(new BigDecimal("2"))
                     .unitPriceSnapshot(product.getPrice())
                     .build();
@@ -686,7 +711,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem updated = MarketplaceCartItem.builder()
                     .id(1001L)
                     .cart(cart)
-                    .product(product)
+                    .productId(product.getId())
+                    .farmerUserId(product.getFarmerUserId())
+                    .productName(product.getName())
+                    .productSlug(product.getSlug())
+                    .imageUrl(product.getImageUrl())
+                    .traceable(product.getTraceable())
                     .quantity(new BigDecimal("5"))
                     .unitPriceSnapshot(product.getPrice())
                     .build();
@@ -713,7 +743,12 @@ class MarketplaceServiceTest {
             MarketplaceCartItem existing = MarketplaceCartItem.builder()
                     .id(1001L)
                     .cart(cart)
-                    .product(product)
+                    .productId(product.getId())
+                    .farmerUserId(product.getFarmerUserId())
+                    .productName(product.getName())
+                    .productSlug(product.getSlug())
+                    .imageUrl(product.getImageUrl())
+                    .traceable(product.getTraceable())
                     .quantity(new BigDecimal("8"))
                     .unitPriceSnapshot(product.getPrice())
                     .build();
@@ -739,11 +774,11 @@ class MarketplaceServiceTest {
             MarketplaceOrderGroup group = MarketplaceOrderGroup.builder().id(5L).groupCode("MOG-20260419-ABC").build();
             MarketplaceOrder order = MarketplaceOrder.builder()
                     .id(300L)
-                    .orderGroup(group)
+                    .orderGroupId(5L)
                     .orderCode("MO-1")
                     .status(MarketplaceOrderStatus.PENDING_PAYMENT)
-                    .buyerUser(buyer)
-                    .farmerUser(User.builder().id(20L).build())
+                    .buyerUserId(buyer.getId())
+                    .farmerUserId(20L)
                     .paymentMethod(MarketplacePaymentMethod.COD)
                     .shippingRecipientName("Buyer")
                     .shippingPhone("0909000000")
@@ -757,12 +792,17 @@ class MarketplaceServiceTest {
             MarketplaceOrderItem orderItem = MarketplaceOrderItem.builder()
                     .id(1L)
                     .order(order)
-                    .product(product)
-                    .lot(reservedLot)
-                    .quantity(new BigDecimal("2"))
+                    .productId(product.getId())
+                    .productNameSnapshot(product.getName())
+                    .productSlugSnapshot(product.getSlug())
+                    .imageUrlSnapshot(product.getImageUrl())
                     .unitPriceSnapshot(new BigDecimal("100000"))
+                    .quantity(new BigDecimal("2"))
                     .lineTotal(new BigDecimal("200000"))
                     .traceableSnapshot(false)
+                    .farmId(product.getFarmId())
+                    .seasonId(product.getSeasonId())
+                    .lotId(product.getLotId())
                     .build();
             order.setItems(List.of(orderItem));
 
@@ -795,10 +835,10 @@ class MarketplaceServiceTest {
             MarketplaceOrder orderB = buildOrder(2L, "MO-2", "MOG-2", buyer, farmer, productB, MarketplaceOrderStatus.PENDING_PAYMENT, 102L);
             MarketplaceProductReview review = MarketplaceProductReview.builder()
                     .id(900L)
-                    .order(orderA)
-                    .orderItem(orderA.getItems().getFirst())
-                    .product(productA)
-                    .buyerUser(buyer)
+                    .orderId(orderA.getId())
+                    .orderItemId(orderA.getItems().getFirst().getId())
+                    .productId(productA.getId())
+                    .buyerUserId(buyer.getId())
                     .rating(5)
                     .build();
 
@@ -1102,10 +1142,14 @@ class MarketplaceServiceTest {
                 .stockQuantity(lot.getOnHandQuantity())
                 .status(MarketplaceProductStatus.PUBLISHED)
                 .traceable(false)
-                .lot(lot)
-                .farm(lot.getFarm())
-                .season(lot.getSeason())
-                .farmerUser(User.builder().id(farmerId).username("farmer-" + farmerId).build())
+                .lotId(lot.getId())
+                .farmId(lot.getFarm() != null ? lot.getFarm().getId() : null)
+                .seasonId(lot.getSeason() != null ? lot.getSeason().getId() : null)
+                .farmerUserId(farmerId)
+                .farmerDisplayName("farmer-" + farmerId)
+                .farmName(lot.getFarm() != null ? lot.getFarm().getName() : null)
+                .seasonName(lot.getSeason() != null ? lot.getSeason().getSeasonName() : null)
+                .lotCode(lot.getLotCode())
                 .build();
     }
 
@@ -1119,7 +1163,12 @@ class MarketplaceServiceTest {
         return MarketplaceCartItem.builder()
                 .id(1001L)
                 .cart(cart)
-                .product(product)
+                .productId(product.getId())
+                .farmerUserId(product.getFarmerUserId())
+                .productName(product.getName())
+                .productSlug(product.getSlug())
+                .imageUrl(product.getImageUrl())
+                .traceable(product.getTraceable())
                 .quantity(quantity)
                 .unitPriceSnapshot(product.getPrice())
                 .build();
@@ -1136,10 +1185,10 @@ class MarketplaceServiceTest {
             Long itemId) {
         MarketplaceOrder order = MarketplaceOrder.builder()
                 .id(id)
-                .orderGroup(MarketplaceOrderGroup.builder().id(id + 1000).groupCode(groupCode).buyerUser(buyer).build())
+                .orderGroupId(id + 1000L)
                 .orderCode(orderCode)
-                .buyerUser(buyer)
-                .farmerUser(farmer)
+                .buyerUserId(buyer.getId())
+                .farmerUserId(farmer.getId())
                 .status(status)
                 .paymentMethod(MarketplacePaymentMethod.COD)
                 .paymentVerificationStatus(MarketplacePaymentVerificationStatus.NOT_REQUIRED)
@@ -1153,7 +1202,7 @@ class MarketplaceServiceTest {
         MarketplaceOrderItem item = MarketplaceOrderItem.builder()
                 .id(itemId)
                 .order(order)
-                .product(product)
+                .productId(product.getId())
                 .productNameSnapshot(product.getName())
                 .productSlugSnapshot(product.getSlug())
                 .imageUrlSnapshot("https://example.com/" + product.getSlug() + ".jpg")

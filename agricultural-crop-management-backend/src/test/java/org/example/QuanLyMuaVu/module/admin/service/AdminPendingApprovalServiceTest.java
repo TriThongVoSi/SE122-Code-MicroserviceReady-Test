@@ -46,8 +46,8 @@ class AdminPendingApprovalServiceTest {
                 .id(101L)
                 .name("Rice Listing")
                 .status(MarketplaceProductStatus.PENDING_REVIEW)
-                .farmerUser(seller)
-                .farm(farm)
+                .farmerUserId(seller.getId())
+                .farmId(farm.getId())
                 .updatedAt(LocalDateTime.of(2026, 5, 10, 8, 0))
                 .build();
 
@@ -55,7 +55,7 @@ class AdminPendingApprovalServiceTest {
         MarketplaceOrder order = MarketplaceOrder.builder()
                 .id(501L)
                 .orderCode("ORD-501")
-                .buyerUser(buyer)
+                .buyerUserId(buyer.getId())
                 .paymentVerificationStatus(MarketplacePaymentVerificationStatus.SUBMITTED)
                 .paymentProofUploadedAt(LocalDateTime.of(2026, 5, 9, 7, 30))
                 .createdAt(LocalDateTime.of(2026, 5, 8, 9, 0))

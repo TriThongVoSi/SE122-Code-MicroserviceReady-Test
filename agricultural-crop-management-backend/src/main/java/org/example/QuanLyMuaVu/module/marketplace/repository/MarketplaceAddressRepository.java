@@ -10,15 +10,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface MarketplaceAddressRepository extends JpaRepository<MarketplaceAddress, Long> {
 
-    List<MarketplaceAddress> findAllByUser_IdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(Long userId);
+    List<MarketplaceAddress> findAllByUserIdAndDeletedAtIsNullOrderByIsDefaultDescIdDesc(Long userId);
 
-    Optional<MarketplaceAddress> findByIdAndUser_IdAndDeletedAtIsNull(Long id, Long userId);
+    Optional<MarketplaceAddress> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 
-    Optional<MarketplaceAddress> findFirstByUser_IdAndIsDefaultTrueAndDeletedAtIsNullOrderByIdDesc(Long userId);
+    Optional<MarketplaceAddress> findFirstByUserIdAndIsDefaultTrueAndDeletedAtIsNullOrderByIdDesc(Long userId);
 
-    boolean existsByUser_IdAndDeletedAtIsNull(Long userId);
+    boolean existsByUserIdAndDeletedAtIsNull(Long userId);
 
     @Modifying
-    @Query("UPDATE MarketplaceAddress a SET a.isDefault = false WHERE a.user.id = :userId AND a.deletedAt IS NULL")
+    @Query("UPDATE MarketplaceAddress a SET a.isDefault = false WHERE a.userId = :userId AND a.deletedAt IS NULL")
     int clearDefaultByUserId(@Param("userId") Long userId);
 }

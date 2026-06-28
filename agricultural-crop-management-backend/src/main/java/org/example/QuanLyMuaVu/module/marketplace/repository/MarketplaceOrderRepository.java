@@ -1,15 +1,16 @@
 package org.example.QuanLyMuaVu.module.marketplace.repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.example.QuanLyMuaVu.module.marketplace.entity.MarketplaceOrder;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplaceOrderStatus;
 import org.example.QuanLyMuaVu.module.marketplace.model.MarketplacePaymentVerificationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,27 +19,27 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     Page<MarketplaceOrder> findByPaymentVerificationStatus(
             MarketplacePaymentVerificationStatus paymentVerificationStatus, Pageable pageable);
 
-    Page<MarketplaceOrder> findByBuyerUser_Id(Long buyerUserId, Pageable pageable);
+    Page<MarketplaceOrder> findByBuyerUserId(Long buyerUserId, Pageable pageable);
 
-    Page<MarketplaceOrder> findByBuyerUser_IdAndStatus(Long buyerUserId, MarketplaceOrderStatus status, Pageable pageable);
+    Page<MarketplaceOrder> findByBuyerUserIdAndStatus(Long buyerUserId, MarketplaceOrderStatus status, Pageable pageable);
 
-    Page<MarketplaceOrder> findByFarmerUser_Id(Long farmerUserId, Pageable pageable);
+    Page<MarketplaceOrder> findByFarmerUserId(Long farmerUserId, Pageable pageable);
 
-    Page<MarketplaceOrder> findByFarmerUser_IdAndStatus(Long farmerUserId, MarketplaceOrderStatus status, Pageable pageable);
+    Page<MarketplaceOrder> findByFarmerUserIdAndStatus(Long farmerUserId, MarketplaceOrderStatus status, Pageable pageable);
 
     Page<MarketplaceOrder> findByStatus(MarketplaceOrderStatus status, Pageable pageable);
 
-    long countByFarmerUser_IdAndStatus(Long farmerUserId, MarketplaceOrderStatus status);
+    long countByFarmerUserIdAndStatus(Long farmerUserId, MarketplaceOrderStatus status);
 
     long countByStatus(MarketplaceOrderStatus status);
 
-    long countByFarmerUser_Id(Long farmerUserId);
+    long countByFarmerUserId(Long farmerUserId);
 
     long countByPaymentVerificationStatus(MarketplacePaymentVerificationStatus paymentVerificationStatus);
 
     @Query("""
             SELECT o.id FROM MarketplaceOrder o
-            WHERE o.buyerUser.id = :buyerUserId
+            WHERE o.buyerUserId = :buyerUserId
             """)
     Page<Long> findBuyerOrderIds(
             @Param("buyerUserId") Long buyerUserId,
@@ -46,7 +47,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
 
     @Query("""
             SELECT o.id FROM MarketplaceOrder o
-            WHERE o.buyerUser.id = :buyerUserId
+            WHERE o.buyerUserId = :buyerUserId
               AND o.status = :status
             """)
     Page<Long> findBuyerOrderIdsByStatus(
@@ -56,23 +57,15 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
 
     @Query("""
             SELECT DISTINCT o FROM MarketplaceOrder o
-            LEFT JOIN FETCH o.orderGroup
-            LEFT JOIN FETCH o.buyerUser
-            LEFT JOIN FETCH o.farmerUser
             LEFT JOIN FETCH o.items oi
-            LEFT JOIN FETCH oi.product
             WHERE o.id IN :orderIds
             """)
     List<MarketplaceOrder> findByIdsWithResponseGraph(@Param("orderIds") List<Long> orderIds);
 
     @Query("""
             SELECT DISTINCT o FROM MarketplaceOrder o
-            LEFT JOIN FETCH o.orderGroup
-            LEFT JOIN FETCH o.buyerUser
-            LEFT JOIN FETCH o.farmerUser
             LEFT JOIN FETCH o.items oi
-            LEFT JOIN FETCH oi.product
-            WHERE o.id = :orderId AND o.buyerUser.id = :buyerUserId
+            WHERE o.id = :orderId AND o.buyerUserId = :buyerUserId
             """)
     Optional<MarketplaceOrder> findByIdAndBuyerUserIdWithItems(
             @Param("orderId") Long orderId,
@@ -81,8 +74,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     @Query("""
             SELECT DISTINCT o FROM MarketplaceOrder o
             LEFT JOIN FETCH o.items oi
-            LEFT JOIN FETCH oi.product
-            WHERE o.id = :orderId AND o.farmerUser.id = :farmerUserId
+            WHERE o.id = :orderId AND o.farmerUserId = :farmerUserId
             """)
     Optional<MarketplaceOrder> findByIdAndFarmerUserIdWithItems(
             @Param("orderId") Long orderId,
@@ -91,7 +83,6 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     @Query("""
             SELECT DISTINCT o FROM MarketplaceOrder o
             LEFT JOIN FETCH o.items oi
-            LEFT JOIN FETCH oi.product
             WHERE o.id = :orderId
             """)
     Optional<MarketplaceOrder> findByIdWithItems(@Param("orderId") Long orderId);
@@ -99,8 +90,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     @Query("""
             SELECT DISTINCT o FROM MarketplaceOrder o
             LEFT JOIN FETCH o.items oi
-            LEFT JOIN FETCH oi.product
-            WHERE o.orderGroup.id = :orderGroupId
+            WHERE o.orderGroupId = :orderGroupId
             ORDER BY o.id ASC
             """)
     List<MarketplaceOrder> findAllByOrderGroupIdWithItems(@Param("orderGroupId") Long orderGroupId);
@@ -108,7 +98,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     @Query("""
             SELECT COALESCE(SUM(o.totalAmount), 0)
             FROM MarketplaceOrder o
-            WHERE o.farmerUser.id = :farmerUserId
+            WHERE o.farmerUserId = :farmerUserId
               AND o.status = :status
             """)
     BigDecimal sumTotalAmountByFarmerUserIdAndStatus(
@@ -124,7 +114,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
 
     @Query("""
             SELECT o FROM MarketplaceOrder o
-            WHERE o.farmerUser.id = :farmerUserId
+            WHERE o.farmerUserId = :farmerUserId
             ORDER BY o.createdAt DESC
             """)
     List<MarketplaceOrder> findRecentByFarmerUserId(
@@ -134,7 +124,7 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     @Query("""
             SELECT MAX(o.createdAt)
             FROM MarketplaceOrder o
-            WHERE o.farmerUser.id = :farmerUserId
+            WHERE o.farmerUserId = :farmerUserId
             """)
     LocalDateTime findLastOrderAtByFarmerUserId(@Param("farmerUserId") Long farmerUserId);
 

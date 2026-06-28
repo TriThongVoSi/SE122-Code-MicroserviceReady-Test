@@ -380,6 +380,45 @@ services:
       incident-service:
         condition: service_started
 
+  marketplace-service:
+    build:
+      context: ./marketplace-service
+      dockerfile: Dockerfile
+    container_name: marketplace_service_quanlymuavu
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: 8090
+      DB_URL: jdbc:mysql://mysql:3306/marketplace_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: ${MYSQL_USER:-springuser}
+      DB_PASS: ${MYSQL_PASSWORD:-springpass}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-supersecretkeyplaceholder64characterslongmustbe64byteslongforhs512!}
+      JWT_JWKS_URI: http://identity-service:8081/api/v1/auth/.well-known/jwks.json
+      APP_BACKEND_URL: http://backend:8080
+      EXTERNAL_SERVICES_FARM_SERVICE_URL: http://farm-service:8084
+      EXTERNAL_SERVICES_SEASON_SERVICE_URL: http://season-service:8085
+      EXTERNAL_SERVICES_INVENTORY_SERVICE_URL: http://inventory-service:8086
+      EXTERNAL_SERVICES_IDENTITY_SERVICE_URL: http://identity-service:8081
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_PRODUCT_IMAGES: marketplace-product-images
+      MINIO_BUCKET_PAYMENT_PROOFS: marketplace-payment-proofs
+      MINIO_PUBLIC_URL: http://localhost:9000
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbituser}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -400,6 +439,7 @@ services:
       FINANCE_SERVICE_URI: http://finance-service:8087
       INCIDENT_SERVICE_URI: http://incident-service:8088
       SUSTAINABILITY_SERVICE_URI: http://sustainability-service:8089
+      MARKETPLACE_SERVICE_URI: http://marketplace-service:8090
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
     depends_on:
       - backend
@@ -412,6 +452,7 @@ services:
       - finance-service
       - incident-service
       - sustainability-service
+      - marketplace-service
 
   frontend:
     build:

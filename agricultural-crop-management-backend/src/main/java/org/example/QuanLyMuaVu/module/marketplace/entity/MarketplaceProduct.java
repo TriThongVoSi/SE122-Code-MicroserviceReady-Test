@@ -73,21 +73,35 @@ public class MarketplaceProduct {
     @Column(name = "image_urls_json", columnDefinition = "TEXT")
     String imageUrlsJson;
 
-    @ManyToOne
-    @JoinColumn(name = "farmer_user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User farmerUser;
+    @Column(name = "farmer_user_id", nullable = false)
+    Long farmerUserId;
 
-    @ManyToOne
-    @JoinColumn(name = "farm_id")
-    org.example.QuanLyMuaVu.module.farm.entity.Farm farm;
+    @Column(name = "farmer_display_name", length = 255)
+    String farmerDisplayName;
 
-    @ManyToOne
-    @JoinColumn(name = "season_id")
-    org.example.QuanLyMuaVu.module.season.entity.Season season;
+    @Column(name = "farm_id")
+    Integer farmId;
 
-    @ManyToOne
-    @JoinColumn(name = "lot_id", nullable = false)
-    org.example.QuanLyMuaVu.module.inventory.entity.ProductWarehouseLot lot;
+    @Column(name = "farm_name", length = 255)
+    String farmName;
+
+    @Column(name = "farm_region", length = 255)
+    String farmRegion;
+
+    @Column(name = "season_id")
+    Integer seasonId;
+
+    @Column(name = "season_name", length = 255)
+    String seasonName;
+
+    @Column(name = "lot_id")
+    Integer lotId;
+
+    @Column(name = "lot_code", length = 120)
+    String lotCode;
+
+    @Column(name = "catalog_snapshot", columnDefinition = "TEXT")
+    String catalogSnapshot;
 
     @Column(name = "traceable", nullable = false)
     @Builder.Default
@@ -115,9 +129,8 @@ public class MarketplaceProduct {
     @Column(name = "status_changed_at")
     LocalDateTime statusChangedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "status_changed_by_user_id")
-    org.example.QuanLyMuaVu.module.identity.entity.User statusChangedByUser;
+    @Column(name = "status_changed_by_user_id")
+    Long statusChangedByUserId;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;

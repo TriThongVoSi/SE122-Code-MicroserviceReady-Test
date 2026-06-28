@@ -37,21 +37,20 @@ public class MarketplaceProductReview {
     @Column(name = "id")
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    MarketplaceProduct product;
+    @Column(name = "product_id", nullable = false)
+    Long productId;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false)
-    MarketplaceOrder order;
+    @Column(name = "order_id", nullable = false)
+    Long orderId;
 
-    @ManyToOne
-    @JoinColumn(name = "order_item_id")
-    MarketplaceOrderItem orderItem;
+    @Column(name = "order_item_id")
+    Long orderItemId;
 
-    @ManyToOne
-    @JoinColumn(name = "buyer_user_id", nullable = false)
-    org.example.QuanLyMuaVu.module.identity.entity.User buyerUser;
+    @Column(name = "buyer_user_id", nullable = false)
+    Long buyerUserId;
+
+    @Column(name = "buyer_display_name", length = 255)
+    String buyerDisplayName;
 
     @Column(name = "rating", nullable = false)
     Integer rating;
@@ -62,6 +61,15 @@ public class MarketplaceProductReview {
     @Column(name = "hidden", nullable = false)
     @Builder.Default
     Boolean hidden = Boolean.FALSE;
+
+    @Column(name = "hidden_reason", length = 500)
+    String hiddenReason;
+
+    @Column(name = "hidden_at")
+    LocalDateTime hiddenAt;
+
+    @Column(name = "hidden_by_user_id")
+    Long hiddenByUserId;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;

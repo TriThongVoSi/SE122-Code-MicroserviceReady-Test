@@ -12,33 +12,25 @@ import org.springframework.data.repository.query.Param;
 
 public interface MarketplaceCartItemRepository extends JpaRepository<MarketplaceCartItem, Long> {
 
-    Optional<MarketplaceCartItem> findByCart_IdAndProduct_Id(Long cartId, Long productId);
+    Optional<MarketplaceCartItem> findByCartIdAndProductId(Long cartId, Long productId);
 
     @Query("""
             SELECT ci FROM MarketplaceCartItem ci
-            JOIN FETCH ci.product p
-            LEFT JOIN FETCH p.farm
-            LEFT JOIN FETCH p.season
-            LEFT JOIN FETCH p.lot
             WHERE ci.cart.id = :cartId
             ORDER BY ci.id ASC
             """)
-    List<MarketplaceCartItem> findByCartIdWithProduct(@Param("cartId") Long cartId);
+    List<MarketplaceCartItem> findByCartId(@Param("cartId") Long cartId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT ci FROM MarketplaceCartItem ci
-            JOIN FETCH ci.product p
-            LEFT JOIN FETCH p.farm
-            LEFT JOIN FETCH p.season
-            LEFT JOIN FETCH p.lot
             WHERE ci.cart.id = :cartId
             ORDER BY ci.id ASC
             """)
-    List<MarketplaceCartItem> findByCartIdWithProductForUpdate(@Param("cartId") Long cartId);
+    List<MarketplaceCartItem> findByCartIdForUpdate(@Param("cartId") Long cartId);
 
     @Modifying
-    @Query("DELETE FROM MarketplaceCartItem ci WHERE ci.cart.id = :cartId AND ci.product.id = :productId")
+    @Query("DELETE FROM MarketplaceCartItem ci WHERE ci.cart.id = :cartId AND ci.productId = :productId")
     int deleteByCartIdAndProductId(@Param("cartId") Long cartId, @Param("productId") Long productId);
 
     @Modifying

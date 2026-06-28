@@ -113,16 +113,22 @@ class MarketplaceReviewIntegrationTest {
                 .price(new BigDecimal("50000")).unit("kg")
                 .stockQuantity(new BigDecimal("50"))
                 .status(MarketplaceProductStatus.PUBLISHED)
-                .traceable(false).lot(lot).farm(farm)
-                .season(lot.getSeason())
-                .farmerUser(User.builder().id(20L).username("farmer-20").build())
+                .traceable(false)
+                .lotId(lot.getId())
+                .farmId(farm != null ? farm.getId() : null)
+                .seasonId(lot.getSeason() != null ? lot.getSeason().getId() : null)
+                .farmerUserId(20L)
+                .farmerDisplayName("farmer-20")
+                .farmName(farm != null ? farm.getName() : null)
+                .seasonName(lot.getSeason() != null ? lot.getSeason().getSeasonName() : null)
+                .lotCode(lot.getLotCode())
                 .build();
 
         completedOrder = MarketplaceOrder.builder()
                 .id(300L).orderCode("MO-300")
                 .status(MarketplaceOrderStatus.COMPLETED)
-                .buyerUser(buyer)
-                .farmerUser(User.builder().id(20L).build())
+                .buyerUserId(buyer.getId())
+                .farmerUserId(20L)
                 .paymentMethod(MarketplacePaymentMethod.COD)
                 .shippingRecipientName("Buyer").shippingPhone("0909000000")
                 .shippingAddressLine("123 Road")
@@ -132,7 +138,8 @@ class MarketplaceReviewIntegrationTest {
                 .build();
 
         orderItem = MarketplaceOrderItem.builder()
-                .id(1L).order(completedOrder).product(product)
+                .id(1L).order(completedOrder)
+                .productId(product.getId())
                 .quantity(new BigDecimal("2")).unitPriceSnapshot(new BigDecimal("50000"))
                 .lineTotal(new BigDecimal("100000")).traceableSnapshot(false)
                 .productNameSnapshot("Fresh Rice").productSlugSnapshot("fresh-rice")
@@ -142,8 +149,8 @@ class MarketplaceReviewIntegrationTest {
         pendingOrder = MarketplaceOrder.builder()
                 .id(400L).orderCode("MO-400")
                 .status(MarketplaceOrderStatus.PENDING_PAYMENT)
-                .buyerUser(buyer)
-                .farmerUser(User.builder().id(20L).build())
+                .buyerUserId(buyer.getId())
+                .farmerUserId(20L)
                 .paymentMethod(MarketplacePaymentMethod.COD)
                 .shippingRecipientName("Buyer").shippingPhone("0909000000")
                 .shippingAddressLine("123 Road")
@@ -250,8 +257,8 @@ class MarketplaceReviewIntegrationTest {
                     .thenReturn(false);
 
             MarketplaceProductReview savedReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(5).comment("Excellent rice!")
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).buyerDisplayName(buyer.getFullName()).rating(5).comment("Excellent rice!")
                     .hidden(false).build();
             when(marketplaceProductReviewRepository.save(any(MarketplaceProductReview.class)))
                     .thenReturn(savedReview);
@@ -283,8 +290,8 @@ class MarketplaceReviewIntegrationTest {
                     .thenReturn(false);
 
             MarketplaceProductReview savedReview = MarketplaceProductReview.builder()
-                    .id(51L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(4).comment(null)
+                    .id(51L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).buyerDisplayName(buyer.getFullName()).rating(4).comment(null)
                     .hidden(false).build();
             when(marketplaceProductReviewRepository.save(any(MarketplaceProductReview.class)))
                     .thenReturn(savedReview);
@@ -310,8 +317,8 @@ class MarketplaceReviewIntegrationTest {
                     .thenReturn(false);
 
             MarketplaceProductReview savedReview = MarketplaceProductReview.builder()
-                    .id(52L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(4).hidden(false).build();
+                    .id(52L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(4).hidden(false).build();
             when(marketplaceProductReviewRepository.save(any(MarketplaceProductReview.class)))
                     .thenReturn(savedReview);
 
@@ -343,8 +350,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should edit own review successfully")
         void shouldEditOwnReview() {
             MarketplaceProductReview existingReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(3).comment("OK")
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(3).comment("OK")
                     .hidden(false).build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(10L);
@@ -364,8 +371,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should block edit of another buyer's review")
         void shouldBlockEditOfAnotherBuyersReview() {
             MarketplaceProductReview existingReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(3).comment("OK")
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(3).comment("OK")
                     .hidden(false).build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(99L);
@@ -382,8 +389,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should not recalculate ratings if only comment changed")
         void shouldNotRecalculateIfOnlyCommentChanged() {
             MarketplaceProductReview existingReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(4).comment("OK")
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(4).comment("OK")
                     .hidden(false).build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(10L);
@@ -426,8 +433,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should delete own review and recalculate ratings")
         void shouldDeleteOwnReview() {
             MarketplaceProductReview existingReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(3).hidden(false).build();
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(3).hidden(false).build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(10L);
             when(marketplaceProductReviewRepository.findById(50L)).thenReturn(Optional.of(existingReview));
@@ -451,8 +458,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should block delete of another buyer's review")
         void shouldBlockDeleteOfAnotherBuyersReview() {
             MarketplaceProductReview existingReview = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(3).hidden(false).build();
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(3).hidden(false).build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(99L);
             when(marketplaceProductReviewRepository.findById(50L)).thenReturn(Optional.of(existingReview));
@@ -475,8 +482,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should hide review (admin)")
         void shouldAdminHideReview() {
             MarketplaceProductReview review = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(4).hidden(false).build();
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(4).hidden(false).build();
 
             when(marketplaceProductReviewRepository.findById(50L)).thenReturn(Optional.of(review));
             when(marketplaceProductReviewRepository.save(any(MarketplaceProductReview.class)))
@@ -492,8 +499,8 @@ class MarketplaceReviewIntegrationTest {
         @DisplayName("Should permanently delete review (admin)")
         void shouldAdminDeleteReview() {
             MarketplaceProductReview review = MarketplaceProductReview.builder()
-                    .id(50L).product(product).order(completedOrder).orderItem(orderItem)
-                    .buyerUser(buyer).rating(4).hidden(false).build();
+                    .id(50L).productId(product.getId()).orderId(completedOrder.getId()).orderItemId(orderItem.getId())
+                    .buyerUserId(buyer.getId()).rating(4).hidden(false).build();
 
             when(marketplaceProductReviewRepository.findById(50L)).thenReturn(Optional.of(review));
 

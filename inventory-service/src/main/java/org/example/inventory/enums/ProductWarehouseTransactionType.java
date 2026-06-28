@@ -7,7 +7,8 @@ public enum ProductWarehouseTransactionType {
     TRANSFER,
     RETURN,
     MARKETPLACE_ORDER_RESERVED,
-    MARKETPLACE_ORDER_RELEASED;
+    MARKETPLACE_ORDER_RELEASED,
+    MARKETPLACE_ORDER_SOLD;
 
     public static ProductWarehouseTransactionType fromCode(String code) {
         if (code == null || code.isBlank()) {

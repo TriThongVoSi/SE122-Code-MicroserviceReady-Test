@@ -60,7 +60,7 @@ class BuyerAddressIntegrationTest {
     }
 
     private MarketplaceAddress addr(Long id, User u, String name, boolean def) {
-        return MarketplaceAddress.builder().id(id).user(u).fullName(name).phone("0901234567")
+        return MarketplaceAddress.builder().id(id).userId(u.getId()).fullName(name).phone("0901234567")
                 .province("HCM").district("Q1").ward("P1").street("Street").label("home").isDefault(def).build();
     }
 
