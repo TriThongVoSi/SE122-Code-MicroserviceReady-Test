@@ -24,6 +24,7 @@ class SnapshotQueryServiceTest {
     @Mock private CropSnapshotRepository cropSnapshotRepository;
     @Mock private HarvestSnapshotRepository harvestSnapshotRepository;
     @Mock private ExpenseSnapshotRepository expenseSnapshotRepository;
+    @Mock private MarketplaceOrderSummaryRepository marketplaceOrderSummaryRepository;
 
     private SnapshotQueryService snapshotQueryService;
 
@@ -35,7 +36,8 @@ class SnapshotQueryServiceTest {
                 seasonSnapshotRepository,
                 cropSnapshotRepository,
                 harvestSnapshotRepository,
-                expenseSnapshotRepository
+                expenseSnapshotRepository,
+                marketplaceOrderSummaryRepository
         );
     }
 

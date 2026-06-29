@@ -117,8 +117,8 @@ services:
       JWT_JWKS_URI: http://identity-service:8081/api/v1/auth/.well-known/jwks.json
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbituser}
-      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-rabbitpass}
+    depends_on:
       mysql:
         condition: service_healthy
       rabbitmq:
