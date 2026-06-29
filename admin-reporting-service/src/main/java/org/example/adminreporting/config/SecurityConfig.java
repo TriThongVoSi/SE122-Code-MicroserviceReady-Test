@@ -21,6 +21,7 @@ public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/template/public/**",
+            "/actuator/health/**",
             "/actuator/health",
             "/actuator/prometheus"
     };

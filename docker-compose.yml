@@ -94,6 +94,10 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbituser}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
+      FIREBASE_PROJECT_ID: nen-tang-quan-ly-mua-vu-voi-ai
+      FIREBASE_SERVICE_ACCOUNT_PATH: /app/firebase-service-account.json
+    volumes:
+      - ./firebase-service-account.json:/app/firebase-service-account.json
     depends_on:
       mysql:
         condition: service_healthy
@@ -376,7 +380,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitpass}
       BACKFILL_ENABLED: "false"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health/liveness"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8091/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -424,19 +428,19 @@ services:
       - marketplace-service
       - admin-reporting-service
 
-  frontend:
-    build:
-      context: ./agricultural-crop-management-frontend
-      dockerfile: Dockerfile
-      args:
-        # Route requests to Gateway (port 8000) instead of Backend directly
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
-    container_name: frontend_quanlymuavu
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    depends_on:
-      - api-gateway
+#  frontend:
+#    build:
+#      context: ./agricultural-crop-management-frontend
+#      dockerfile: Dockerfile
+#      args:
+#        # Route requests to Gateway (port 8000) instead of Backend directly
+#        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+#    container_name: frontend_quanlymuavu
+#    restart: unless-stopped
+#    ports:
+#      - "3000:80"
+#    depends_on:
+#      - api-gateway
 
   prometheus:
     image: prom/prometheus:latest
@@ -458,6 +462,11 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - prometheus
+
+  tempo:
+    image: mailhog/mailhog:latest
+    container_name: tempo_quanlymuavu
+    restart: unless-stopped
 
 volumes:
   mysql_data:

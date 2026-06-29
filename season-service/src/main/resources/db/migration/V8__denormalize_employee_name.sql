@@ -13,7 +13,7 @@ ALTER TABLE season_employees
 UPDATE season_employees se
 JOIN identity_db.users u ON se.employee_user_id = u.user_id
 SET
-  se.employee_username = u.username,
+  se.employee_username = u.user_name,
   se.employee_full_name = u.full_name,
   se.employee_email = u.email;
 

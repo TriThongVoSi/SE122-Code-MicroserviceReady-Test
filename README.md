@@ -338,110 +338,118 @@ SE122-Code-MicroserviceReady/
 
 ### Yêu cầu hệ thống
 
-| Phần mềm | Phiên bản tối thiểu |
-|---|---|
-| **Docker** | 20+ |
-| **Docker Compose** | 2.0+ |
-| **Git** | 2.30+ |
+| Công cụ | Phiên bản khuyến nghị | Ghi chú |
+|---|---|---|
+| **Docker** | 20.10+ | Bắt buộc nếu chạy qua Docker Compose |
+| **Docker Compose** | 2.0+ | Bắt buộc nếu chạy qua Docker Compose |
+| **Java JDK** | 23 | Chỉ cần nếu muốn chạy local bằng IDE hoặc dòng lệnh |
+| **Node.js & npm** | 18+ (npm 9+) | Chỉ cần nếu muốn chạy frontend ở chế độ dev local |
+| **Git** | 2.30+ | Dùng để clone mã nguồn |
 
-> **Lưu ý**: Không cần cài đặt Java, Node.js, MySQL riêng lẻ — tất cả chạy trong Docker containers.
+---
 
-### 1️⃣ Clone repository
+### 1️⃣ Chuẩn bị mã nguồn & môi trường
 
+1. **Clone repository về máy**:
+   ```bash
+   git clone https://github.com/TriThongVoSi/SE122-Code-MicroserviceReady-Test.git
+   cd SE122-Code-MicroserviceReady-Test
+   ```
+
+2. **Cấu hình file môi trường (`.env`)**:
+   Sao chép file `.env.example` thành `.env` ở thư mục gốc:
+   * **Windows (Command Prompt)**: `copy .env.example .env`
+   * **Windows (PowerShell)**: `Copy-Item .env.example .env`
+   * **Linux/macOS**: `cp .env.example .env`
+
+3. **Cấu hình API Key cho Trợ lý ảo AI** (Tùy chọn nhưng cần thiết cho Chatbot):
+   Mở file `.env` vừa tạo và điền khóa API Gemini của bạn vào biến:
+   ```properties
+   GEMINI_API_KEY=your_actual_gemini_api_key
+   ```
+   > [!NOTE]
+   > Hệ thống sử dụng cơ chế xác thực bất đối xứng **RS256 JWKS** (không sử dụng secret key đối xứng `JWT_SIGNER_KEY` cũ nữa). Cặp khóa RSA (private & public key) đã được tích hợp sẵn ở `identity-service` trong thư mục `src/main/resources/keys/` và tự động load khi khởi động.
+
+---
+
+### 2️⃣ Khởi chạy toàn bộ hệ thống bằng Docker Compose (Khuyến nghị)
+
+Đây là cách nhanh nhất và ổn định nhất để chạy đầy đủ ứng dụng với tất cả 12 microservices, cơ sở dữ liệu tách biệt và hạ tầng hỗ trợ.
+
+1. **Chạy lệnh khởi động**:
+   ```bash
+   docker-compose up -d --build
+   ```
+   *Lệnh này sẽ tải các Docker images cần thiết, build tất cả microservices từ mã nguồn và khởi chạy chúng ngầm.*
+
+2. **Kiểm tra trạng thái các container**:
+   Đợi khoảng 60 - 90 giây để các cơ sở dữ liệu khởi tạo và chạy Flyway migrations, sau đó gõ lệnh:
+   ```bash
+   docker-compose ps
+   ```
+   *Đảm bảo tất cả các container đều hiển thị trạng thái `Up` (hoặc `healthy`).*
+
+3. **Truy cập ứng dụng**:
+   * **Frontend**: `http://localhost:3000` (đăng nhập bằng tài khoản mẫu bên dưới)
+   * **Hạ tầng quản lý RabbitMQ**: `http://localhost:15672` (User: `rabbituser` | Pass: `rabbitpass`)
+   * **Hạ tầng quản lý MinIO**: `http://localhost:9001` (User: `minioadmin` | Pass: `minioadmin`)
+   * **MailHog Web**: `http://localhost:8025` (Kiểm tra hộp thư thử nghiệm gửi từ hệ thống)
+   * **Grafana Dashboard**: `http://localhost:3001` (Thông tin giám sát hệ thống)
+
+---
+
+### 3️⃣ Chạy ở chế độ Phát triển (Local Development)
+
+Nếu bạn muốn chỉnh sửa mã nguồn và debug trực tiếp bằng IDE (như IntelliJ IDEA, VS Code):
+
+#### Bước 1: Chỉ chạy hạ tầng phụ trợ trong Docker
+Khởi chạy cơ sở dữ liệu, message broker và lưu trữ để các microservices local kết nối đến:
 ```bash
-git clone https://github.com/TriThongVoSi/SE122-Code-MicroserviceReady-Test.git
-cd SE122-Code-MicroserviceReady-Test
+docker-compose up -d mysql rabbitmq minio mailhog
 ```
 
-### 2️⃣ Khởi chạy toàn bộ hệ thống (Khuyến nghị)
+#### Bước 2: Chạy các dịch vụ Backend mong muốn qua dòng lệnh hoặc IDE
+Đảm bảo bạn đã cài đặt JDK 23 và biến môi trường `JAVA_HOME` đã trỏ đúng phiên bản.
+Di chuyển vào thư mục của service cụ thể (ví dụ `identity-service` hoặc `farm-service`) và chạy lệnh:
+* **Windows**:
+  ```cmd
+  mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+  ```
+* **Linux/macOS**:
+  ```bash
+  ./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
+  ```
+*(Hoặc click nút Run/Debug nút mũi tên xanh trên IDE đối với class Application chính của service đó).*
 
+#### Bước 3: Chạy ứng dụng Frontend ở chế độ Dev
+Mở một terminal riêng biệt tại thư mục frontend, cài đặt dependencies và chạy dev server:
 ```bash
-docker-compose up -d
-```
-
-Lệnh trên sẽ khởi chạy:
-- **MySQL 8.0** — 12 databases (một cho mỗi service)
-- **RabbitMQ 3** — Message bus (port 5672 + 15672)
-- **MinIO** — Object storage (port 9000 + 9001)
-- **Identity Service** (8081) — Auth & users
-- **Crop Catalog Service** (8082) — Reference data
-- **AI Service** (8083) — Gemini AI
-- **Farm Service** (8084) — Farm management
-- **Season Service** (8085) — Season & tasks
-- **Inventory Service** (8086) — Warehouse
-- **Finance Service** (8087) — Expenses
-- **Incident Service** (8088) — Incidents
-- **Sustainability Service** (8089) — FDN analysis
-- **Marketplace Service** (8090) — E-commerce
-- **Admin Reporting Service** (8091) — Admin dashboards
-- **API Gateway** (8000) — Routing
-- **Frontend** (3000) — React app
-- **Prometheus** (9090) — Metrics
-- **Grafana** (3001) — Dashboards
-- **MailHog** (1025/8025) — Email testing
-
-Đợi ~60-90 giây cho tất cả services healthy:
-
-```bash
-docker-compose ps
-```
-
-### 3️⃣ Chạy riêng lẻ từng service (Development)
-
-Nếu muốn chạy service trong IDE để debug:
-
-```bash
-# 1. Khởi chạy infrastructure
-docker-compose up -d mysql rabbitmq
-
-# 2. Chạy service từ IDE
-cd identity-service
-./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
-
-# 3. Frontend dev mode
 cd agricultural-crop-management-frontend
 npm install
 npm run dev
 ```
+Trình duyệt sẽ tự động mở trang web giao diện tại địa chỉ: `http://localhost:5173`.
 
-### 4️⃣ Cấu hình biến môi trường (tùy chọn)
+---
 
-Mặc định `docker-compose.yml` đã có giá trị dev. Tạo file `.env` để override:
+### 4️⃣ Hướng dẫn Import dữ liệu mẫu vào Database (Seed Data)
 
-```properties
-# MySQL
-MYSQL_ROOT_PASSWORD=rootpass
-MYSQL_USER=springuser
-MYSQL_PASSWORD=springpass
+Khi cơ sở dữ liệu được tạo mới lần đầu tiên, nó sẽ trống. Để nhập dữ liệu nông trại mẫu, sản phẩm sàn thương mại, danh mục cây trồng, bạn cần chạy script import dữ liệu.
 
-# JWT
-JWT_SIGNER_KEY=your_secret_key
+Vui lòng tham khảo tài liệu hướng dẫn cụ thể theo hệ điều hành của bạn:
+* 🪟 **Trên Windows**: [Hướng dẫn luồng thao tác import dữ liệu mới window.md](Hướng%20dẫn%20luồng%20thao%20tác%20import%20dữ%20liệu%20mới%20window.md)
+* 🐧 **Trên Linux**: [Hướng dẫn luồng thao tác import dữ liệu mới linux.md](Hướng%20dẫn%20luồng%20thao%20tác%20import%20dữ%20liệu%20mới%20linux.md)
 
-# AI (optional)
-GEMINI_API_KEY=your_gemini_api_key
+---
 
-# CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-```
+### 5️⃣ Kiểm tra & Giám sát dịch vụ (Health Check)
 
-### 5️⃣ Kiểm tra services
+Bạn có thể giám sát trạng thái hoạt động của các dịch vụ bằng lệnh curl hoặc trình duyệt:
+* **Kiểm tra API Gateway**: [http://localhost:8000/actuator/health](http://localhost:8000/actuator/health)
+* **Kiểm tra Identity Service**: [http://localhost:8081/actuator/health](http://localhost:8081/actuator/health)
+* **Đường dẫn Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
 
-```bash
-# Kiểm tra tất cả containers
-docker-compose ps
-
-# Kiểm tra logs của một service
-docker-compose logs -f identity-service
-
-# Kiểm tra API Gateway health
-curl http://localhost:8000/actuator/health
-
-# Kiểm tra Identity Service
-curl http://localhost:8081/actuator/health
-
-# Kiểm tra Prometheus targets
-curl http://localhost:9090/api/v1/targets
-```
+---
 
 ---
 

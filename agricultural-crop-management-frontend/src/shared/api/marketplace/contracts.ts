@@ -19,8 +19,8 @@ export type MarketplacePage<T> = {
   totalPages: number;
 };
 
-const MarketplaceEnvelopeSchema = z.object({
-  code: z.string(),
+export const MarketplaceEnvelopeSchema = z.object({
+  code: z.union([z.string(), z.number()]).transform(String),
   message: z.string(),
   result: z.unknown().optional(),
   data: z.unknown().optional(),

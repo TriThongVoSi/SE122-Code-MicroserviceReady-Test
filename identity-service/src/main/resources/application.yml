@@ -55,6 +55,11 @@ jwt:
   valid-duration: ${JWT_VALID_DURATION:3600}
   refreshable-duration: ${JWT_REFRESHABLE_DURATION:36000}
 
+firebase:
+  project-id: ${FIREBASE_PROJECT_ID:}
+  service-account-json: ${FIREBASE_SERVICE_ACCOUNT_JSON:}
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}
+
 management:
   tracing:
     sampling:

@@ -42,13 +42,13 @@ CREATE TABLE notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE outbox_events (
-    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    event_type VARCHAR(255) NOT NULL,
+    id VARCHAR(255) NOT NULL PRIMARY KEY,
     aggregate_type VARCHAR(255) NOT NULL,
     aggregate_id VARCHAR(255) NOT NULL,
-    payload TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP NULL
+    event_type VARCHAR(255) NOT NULL,
+    payload LONGTEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed BOOLEAN NOT NULL DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE processed_events (
@@ -63,4 +63,5 @@ CREATE INDEX idx_alert_farm ON alerts(farm_id);
 CREATE INDEX idx_alert_season ON alerts(season_id);
 CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at);
 CREATE INDEX idx_notifications_read ON notifications(user_id, read_at);
-CREATE INDEX idx_outbox_events_processed ON outbox_events(processed_at);
+CREATE INDEX idx_outbox_events_processed ON outbox_events(processed);
+

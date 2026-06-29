@@ -1849,7 +1849,17 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                 order.getBuyerUserId(),
                 order.getFarmerUserId(),
                 order.getStatus(),
-                null, // payment
+                new MarketplaceOrderPaymentResponse(
+                        order.getPaymentMethod(),
+                        order.getPaymentVerificationStatus(),
+                        order.getPaymentProofFileName(),
+                        order.getPaymentProofContentType(),
+                        order.getPaymentProofStoragePath(),
+                        order.getPaymentProofUploadedAt(),
+                        order.getPaymentVerifiedAt(),
+                        order.getPaymentVerifiedByUserId(),
+                        order.getPaymentVerificationNote()
+                ),
                 order.getShippingRecipientName(),
                 order.getShippingPhone(),
                 order.getShippingAddressLine(),
