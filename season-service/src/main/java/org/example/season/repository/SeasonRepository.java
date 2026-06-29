@@ -30,11 +30,12 @@ public interface SeasonRepository extends JpaRepository<Season, Integer>,
 
         List<Season> findAllByPlotIdOrderByStartDateDesc(Integer plotId);
 
-        @Query(value = "SELECT s.* FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id WHERE p.user_id = :userId", nativeQuery = true)
+        // Filtered by owner user ID - no cross-schema JOIN needed (ownerUserId is denormalized)
+        @Query("SELECT s FROM Season s WHERE s.ownerUserId = :userId")
         List<Season> findAllByPlotUserId(@Param("userId") Long userId);
 
-        @Query(value = "SELECT s.* FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id WHERE p.farm_id IN :farmIds", nativeQuery = true)
-        List<Season> findAllByPlotFarmIdIn(@Param("farmIds") Iterable<Integer> farmIds);
+        @Query("SELECT s FROM Season s WHERE s.plotId IN :plotIds")
+        List<Season> findAllByPlotFarmIdIn(@Param("plotIds") Iterable<Integer> plotIds);
 
         List<Season> findAllByPlotIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                         Integer plotId,
@@ -44,20 +45,27 @@ public interface SeasonRepository extends JpaRepository<Season, Integer>,
         @Query("SELECT s FROM Season s WHERE s.plotId = :plotId AND s.status IN :statuses")
         List<Season> findByPlotIdAndStatusIn(@Param("plotId") Integer plotId, @Param("statuses") Iterable<SeasonStatus> statuses);
 
-        @Query(value = "SELECT s.* FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id JOIN farm_db.farms f ON p.farm_id = f.farm_id WHERE s.season_id = :seasonId AND f.user_id = :ownerId", nativeQuery = true)
+        // No cross-schema JOIN - uses denormalized ownerUserId
+        @Query("SELECT s FROM Season s WHERE s.id = :seasonId AND s.ownerUserId = :ownerId")
         Optional<Season> findByIdAndFarmUserId(@Param("seasonId") Integer seasonId, @Param("ownerId") Long ownerId);
 
-        @Query(value = "SELECT s.* FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id JOIN farm_db.farms f ON p.farm_id = f.farm_id WHERE f.user_id = :ownerId", nativeQuery = true)
+        @Query("SELECT s FROM Season s WHERE s.ownerUserId = :ownerId")
         List<Season> findAllByFarmUserId(@Param("ownerId") Long ownerId);
 
-        @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id JOIN farm_db.farms f ON p.farm_id = f.farm_id WHERE s.season_id = :seasonId AND f.user_id = :ownerId", nativeQuery = true)
+        @Query("SELECT COUNT(s) > 0 FROM Season s WHERE s.id = :seasonId AND s.ownerUserId = :ownerId")
         boolean existsByIdAndFarmUserId(@Param("seasonId") Integer seasonId, @Param("ownerId") Long ownerId);
 
-        @Query(value = "SELECT COUNT(*) FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id JOIN farm_db.farms f ON p.farm_id = f.farm_id WHERE s.status = :status AND f.user_id = :ownerId", nativeQuery = true)
-        long countByStatusAndFarmUserId(@Param("status") String status, @Param("ownerId") Long ownerId);
+        @Query("SELECT COUNT(s) FROM Season s WHERE s.status = :status AND s.ownerUserId = :ownerId")
+        long countByStatusAndFarmUserId(@Param("status") SeasonStatus status, @Param("ownerId") Long ownerId);
 
-        @Query(value = "SELECT s.* FROM seasons s JOIN farm_db.plots p ON s.plot_id = p.plot_id JOIN farm_db.farms f ON p.farm_id = f.farm_id WHERE s.status = 'ACTIVE' AND f.user_id = :ownerId ORDER BY s.start_date DESC", nativeQuery = true)
-        List<Season> findActiveSeasonsByUserIdOrderByStartDateDesc(@Param("ownerId") Long ownerId);
+        // No cross-schema JOIN - uses denormalized ownerUserId and fixed status parameter
+        @Query("SELECT s FROM Season s WHERE s.status = :status AND s.ownerUserId = :ownerId ORDER BY s.startDate DESC")
+        List<Season> findActiveSeasonsByUserIdOrderByStartDateDesc(@Param("status") SeasonStatus status, @Param("ownerId") Long ownerId);
+
+        // Note: searchByKeywordAndUserId and findByFilters require crop/plot names from other schemas.
+        // These methods are temporarily disabled - implement via event-driven denormalization
+        // or in-memory filtering with external service lookups.
+        // See SeasonQueryService for the in-memory filtering approach.
 
         @Query("SELECT COUNT(s) > 0 FROM Season s WHERE s.plotId = :plotId " +
                         "AND LOWER(s.seasonName) = LOWER(:seasonName) " +
@@ -68,34 +76,10 @@ public interface SeasonRepository extends JpaRepository<Season, Integer>,
                         @Param("seasonName") String seasonName,
                         @Param("excludeId") Integer excludeId);
 
-        @Query(value = "SELECT s.* FROM seasons s " +
-                        "JOIN farm_db.plots p ON s.plot_id = p.plot_id " +
-                        "JOIN farm_db.farms f ON p.farm_id = f.farm_id " +
-                        "JOIN crop_catalog_db.crops c ON s.crop_id = c.crop_id " +
-                        "WHERE f.user_id = :ownerId " +
-                        "AND (LOWER(s.season_name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-                        "OR LOWER(p.plot_name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-                        "OR LOWER(c.crop_name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-                        "ORDER BY s.start_date DESC", nativeQuery = true)
-        List<Season> searchByKeywordAndUserId(@Param("keyword") String keyword, @Param("ownerId") Long ownerId);
+        // Note: findByFilters requires farm/plot filters. Use SeasonQueryService.inMemoryFilterByFarmId
+        // which calls findAllByFarmUserId and filters in-memory by farmId via external service lookup.
 
         long countByStatus(SeasonStatus status);
 
         boolean existsByVarietyId(Integer varietyId);
-
-        @Query(value = "SELECT s.* FROM seasons s " +
-                        "JOIN farm_db.plots p ON s.plot_id = p.plot_id " +
-                        "JOIN farm_db.farms f ON p.farm_id = f.farm_id " +
-                        "WHERE (:from IS NULL OR s.start_date >= :from) " +
-                        "AND (:to IS NULL OR s.start_date < :to) " +
-                        "AND (:cropId IS NULL OR s.crop_id = :cropId) " +
-                        "AND (:farmId IS NULL OR f.farm_id = :farmId) " +
-                        "AND (:plotId IS NULL OR s.plot_id = :plotId) " +
-                        "AND (:varietyId IS NULL OR s.variety_id = :varietyId)", nativeQuery = true)
-        List<Season> findByFilters(@Param("from") LocalDate from,
-                        @Param("to") LocalDate to,
-                        @Param("cropId") Integer cropId,
-                        @Param("farmId") Integer farmId,
-                        @Param("plotId") Integer plotId,
-                        @Param("varietyId") Integer varietyId);
 }

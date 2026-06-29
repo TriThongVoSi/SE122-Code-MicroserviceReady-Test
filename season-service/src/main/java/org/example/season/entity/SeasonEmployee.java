@@ -48,6 +48,20 @@ public class SeasonEmployee {
     @Column(name = "employee_user_id", nullable = false)
     Long employeeUserId;
 
+    /**
+     * Denormalized employee display name.
+     * Populated at assignment time via ExternalServiceClient.getUser().
+     * Eliminates cross-schema JOIN to identity_db at runtime.
+     */
+    @Column(name = "employee_username")
+    String employeeUsername;
+
+    @Column(name = "employee_full_name")
+    String employeeFullName;
+
+    @Column(name = "employee_email")
+    String employeeEmail;
+
     @Column(name = "added_by_user_id")
     Long addedByUserId;
 

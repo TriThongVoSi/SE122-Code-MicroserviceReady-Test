@@ -18,6 +18,7 @@ import org.example.sustainability.snapshot.repository.CropSnapshotRepository;
 import org.example.sustainability.snapshot.repository.ExpenseSnapshotRepository;
 import org.example.sustainability.snapshot.repository.FarmSnapshotRepository;
 import org.example.sustainability.snapshot.repository.HarvestSnapshotRepository;
+import org.example.sustainability.snapshot.repository.MarketplaceOrderSummaryRepository;
 import org.example.sustainability.snapshot.repository.PlotSnapshotRepository;
 import org.example.sustainability.snapshot.repository.SeasonSnapshotRepository;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class SnapshotQueryService {
     CropSnapshotRepository cropSnapshotRepository;
     HarvestSnapshotRepository harvestSnapshotRepository;
     ExpenseSnapshotRepository expenseSnapshotRepository;
+    MarketplaceOrderSummaryRepository marketplaceOrderSummaryRepository;
 
     public Optional<FarmContext> findFarm(Integer farmId) {
         FarmSnapshot snapshot = farmSnapshotRepository.findLatestByFarmId(farmId);
@@ -156,11 +158,13 @@ public class SnapshotQueryService {
         if (seasonId == null) {
             return BigDecimal.ZERO;
         }
-        BigDecimal val = seasonSnapshotRepository.getMarketplaceRevenueBySeasonId(seasonId);
+        // No cross-schema query - reads from event-driven MarketplaceOrderSummary table
+        BigDecimal val = marketplaceOrderSummaryRepository.getMarketplaceRevenueBySeasonId(seasonId);
         return val != null ? val : BigDecimal.ZERO;
     }
 
     public long countMarketplaceOrders() {
-        return seasonSnapshotRepository.countMarketplaceOrders();
+        // No cross-schema query - reads from event-driven MarketplaceOrderSummary table
+        return marketplaceOrderSummaryRepository.count();
     }
 }

@@ -69,7 +69,7 @@ public class SeasonQueryService {
         if (ownerId == null) {
             return List.of();
         }
-        return seasonRepository.findActiveSeasonsByUserIdOrderByStartDateDesc(ownerId);
+        return seasonRepository.findActiveSeasonsByUserIdOrderByStartDateDesc(SeasonStatus.ACTIVE, ownerId);
     }
 
     public List<Season> findAllSeasonsByPlotId(Integer plotId) {
@@ -107,7 +107,28 @@ public class SeasonQueryService {
             Integer farmId,
             Integer plotId,
             Integer varietyId) {
-        return seasonRepository.findByFilters(from, to, cropId, farmId, plotId, varietyId);
+        // Filter by farmId using in-memory plot lookup (avoids cross-schema JOIN)
+        List<Season> seasons = seasonRepository.findAllByFarmUserId(
+                seasonWorkspaceAccessService.getCurrentUserId());
+
+        return seasons.stream()
+                .filter(s -> farmId == null || isPlotInFarm(s.getPlotId(), farmId))
+                .filter(s -> from == null || s.getStartDate() == null || !s.getStartDate().isBefore(from))
+                .filter(s -> to == null || s.getStartDate() == null || !s.getStartDate().isAfter(to))
+                .filter(s -> cropId == null || cropId.equals(s.getCropId()))
+                .filter(s -> plotId == null || plotId.equals(s.getPlotId()))
+                .filter(s -> varietyId == null || varietyId.equals(s.getVarietyId()))
+                .toList();
+    }
+
+    private boolean isPlotInFarm(Integer plotId, Integer farmId) {
+        if (plotId == null || farmId == null) return false;
+        try {
+            ExternalServiceClient.PlotInternalDto plot = externalServiceClient.getPlot(plotId);
+            return plot != null && farmId.equals(plot.getFarmId());
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     public List<Season> findAllSeasons() {
@@ -118,7 +139,7 @@ public class SeasonQueryService {
         if (status == null || ownerId == null) {
             return 0L;
         }
-        return seasonRepository.countByStatusAndFarmUserId(status.name(), ownerId);
+        return seasonRepository.countByStatusAndFarmUserId(status, ownerId);
     }
 
     public long countSeasons() {
@@ -261,8 +282,12 @@ public class SeasonQueryService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return List.of();
         }
-        return seasonRepository.searchByKeywordAndUserId(keyword.trim(), currentUserId)
-                .stream()
+        // Get all seasons owned by user, then filter in-memory by keyword
+        // Note: full text search across crop/plot names requires denormalization
+        // or event-driven read model. This filters by season name only for now.
+        String kw = keyword.trim().toLowerCase();
+        return seasonRepository.findAllByFarmUserId(currentUserId).stream()
+                .filter(s -> s.getSeasonName() != null && s.getSeasonName().toLowerCase().contains(kw))
                 .map(seasonMapper::toResponse)
                 .toList();
     }

@@ -72,7 +72,7 @@ public class AdminDocumentController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    record CreateDocumentRequest(
+    public record CreateDocumentRequest(
             String title,
             String description,
             String documentUrl,

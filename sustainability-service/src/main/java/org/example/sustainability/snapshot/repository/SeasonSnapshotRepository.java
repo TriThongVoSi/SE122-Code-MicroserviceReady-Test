@@ -59,9 +59,6 @@ public interface SeasonSnapshotRepository extends JpaRepository<SeasonSnapshot, 
             """, nativeQuery = true)
     List<SeasonSnapshot> findActiveLatestSeasonsForUser(@Param("userId") Long userId);
 
-    @Query(value = "SELECT COALESCE(SUM(oi.line_total), 0) FROM marketplace_db.marketplace_order_items oi JOIN marketplace_db.marketplace_orders o ON o.id = oi.order_id WHERE oi.season_id = :seasonId AND o.status = 'COMPLETED'", nativeQuery = true)
-    java.math.BigDecimal getMarketplaceRevenueBySeasonId(@Param("seasonId") Integer seasonId);
-
-    @Query(value = "SELECT COUNT(*) FROM marketplace_db.marketplace_orders", nativeQuery = true)
-    long countMarketplaceOrders();
+    // Note: marketplace revenue is now queried from MarketplaceOrderSummaryRepository
+    // (event-driven, no cross-schema dependency)
 }

@@ -111,8 +111,19 @@ public class SeasonTaskService {
         ExternalServiceClient.UserInternalDto currentUser = seasonWorkspaceAccessService.getCurrentUser();
         ExternalServiceClient.UserInternalDto assignee = resolveTaskAssignee(season, request.getAssigneeUserId(), currentUser);
 
+        // Populate denormalized fields for DashboardTaskView (avoids cross-schema JOINs)
+        String plotName = null;
+        if (season != null && season.getPlotId() != null) {
+            try {
+                plotName = externalServiceClient.getPlot(season.getPlotId()).getPlotName();
+            } catch (Exception ignored) {
+            }
+        }
+
         Task task = Task.builder()
                 .userId(assignee.getId())
+                .assigneeName(assignee.getFullName())
+                .plotName(plotName)
                 .season(season)
                 .title(request.getTitle())
                 .description(request.getDescription())

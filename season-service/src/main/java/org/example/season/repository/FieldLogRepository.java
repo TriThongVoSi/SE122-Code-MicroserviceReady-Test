@@ -22,13 +22,7 @@ public interface FieldLogRepository extends JpaRepository<FieldLog, Integer> {
 
     long countBySeasonIdAndLogTypeIgnoreCase(Integer seasonId, String logType);
 
-    @Query(value = """
-            SELECT f.* FROM field_logs f
-            JOIN seasons s ON f.season_id = s.season_id
-            JOIN farm_db.plots p ON s.plot_id = p.plot_id
-            JOIN farm_db.farms farm ON p.farm_id = farm.farm_id
-            WHERE farm.user_id = :ownerId
-            ORDER BY f.created_at DESC, f.field_log_id DESC
-            """, nativeQuery = true)
+    // No cross-schema JOIN - uses denormalized ownerUserId in Season
+    @Query("SELECT f FROM FieldLog f WHERE f.season.ownerUserId = :ownerId ORDER BY f.createdAt DESC, f.id DESC")
     List<FieldLog> findRecentByOwnerId(@Param("ownerId") Long ownerId, Pageable pageable);
 }

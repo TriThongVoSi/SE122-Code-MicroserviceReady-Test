@@ -31,13 +31,11 @@ import org.hibernate.annotations.Synchronize;
                 "t.status AS status, " +
                 "t.season_id AS season_id, " +
                 "t.user_id AS user_id, " +
-                "u.full_name AS assignee_name, " +
-                "p.plot_id AS plot_id, " +
-                "p.plot_name AS plot_name " +
+                "t.assignee_name AS assignee_name, " +
+                "t.plot_id AS plot_id, " +
+                "t.plot_name AS plot_name " +
         "FROM tasks t " +
-        "LEFT JOIN identity_db.users u ON t.user_id = u.user_id " +
-        "LEFT JOIN seasons s ON t.season_id = s.season_id " +
-        "LEFT JOIN farm_db.plots p ON s.plot_id = p.plot_id"
+        "LEFT JOIN seasons s ON t.season_id = s.season_id"
 )
 @Synchronize({ "tasks", "seasons" })
 @Getter

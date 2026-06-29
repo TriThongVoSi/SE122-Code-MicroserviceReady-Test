@@ -41,6 +41,14 @@ public class Season {
     @Column(name = "plot_id", nullable = false)
     Integer plotId;
 
+    /**
+     * Denormalized farm owner user ID.
+     * Set at season creation time from the farm owner.
+     * Eliminates cross-schema JOIN to farm_db at runtime.
+     */
+    @Column(name = "owner_user_id")
+    Long ownerUserId;
+
     @Column(name = "crop_id", nullable = false)
     Integer cropId;
 

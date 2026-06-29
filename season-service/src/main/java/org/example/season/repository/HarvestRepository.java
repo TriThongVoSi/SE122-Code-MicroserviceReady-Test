@@ -50,13 +50,7 @@ public interface HarvestRepository extends JpaRepository<Harvest, Integer> {
     List<AdminReportProjections.SeasonRevenueAgg> sumRevenueBySeasonIds(
             @Param("seasonIds") Set<Integer> seasonIds);
 
-    @Query(value = """
-            SELECT h.* FROM harvests h
-            JOIN seasons s ON h.season_id = s.season_id
-            JOIN farm_db.plots p ON s.plot_id = p.plot_id
-            JOIN farm_db.farms farm ON p.farm_id = farm.farm_id
-            WHERE farm.user_id = :ownerId
-            ORDER BY h.created_at DESC, h.harvest_id DESC
-            """, nativeQuery = true)
+    // No cross-schema JOIN - uses denormalized ownerUserId in Season
+    @Query("SELECT h FROM Harvest h WHERE h.season.ownerUserId = :ownerId ORDER BY h.createdAt DESC, h.id DESC")
     List<Harvest> findRecentByOwnerId(@Param("ownerId") Long ownerId, Pageable pageable);
 }

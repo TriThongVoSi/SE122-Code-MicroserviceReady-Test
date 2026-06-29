@@ -39,6 +39,22 @@ public class Task {
     @Column(name = "user_id", nullable = false)
     Long userId;
 
+    /**
+     * Denormalized assignee full name.
+     * Set when task is assigned to a user.
+     * Eliminates cross-schema JOIN to identity_db.
+     */
+    @Column(name = "assignee_name")
+    String assigneeName;
+
+    /**
+     * Denormalized plot name.
+     * Set from the season's plot at task creation.
+     * Eliminates cross-schema JOIN to farm_db.
+     */
+    @Column(name = "plot_name")
+    String plotName;
+
     @ManyToOne
     @JoinColumn(name = "season_id")
     Season season;

@@ -34,8 +34,19 @@ public class TaskService {
             season = seasonRepository.findById(request.getSeasonId()).orElse(null);
         }
 
+        // Populate denormalized fields for DashboardTaskView (avoids cross-schema JOINs)
+        String plotName = null;
+        if (season != null && season.getPlotId() != null) {
+            try {
+                plotName = externalServiceClient.getPlot(season.getPlotId()).getPlotName();
+            } catch (Exception ignored) {
+            }
+        }
+
         Task task = Task.builder()
                 .userId(request.getUserId())
+                .assigneeName(user.getFullName())
+                .plotName(plotName)
                 .season(season)
                 .title(request.getTitle())
                 .description(request.getDescription())

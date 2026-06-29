@@ -8,6 +8,61 @@ scrape_configs:
     static_configs:
       - targets: ['api-gateway:8000']
 
+  - job_name: 'identity-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['identity-service:8081']
+
+  - job_name: 'crop-catalog-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['crop-catalog-service:8082']
+
+  - job_name: 'ai-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ai-service:8083']
+
+  - job_name: 'farm-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['farm-service:8084']
+
+  - job_name: 'season-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['season-service:8085']
+
+  - job_name: 'inventory-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['inventory-service:8086']
+
+  - job_name: 'finance-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['finance-service:8087']
+
+  - job_name: 'incident-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['incident-service:8088']
+
+  - job_name: 'sustainability-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['sustainability-service:8089']
+
+  - job_name: 'marketplace-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['marketplace-service:8090']
+
+  - job_name: 'admin-reporting-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['admin-reporting-service:8091']
+
   - job_name: 'monolith-backend'
     metrics_path: '/actuator/prometheus'
     static_configs:

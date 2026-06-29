@@ -22,24 +22,21 @@ public interface SeasonEmployeeRepository extends JpaRepository<SeasonEmployee, 
     List<SeasonEmployee> findAllByEmployeeUserIdAndActiveTrue(Long employeeUserId);
 
     @Query(value = """
-            SELECT se.* FROM season_employees se
-            JOIN identity_db.users u ON se.employee_user_id = u.user_id
-            WHERE se.season_id = :seasonId
+            SELECT se FROM SeasonEmployee se
+            WHERE se.season.id = :seasonId
             AND (:keyword IS NULL OR :keyword = ''
-            OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            OR LOWER(se.employeeUsername) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(se.employeeFullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(se.employeeEmail) LIKE LOWER(CONCAT('%', :keyword, '%')))
             """,
             countQuery = """
-            SELECT COUNT(*) FROM season_employees se
-            JOIN identity_db.users u ON se.employee_user_id = u.user_id
-            WHERE se.season_id = :seasonId
+            SELECT COUNT(se) FROM SeasonEmployee se
+            WHERE se.season.id = :seasonId
             AND (:keyword IS NULL OR :keyword = ''
-            OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            """,
-            nativeQuery = true)
+            OR LOWER(se.employeeUsername) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(se.employeeFullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(se.employeeEmail) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            """)
     Page<SeasonEmployee> searchBySeasonAndKeyword(@Param("seasonId") Integer seasonId,
             @Param("keyword") String keyword,
             Pageable pageable);
