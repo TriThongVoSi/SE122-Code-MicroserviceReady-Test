@@ -17,7 +17,8 @@ public record MarketplaceOrderCreatedEvent(
             Long buyerUserId,
             Long farmerUserId,
             String status,
-            List<OrderItemPayload> items
+            List<OrderItemPayload> items,
+            java.math.BigDecimal totalAmount
     ) {}
 
     public record OrderItemPayload(
@@ -29,7 +30,9 @@ public record MarketplaceOrderCreatedEvent(
             String farmName,
             Integer seasonId,
             String seasonName,
-            Integer quantity
+            Integer quantity,
+            java.math.BigDecimal unitPrice,
+            java.math.BigDecimal lineTotal
     ) {}
 
     public static String getEventType() {

@@ -5448,13 +5448,13 @@ paths:
               $ref: "#/components/schemas/AuthenticationRequest"
         required: true
       responses:
-        "403":
-          description: User locked or no role
+        "401":
+          description: Invalid credentials
           content:
             application/json:
               example:
-                code: USER_LOCKED
-                message: User account is not active.
+                code: INVALID_CREDENTIALS
+                message: Invalid username/email or password.
         "200":
           description: Login successful
           content:
@@ -5477,13 +5477,13 @@ paths:
                         provinceId: 24
                         wardId: 25112
                       redirectTo: /farmer
-        "401":
-          description: Invalid credentials
+        "403":
+          description: User locked or no role
           content:
             application/json:
               example:
-                code: INVALID_CREDENTIALS
-                message: Invalid username/email or password.
+                code: USER_LOCKED
+                message: User account is not active.
   /api/v1/auth/reset-password:
     post:
       tags:
@@ -5760,18 +5760,18 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseRoleResponse"
-        "200":
-          description: Tạo vai trò thành công
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
         "403":
           description: Không có quyền tạo vai trò
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ApiResponseRoleResponse"
+        "200":
+          description: Tạo vai trò thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
       security:
       - bearerAuth: []
   /api/v1/admin/documents:
@@ -10391,6 +10391,12 @@ paths:
         \ frontend app bootstrapping."
       operationId: getCurrentUser
       responses:
+        "401":
+          description: Unauthorized - invalid or expired token
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
         "200":
           description: User info retrieved successfully
           content:
@@ -10415,12 +10421,6 @@ paths:
                         provinceId: 24
                         wardId: 25112
                       redirectTo: /farmer
-        "401":
-          description: Unauthorized - invalid or expired token
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ApiResponseAuthenticationResponse"
   /api/v1/admin/users/{id}/can-delete:
     get:
       tags:
@@ -18667,14 +18667,14 @@ components:
           $ref: "#/components/schemas/MetricValue"
         estimatedYieldMetric:
           $ref: "#/components/schemas/MetricValue"
-        noutputMetric:
-          $ref: "#/components/schemas/MetricValue"
-        nsurplusMetric:
-          $ref: "#/components/schemas/MetricValue"
-        nsurplus:
-          type: number
         noutput:
           type: number
+        nsurplus:
+          type: number
+        nsurplusMetric:
+          $ref: "#/components/schemas/MetricValue"
+        noutputMetric:
+          $ref: "#/components/schemas/MetricValue"
         nOutput:
           type: number
         nSurplus:
@@ -19660,11 +19660,11 @@ components:
           type: boolean
         last:
           type: boolean
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -19679,10 +19679,10 @@ components:
           type: boolean
         unpaged:
           type: boolean
-        pageNumber:
+        pageSize:
           type: integer
           format: int32
-        pageSize:
+        pageNumber:
           type: integer
           format: int32
     SortObject:
@@ -19690,9 +19690,9 @@ components:
       properties:
         empty:
           type: boolean
-        unsorted:
-          type: boolean
         sorted:
+          type: boolean
+        unsorted:
           type: boolean
     ApiResponseListDashboardRecentActivityResponse:
       type: object

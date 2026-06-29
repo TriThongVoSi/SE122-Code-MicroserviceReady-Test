@@ -33,6 +33,7 @@ public class AdminEventListener {
     private final HarvestSummaryRepository harvestSummaryRepository;
     private final ExpenseSummaryRepository expenseSummaryRepository;
     private final MarketplaceOrderSummaryRepository marketplaceOrderSummaryRepository;
+    private final MarketplaceOrderItemSummaryRepository marketplaceOrderItemSummaryRepository;
 
     @Transactional
     @RabbitListener(queues = RabbitMQConfig.ADMIN_REPORTING_EVENTS_QUEUE)
@@ -248,10 +249,24 @@ public class AdminEventListener {
                 .buyerName("Buyer " + dto.getPayload().getBuyerUserId())
                 .status(dto.getPayload().getStatus())
                 .paymentStatus("PENDING")
-                .totalAmount(BigDecimal.ZERO)
+                .totalAmount(dto.getPayload().getTotalAmount() != null ? dto.getPayload().getTotalAmount() : BigDecimal.ZERO)
                 .createdAt(dto.getOccurredAt())
                 .build();
         marketplaceOrderSummaryRepository.save(summary);
+
+        if (dto.getPayload().getItems() != null) {
+            for (MarketplaceOrderCreatedEventDto.OrderItemPayload item : dto.getPayload().getItems()) {
+                MarketplaceOrderItemSummary itemSummary = MarketplaceOrderItemSummary.builder()
+                        .itemId(item.getItemId())
+                        .orderId(dto.getPayload().getOrderId())
+                        .seasonId(item.getSeasonId())
+                        .quantity(item.getQuantity() != null ? BigDecimal.valueOf(item.getQuantity()) : BigDecimal.ZERO)
+                        .unitPrice(item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO)
+                        .lineTotal(item.getLineTotal() != null ? item.getLineTotal() : BigDecimal.ZERO)
+                        .build();
+                marketplaceOrderItemSummaryRepository.save(itemSummary);
+            }
+        }
     }
 
     private void handlePaymentSubmitted(Message message) throws Exception {

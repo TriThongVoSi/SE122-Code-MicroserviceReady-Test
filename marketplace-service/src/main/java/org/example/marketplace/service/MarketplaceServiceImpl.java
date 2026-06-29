@@ -854,7 +854,9 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                         item.getFarmName(),
                         item.getSeasonId(),
                         item.getSeasonName(),
-                        item.getQuantity().intValue()
+                        item.getQuantity().intValue(),
+                        item.getUnitPriceSnapshot(),
+                        item.getLineTotal()
                 ))
                 .toList();
 
@@ -869,7 +871,8 @@ public class MarketplaceServiceImpl implements MarketplaceService {
                         order.getBuyerUserId(),
                         order.getFarmerUserId(),
                         order.getStatus().name(),
-                        itemPayloads
+                        itemPayloads,
+                        order.getTotalAmount()
                 )
         );
         domainEventPublisher.publish(event);

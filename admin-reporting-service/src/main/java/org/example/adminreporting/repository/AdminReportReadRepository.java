@@ -34,6 +34,7 @@ public class AdminReportReadRepository {
             .harvestRevenue(getBigDecimal(rs, "harvestRevenue"))
             .harvestCount(getLong(rs, "harvestCount"))
             .totalExpense(getBigDecimal(rs, "totalExpense"))
+            .marketplaceRevenue(getBigDecimal(rs, "marketplaceRevenue"))
             .build();
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -66,7 +67,8 @@ public class AdminReportReadRepository {
                                coalesce(h.totalQuantity, 0) as harvestQuantityKg,
                                coalesce(h.totalRevenue, 0) as harvestRevenue,
                                coalesce(h.harvestCount, 0) as harvestCount,
-                               coalesce(e.totalExpense, 0) as totalExpense
+                               coalesce(e.totalExpense, 0) as totalExpense,
+                               coalesce(m.marketplaceRevenue, 0) as marketplaceRevenue
                         from admin_season_summary s
                         join admin_plot_summary p on p.plot_id = s.plot_id
                         join admin_farm_summary f on f.farm_id = p.farm_id
@@ -84,6 +86,14 @@ public class AdminReportReadRepository {
                             from admin_expense_summary e
                             group by e.season_id
                         ) e on e.seasonId = s.season_id
+                        left join (
+                            select oi.season_id as seasonId,
+                                   sum(coalesce(oi.line_total, 0)) as marketplaceRevenue
+                            from admin_marketplace_order_item_summary oi
+                            join admin_marketplace_order_summary o on o.order_id = oi.order_id
+                            where o.status = 'COMPLETED'
+                            group by oi.season_id
+                        ) m on m.seasonId = s.season_id
                         where (:from is null or s.start_date >= :from)
                           and (:to is null or s.start_date < :to)
                           and (:cropId is null or s.crop_id = :cropId)
@@ -143,5 +153,6 @@ public class AdminReportReadRepository {
         BigDecimal harvestRevenue;
         Long harvestCount;
         BigDecimal totalExpense;
+        BigDecimal marketplaceRevenue;
     }
 }

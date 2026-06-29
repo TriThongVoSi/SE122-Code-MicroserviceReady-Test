@@ -161,6 +161,7 @@ public class AdminEvents {
             private Long farmerUserId;
             private String status;
             private List<OrderItemPayload> items;
+            private BigDecimal totalAmount;
         }
 
         @Data
@@ -177,6 +178,8 @@ public class AdminEvents {
             private Integer seasonId;
             private String seasonName;
             private Integer quantity;
+            private BigDecimal unitPrice;
+            private BigDecimal lineTotal;
         }
     }
 

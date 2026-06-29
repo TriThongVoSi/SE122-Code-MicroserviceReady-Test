@@ -246,6 +246,8 @@ public class AdminReportResponse {
         private String plotName;
         private BigDecimal totalQuantity;
         private BigDecimal totalRevenue;
+        private BigDecimal marketplaceRevenue;
+        private String marketplaceRevenueStatus;
         private BigDecimal avgPrice;
     }
 
@@ -281,6 +283,8 @@ public class AdminReportResponse {
         private Integer plotId;
         private String plotName;
         private BigDecimal totalRevenue;
+        private BigDecimal marketplaceRevenue;
+        private String marketplaceRevenueStatus;
         private BigDecimal totalCost;
         private BigDecimal grossProfit;
         private BigDecimal marginPercent;

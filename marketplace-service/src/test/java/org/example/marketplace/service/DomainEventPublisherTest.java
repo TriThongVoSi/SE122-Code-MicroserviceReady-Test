@@ -48,7 +48,7 @@ class DomainEventPublisherTest {
                 "123",
                 LocalDateTime.now(),
                 new MarketplaceOrderCreatedEvent.Payload(
-                        1L, 123L, 1L, 2L, "PENDING", List.of()
+                        1L, 123L, 1L, 2L, "PENDING", List.of(), java.math.BigDecimal.TEN
                 )
         );
 
@@ -80,7 +80,7 @@ class DomainEventPublisherTest {
                 "456",
                 LocalDateTime.now(),
                 new MarketplaceOrderCreatedEvent.Payload(
-                        1L, 456L, 1L, 2L, "PENDING", List.of()
+                        1L, 456L, 1L, 2L, "PENDING", List.of(), java.math.BigDecimal.TEN
                 )
         );
 

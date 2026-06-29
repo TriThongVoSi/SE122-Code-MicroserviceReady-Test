@@ -1151,8 +1151,6 @@ components:
           type: number
         yield:
           type: number
-        noutput:
-          type: number
         nOutput:
           type: number
     InputsBreakdown:
@@ -1262,14 +1260,6 @@ components:
         nueMetric:
           $ref: "#/components/schemas/MetricValue"
         estimatedYieldMetric:
-          $ref: "#/components/schemas/MetricValue"
-        noutput:
-          type: number
-        nsurplus:
-          type: number
-        noutputMetric:
-          $ref: "#/components/schemas/MetricValue"
-        nsurplusMetric:
           $ref: "#/components/schemas/MetricValue"
         nOutput:
           type: number
